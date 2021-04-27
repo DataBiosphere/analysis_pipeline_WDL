@@ -1,0 +1,6 @@
+# Checker workflow (checker.wdl)
+This script runs vcf-to-gds-wf.wdl on a known set of inputs, and validates them against expected outputs with a quick md5sum check. On Terra, both inputs and outputs are pulled from the UCSC-owned topmed_workflow_testing bucket.
+
+This workflow is not simply a copy of the check_gds step. Check_gds would not determine if the unique_variant_ids step ran successfully, instead, it a seperate validation check. Speaking of which, because the inputs are known to not take very long in check_gds, it is enabled *by default.* If you are replacing these files with your own sets of inputs and outputs, and that set is non-downsampled, modern TOPMed data, you may wish to consider skipping this step.
+
+**If relying on the truth files located in topmed_workflow_testing, make sure to run this on the full array of input VCF files.** If you do not run this on the full array of provided files, the resulting gds files will have unexpected variant IDs, likely resulting in an md5sum mismatch. That does not mean the gds files are invalid, it just means their IDs are not exactly the same as they would be if you had generated them all together.
