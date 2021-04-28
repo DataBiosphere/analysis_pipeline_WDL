@@ -10,6 +10,7 @@ task vcf2gds {
 		Int cpu = 2
 		Int disk
 		Int memory = 4
+		Int preempt = 3
 	}
 	command {
 		set -eux -o pipefail
@@ -34,8 +35,8 @@ task vcf2gds {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
 		disks: "local-disk ${disk} SSD"
-		bootDiskSizeGb: 6
 		memory: "${memory} GB"
+		preemptibles: "${preempt}"
 	}
 	output {
 		File gds_output = output_file_name
@@ -51,6 +52,7 @@ task unique_variant_id {
 		Int cpu = 2
 		Int disk
 		Int memory = 4
+		Int preempt = 2
 	}
 	command <<<
 		set -eux -o pipefail
@@ -142,8 +144,8 @@ task unique_variant_id {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
 		disks: "local-disk ${disk} SSD"
-		bootDiskSizeGb: 6
 		memory: "${memory} GB"
+		preemptibles: "${preempt}"
 	}
 	output {
 		Array[File] unique_variant_id_gds_per_chr = glob("*.gds")
@@ -159,6 +161,7 @@ task check_gds {
 		Int cpu = 8
 		Int disk
 		Int memory = 12
+		Int preempt = 0
 	}
 
 	command <<<
@@ -229,6 +232,7 @@ task check_gds {
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
+		preemptibles: "${preempt}"
 	}
 }
 
