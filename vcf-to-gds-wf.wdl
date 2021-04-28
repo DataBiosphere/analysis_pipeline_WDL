@@ -7,7 +7,7 @@ task vcf2gds {
 		String output_file_name = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
 		Array[String] format # vcf formats to keep
 		# runtime attributes
-		Int cpu = 1
+		Int cpu = 2
 		Int disk
 		Int memory = 4
 	}
@@ -48,7 +48,7 @@ task unique_variant_id {
 	input {
 		Array[File] gdss
 		# runtime attr
-		Int cpu = 1
+		Int cpu = 2
 		Int disk
 		Int memory = 4
 	}
@@ -156,9 +156,9 @@ task check_gds {
 		File gds
 		Array[File] vcfs
 		# runtime attr
-		Int cpu = 1
+		Int cpu = 8
 		Int disk
-		Int memory = 4
+		Int memory = 12
 	}
 
 	command <<<
