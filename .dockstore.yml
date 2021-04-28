@@ -5,4 +5,4 @@ workflows:
      testParameterFiles:
          - /vcf-to-gds-terra.json
          - /vcf-to-gds-local.json
-     name: UWGAC-vcf-to-gds-wdl
+     name: vcf-to-gds-wdl
