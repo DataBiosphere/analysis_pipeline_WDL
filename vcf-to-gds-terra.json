@@ -25,10 +25,8 @@
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chrX.vcf.gz"
 ],
   "a_vcftogds.vcfgds_disk": 50,
-  "a_vcftogds.vcfgds_memory": 10,
   "a_vcftogds.uniquevars_disk": 50,
-  "a_vcftogds.uniquevars_memory": 10,
   "a_vcftogds.check_gds": true,
   "a_vcftogds.checkgds_disk": 50,
-  "a_vcftogds.checkgds_memory": 10
+  "a_vcftogds.check_gds.preemptible_tries": 1
 }

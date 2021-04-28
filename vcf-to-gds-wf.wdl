@@ -7,9 +7,10 @@ task vcf2gds {
 		String output_file_name = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
 		Array[String] format # vcf formats to keep
 		# runtime attributes
-		Int cpu
+		Int cpu = 2
 		Int disk
-		Int memory
+		Int memory = 4
+		Int preempt = 3
 	}
 	command {
 		set -eux -o pipefail
@@ -34,8 +35,8 @@ task vcf2gds {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
 		disks: "local-disk ${disk} SSD"
-		bootDiskSizeGb: 6
 		memory: "${memory} GB"
+		preemptibles: "${preempt}"
 	}
 	output {
 		File gds_output = output_file_name
@@ -48,9 +49,10 @@ task unique_variant_id {
 	input {
 		Array[File] gdss
 		# runtime attr
-		Int cpu
+		Int cpu = 2
 		Int disk
-		Int memory
+		Int memory = 4
+		Int preempt = 2
 	}
 	command <<<
 		set -eux -o pipefail
@@ -142,8 +144,8 @@ task unique_variant_id {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
 		disks: "local-disk ${disk} SSD"
-		bootDiskSizeGb: 6
 		memory: "${memory} GB"
+		preemptibles: "${preempt}"
 	}
 	output {
 		Array[File] unique_variant_id_gds_per_chr = glob("*.gds")
@@ -156,9 +158,10 @@ task check_gds {
 		File gds
 		Array[File] vcfs
 		# runtime attr
-		Int cpu
+		Int cpu = 8
 		Int disk
-		Int memory
+		Int memory = 12
+		Int preempt = 0
 	}
 
 	command <<<
@@ -229,6 +232,7 @@ task check_gds {
 		disks: "local-disk ${disk} SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
+		preemptibles: "${preempt}"
 	}
 }
 
@@ -240,17 +244,11 @@ workflow a_vcftogds {
 
 		# runtime attributes
 		# [1] vcf2gds
-		Int vcfgds_cpu = 1
 		Int vcfgds_disk
-		Int vcfgds_memory = 4
 		# [2] uniquevarids
-		Int uniquevars_cpu = 1
 		Int uniquevars_disk
-		Int uniquevars_memory = 4
 		# [3] checkgds
-		Int checkgds_cpu = 1
 		Int checkgds_disk
-		Int checkgds_memory = 4
 	}
 
 	scatter(vcf_file in vcf_files) {
@@ -258,18 +256,14 @@ workflow a_vcftogds {
 			input:
 				vcf = vcf_file,
 				format = format,
-				cpu = vcfgds_cpu,
-				disk = vcfgds_disk,
-				memory = vcfgds_memory
+				disk = vcfgds_disk
 		}
 	}
 	
 	call unique_variant_id {
 		input:
 			gdss = vcf2gds.gds_output,
-			cpu = uniquevars_cpu,
-			disk = uniquevars_disk,
-			memory = uniquevars_memory
+			disk = uniquevars_disk
 	}
 	
 	if(check_gds) {
@@ -278,9 +272,7 @@ workflow a_vcftogds {
 				input:
 					gds = gds,
 					vcfs = vcf_files,
-					cpu = checkgds_cpu,
-					disk = checkgds_disk,
-					memory = checkgds_memory
+					disk = checkgds_disk
 			}
 		}
 	}

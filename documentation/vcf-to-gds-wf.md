@@ -7,19 +7,26 @@ Please be aware that the third step, check_gds is skipped by default, as it is i
 | variable          	| type          	| default 	| info                                                                                                                        	|
 |-------------------	|---------------	|---------	|-----------------------------------------------------------------------------------------------------------------------------	|
 | **vcf**               	| **Array[File]**   	|         	| **Input vcf, .vcf.bgz, .vcf.gz, .bcf, or any combination thereof; expects 22-25**                                                              	|
-|                   	|               	|         	|                                                                                                                             	|
-| check_gds         	| Boolean       	| false   	| Run the checkGDS step. **Highly recommended** to leave as `false`. 	|
-| checkgds_cpu			| int 				| 1			| Runtime cores to allot for 3rd task (no-op if check_gds=False)                                                         	|
-| checkgds_disk     	| int           	|         	| Runtime disk space to allot for 3rd task (no-op if check_gds=False)                                                         	|
-| checkgds_memory   	| int           	| 4       	| Runtime memory to allot for 3rd task (no-op if check_gds=False)                                                             	|
-| format            	| Array[String] 	| ["GT"]  	| VCF FORMAT fields to carry over into the GDS. Default is GT, ie, non-genotype fields are discarded.                         	|
-| uniquevars_cpu		| int 				| 1			| Runtime cores to allot for 2nd task |
-| uniquevars_disk   	| int           	|         	| Runtime disk space to allot for 2nd task                                                                                    	|
-| uniquevars_memory 	| int           	| 4       	| Runtime memory to allot for 2nd task                                                                                        	|
-| vcfgds_cpu			| int 				| 1			| Runtime cores to allot for 1st task |
-| vcfgds_disk       	| int           	|         	| Runtime disk space to allot for 1st task                                                                                    	|
-| vcfgds_memory     	| int           	| 4       	| Runtime memory to allot for 1st task                                                                                        	|
-|                   	|               	|         	|                                                                                                                             	|
+|                   |           |         	|                                            	|
+| check_gds         | Boolean   | false   	| Run the checkGDS step. **Highly recommended** to leave as `false` except on provided test data. 	|
+| check_gds.cpu		| int 		| 8			| Runtime cores to allot for 3rd task           |
+| checkgds_disk     | int       |         	| Runtime disk space to allot for 3rd task    	|
+| check_gds.memory  | int       | 12       	| Runtime memory to allot for 3rd task   	    |
+| check_gds.preempt | int       | 0       	| # of preemptible VM tries for 3rd task, **highly recommended** to leave as 0 except on provided test data. |
+| format            | Array[String] | ["GT"]| VCF FORMAT fields to carry over into the GDS. Default is GT, ie, non-genotype fields are discarded. |
+| unique_variant_id.cpu	| int 	| 2			| Runtime cores to allot for 2nd task           |
+| uniquevars_disk   	| int   |         	| Runtime disk space to allot for 2nd task    	|
+| unique_variant_id.memory 	| int  | 4      | Runtime memory to allot for 2nd task          |
+| unique_variant_id.preempt | int  | 4      | # of preemptible VM tries for for 2nd task    |
+| vcfgds.cpu			| int   | 2			| Runtime cores to allot for 1st task           |
+| vcfgds_disk       	| int   |         	| Runtime disk space to allot for 1st task      |
+| vcfgds.memory     	| int   | 4       	| Runtime memory to allot for 1st task      	|
+| vcfgds.preempt     	| int   | 3       	| # of preemptible VM tries for for 1st task   	|
+|                   	|       |         	|                                               |
 
 ### Outputs
-unique_variant_id_gds_per_chr: *Array[File]* of GDS files, matching the name of the input vcfs with ".gds" appended to the end, and with unique variant IDs across the whole genome.
+unique_variant_id_gds_per_chr:
+* Type: *Array[File]*
+* Array of GDS files, matching the name of the input vcfs with ".gds" appended to the end, and with unique variant IDs across the whole genome.  
+  
+Note that the check_gds step, while it will stop the pipeline should a check fail, does not actually have any true ouputs. The GDS file output is from the step prior.
