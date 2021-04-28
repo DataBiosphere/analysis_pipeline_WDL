@@ -2,7 +2,7 @@ version: 1.2
 workflows:
    - subclass: WDL
      primaryDescriptorPath: /vcf-to-gds-wf.wdl
-     testParameterFiles: 
+     testParameterFiles:
          - /vcf-to-gds-terra.json
          - /vcf-to-gds-local.json
      name: UWGAC-vcf-to-gds-wdl
