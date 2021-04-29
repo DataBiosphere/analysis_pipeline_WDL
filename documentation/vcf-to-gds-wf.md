@@ -19,10 +19,12 @@ Please be aware that the third step, check_gds is skipped by default, as it is i
 | unique_variant_id.memory 	| int  | 4      | Runtime memory to allot for 2nd task          |
 | unique_variant_id.preempt | int  | 4      | # of preemptible VM tries for for 2nd task    |
 | vcfgds.cpu			| int   | 2			| Runtime cores to allot for 1st task           |
-| vcfgds_disk       	| int   |         	| Runtime disk space to allot for 1st task      |
+| vcfgds.addldisk       | int   | 1       	| Extra disk size (GB) to allot for 1st task    |
 | vcfgds.memory     	| int   | 4       	| Runtime memory to allot for 1st task      	|
 | vcfgds.preempt     	| int   | 3       	| # of preemptible VM tries for for 1st task   	|
 |                   	|       |         	|                                               |
+
+Note that `addldisk` is adding gigabytes **on top of** the WDL's best-guess estimate of disk space needed based on the size of your inputs.
 
 ### Outputs
 unique_variant_id_gds_per_chr:
