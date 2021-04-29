@@ -24,8 +24,8 @@
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr22.vcf.gz",
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chrX.vcf.gz"
 ],
-  "a_vcftogds.vcfgds_disk": 50,
-  "a_vcftogds.uniquevars_disk": 50,
+  "a_vcftogds.vcf2gds.addldisk": 1,
+  "a_vcftogds.unique_variant_id.addldisk": 1,
   "a_vcftogds.check_gds": true,
   "a_vcftogds.checkgds_disk": 50,
   "a_vcftogds.check_gds.preemptible_tries": 1

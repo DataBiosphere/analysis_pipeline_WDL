@@ -7,12 +7,17 @@ task vcf2gds {
 		String output_file_name = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
 		Array[String] format # vcf formats to keep
 		# runtime attributes
+		Int addldisk = 1
 		Int cpu = 2
-		Int disk
 		Int memory = 4
 		Int preempt = 3
+
+		Int debug_diskcalculation = 2*ceil(size(vcf, "GB")) + addldisk
 	}
 	command {
+		echo "Disk size calculation: ~{debug_diskcalculation}"
+
+
 		set -eux -o pipefail
 
 		echo "Generating config file"
@@ -31,10 +36,15 @@ task vcf2gds {
 		echo "Calling R script vcfToGds.R"
 		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R vcf2gds.config
 	}
+	
+	# Estimate disk size required
+	Int vcf_size = ceil(size(vcf, "GB"))
+	Int finalDiskSize = 2*vcf_size + addldisk
+	
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
-		disks: "local-disk ${disk} SSD"
+		disks: "local-disk " + finalDiskSize + "HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -49,12 +59,19 @@ task unique_variant_id {
 	input {
 		Array[File] gdss
 		# runtime attr
+		Int addldisk = 1
 		Int cpu = 2
-		Int disk
 		Int memory = 4
 		Int preempt = 2
+
+		Int debug_diskcalculation = 2*ceil(size(vcf, "GB")) + addldisk
 	}
 	command <<<
+		echo "Disk size calculation: ~{debug_diskcalculation}"
+
+
+
+
 		set -eux -o pipefail
 
 		# This is a workaround for the Python code to work correctly
@@ -140,10 +157,14 @@ task unique_variant_id {
 		echo "Calling uniqueVariantIDs.R"
 		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
 	>>>
+	# Estimate disk size required
+	Int gdss_size = ceil(size(gdss, "GB"))
+	Int finalDiskSize = 2*gdss_size + addldisk
+
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
-		disks: "local-disk ${disk} SSD"
+		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -243,10 +264,6 @@ workflow a_vcftogds {
 		Boolean check_gds = false
 
 		# runtime attributes
-		# [1] vcf2gds
-		Int vcfgds_disk
-		# [2] uniquevarids
-		Int uniquevars_disk
 		# [3] checkgds
 		Int checkgds_disk
 	}
@@ -255,15 +272,13 @@ workflow a_vcftogds {
 		call vcf2gds {
 			input:
 				vcf = vcf_file,
-				format = format,
-				disk = vcfgds_disk
+				format = format
 		}
 	}
 	
 	call unique_variant_id {
 		input:
 			gdss = vcf2gds.gds_output,
-			disk = uniquevars_disk
 	}
 	
 	if(check_gds) {
