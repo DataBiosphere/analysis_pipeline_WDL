@@ -9,3 +9,6 @@ workflows:
    - subclass: WDL
      primaryDescriptorPath: /ld-pruning-wf.wdl
      name: ld-pruning-wdl
+   - subclass: WDL
+     primaryDescriptorPath: /ld-pruning-wf.wdl
+     name: ld-pruning-wdl
