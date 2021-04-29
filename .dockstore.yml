@@ -6,3 +6,6 @@ workflows:
          - /vcf-to-gds-terra.json
          - /vcf-to-gds-local.json
      name: vcf-to-gds-wdl
+   - subclass: WDL
+     primaryDescriptorPath: /ld-pruning-wf.wdl
+     name: ld-pruning-wdl
