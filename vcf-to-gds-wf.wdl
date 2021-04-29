@@ -44,7 +44,7 @@ task vcf2gds {
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
-		disks: "local-disk " + finalDiskSize + "HDD"
+		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -64,7 +64,7 @@ task unique_variant_id {
 		Int memory = 4
 		Int preempt = 2
 
-		Int debug_diskcalculation = 2*ceil(size(vcf, "GB")) + addldisk
+		Int debug_diskcalculation = 2*ceil(size(gdss, "GB")) + addldisk
 	}
 	command <<<
 		echo "Disk size calculation: ~{debug_diskcalculation}"
@@ -179,13 +179,19 @@ task check_gds {
 		File gds
 		Array[File] vcfs
 		# runtime attr
+		Int addldisk = 1
 		Int cpu = 8
-		Int disk
 		Int memory = 12
 		Int preempt = 0
+
+		Int debug_diskcalculation = ceil(size(gds, "GB")) + ceil(size(vcfs, "GB")) + addldisk
 	}
 
 	command <<<
+		echo "Disk size calculation: ~{debug_diskcalculation}"
+
+
+
 		# triple carrot syntax is required for this command section
 		set -eux -o pipefail
 
@@ -247,10 +253,15 @@ task check_gds {
 		Rscript /usr/local/analysis_pipeline/R/check_gds.R check_gds.config --chromosome ${BASH_CHR}
 	>>>
 
+	# Estimate disk size required
+	Int gds_size = ceil(size(gds, "GB"))
+	Int vcfs_size = ceil(size(vcfs, "GB"))
+	Int finalDiskSize = gds_size + vcfs_size + addldisk
+
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
-		disks: "local-disk ${disk} SSD"
+		disks: "local-disk " + finalDiskSize + " SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -262,10 +273,6 @@ workflow a_vcftogds {
 		Array[File] vcf_files
 		Array[String] format = ["GT"]
 		Boolean check_gds = false
-
-		# runtime attributes
-		# [3] checkgds
-		Int checkgds_disk
 	}
 
 	scatter(vcf_file in vcf_files) {
@@ -286,8 +293,7 @@ workflow a_vcftogds {
 			call check_gds {
 				input:
 					gds = gds,
-					vcfs = vcf_files,
-					disk = checkgds_disk
+					vcfs = vcf_files
 			}
 		}
 	}
