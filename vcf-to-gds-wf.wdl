@@ -11,13 +11,8 @@ task vcf2gds {
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 3
-
-		Int debug_diskcalculation = 2*ceil(size(vcf, "GB")) + addldisk
 	}
 	command {
-		echo "Disk size calculation: ~{debug_diskcalculation}"
-
-
 		set -eux -o pipefail
 
 		echo "Generating config file"
@@ -63,15 +58,8 @@ task unique_variant_id {
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 2
-
-		Int debug_diskcalculation = 2*ceil(size(gdss, "GB")) + addldisk
 	}
 	command <<<
-		echo "Disk size calculation: ~{debug_diskcalculation}"
-
-
-
-
 		set -eux -o pipefail
 
 		# This is a workaround for the Python code to work correctly
@@ -183,15 +171,9 @@ task check_gds {
 		Int cpu = 8
 		Int memory = 12
 		Int preempt = 0
-
-		Int debug_diskcalculation = ceil(size(gds, "GB")) + ceil(size(vcfs, "GB")) + addldisk
 	}
 
 	command <<<
-		echo "Disk size calculation: ~{debug_diskcalculation}"
-
-
-
 		# triple carrot syntax is required for this command section
 		set -eux -o pipefail
 
