@@ -1,0 +1,3 @@
+{
+  "analysis_pipeline_WDL.vcf_files": ["testdata/1KG_phase3_subset_chr1.vcf.gz", "testdata/1KG_phase3_subset_chr2.vcf.gz", "testdata/1KG_phase3_subset_chr3.vcf.gz", "testdata/1KG_phase3_subset_chr20.vcf.gz", "testdata/1KG_phase3_subset_chrX.vcf.gz"]
+}

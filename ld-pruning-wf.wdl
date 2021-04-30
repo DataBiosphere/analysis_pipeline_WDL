@@ -4,8 +4,11 @@ version 1.0
 task ld_pruning {
 	input {
 		File gds
-		Float ld_r_threshold
-		Float ld_win_size
+		String genome_build = hg38  # can also be hg18 or hg19
+		Float ld_r_threshold = 0.32  # (r^2 = 0.1)
+		Float ld_win_size = 10
+		Float maf_threshold = 0.01
+		Float missing_threshold = 0.01
 		
 		# runtime attributes
 		Int addldisk = 1
