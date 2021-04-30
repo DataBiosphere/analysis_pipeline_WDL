@@ -49,7 +49,7 @@ task ld_pruning {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File ld_pruning_output = glob("*.RData") # RData file with variant.id of pruned variants
+		Array[File] ld_pruning_output = glob("*.RData") # RData file with variant.id of pruned variants
 		File config_file = "ld_pruning.config"
 	}
 }
