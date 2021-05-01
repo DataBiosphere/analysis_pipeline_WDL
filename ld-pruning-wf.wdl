@@ -3,17 +3,20 @@ version 1.0
 # [1] ld_pruning -- ld prunes a GDS file
 task ld_pruning {
 	input {
-		
+
 		# will need to figure out how to deal with autosome_only = true
 
 		File gds
+		File? sample_include_file
+		File? variant_include_file
 		String genome_build = "hg38"  # can also be hg18 or hg19
 		Float ld_r_threshold = 0.32  # (r^2 = 0.1)
 		Float ld_win_size = 10
 		Float maf_threshold = 0.01
 		Float missing_threshold = 0.01
-		Boolean autosome_only = false
+		Boolean autosome_only = true
 		Boolean exclude_pca_corr = true
+		String? out_prefix
 		
 		# runtime attributes
 		Int addldisk = 1
@@ -29,6 +32,14 @@ task ld_pruning {
 		import os
 		f = open("ld_pruning.config", "a")
 		f.write("gds_file ~{gds}\n")
+		if ~{exclude_pca_corr} != true:
+			f.write("exclude_pca_corr ~{exclude_pca_corr}")
+		if "~{genome_build}" != "hg38":
+			f.write("genome_build ~{genome_build}")
+		f.write("ld_r_threshold ~{ld_r_threshold}")
+		f.write("ld_win_size ~{ld_win_size}")
+		f.write("maf_threshold ~{maf_threshold}")
+		f.write("missing_threshold ~{missing_threshold}")
 
 		# other stuff goes here
 
