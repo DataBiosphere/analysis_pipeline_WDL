@@ -3,12 +3,17 @@ version 1.0
 # [1] ld_pruning -- ld prunes a GDS file
 task ld_pruning {
 	input {
+		
+		# will need to figure out how to deal with autosome_only = true
+
 		File gds
 		String genome_build = "hg38"  # can also be hg18 or hg19
 		Float ld_r_threshold = 0.32  # (r^2 = 0.1)
 		Float ld_win_size = 10
 		Float maf_threshold = 0.01
 		Float missing_threshold = 0.01
+		Boolean autosome_only = false
+		Boolean exclude_pca_corr = true
 		
 		# runtime attributes
 		Int addldisk = 1
