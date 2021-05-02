@@ -1,5 +1,9 @@
 version 1.0
 
+# General notes:
+# Should error out if genome_build != one of these: hg38, hg19, or hg18
+# There might be a better way of doing this in WDL than the current implementation though...
+
 # [1] ld_pruning -- ld prunes a GDS file
 task ld_pruning {
 	input {
@@ -15,7 +19,7 @@ task ld_pruning {
 		Float maf_threshold = 0.01
 		Float missing_threshold = 0.01
 		Boolean autosome_only = true
-		Boolean exclude_pca_corr = true
+		Boolean exclude_pca_corr = true  # will act as String by Python
 		String? out_prefix
 		
 		# runtime attributes
@@ -35,10 +39,16 @@ task ld_pruning {
 		if "~{exclude_pca_corr}" != "true":
 			f.write("exclude_pca_corr ~{exclude_pca_corr}\n")
 		if "~{genome_build}" != "hg38":
-			f.write("genome_build ~{genome_build}\n")
+			if "~{genome_build}" == "hg18" || "~{genome_build}" == "hg19":
+				f.write("genome_build ~{genome_build}\n")
+			else:
+				# invalid
+				exit(1)
+		if ~{ld_r_threshold} != 0.32:
+			f.write("ld_r_threshold ~{ld_r_threshold}\n")
 
-		# should have more ifs to match the CWL
-		f.write("ld_r_threshold ~{ld_r_threshold}\n")
+				# should have more ifs to match the CWL
+
 		f.write("ld_win_size ~{ld_win_size}\n")
 		f.write("maf_threshold ~{maf_threshold}\n")
 		f.write("missing_threshold ~{missing_threshold}\n")
@@ -78,9 +88,27 @@ task subset_gds {
 }
 
 task merge_gds {
+	input {
+		Array[File] gdss
+
+		# runtime attributes
+		Int addldisk = 1
+		Int cpu = 2
+		Int memory = 4
+		Int preempt = 3
+	}
 }
 
 task check_merged_gds {
+	input {
+		File gds
+
+		# runtime attributes
+		Int addldisk = 1
+		Int cpu = 2
+		Int memory = 4
+		Int preempt = 3
+	}
 
 }
 
