@@ -36,6 +36,8 @@ task ld_pruning {
 			f.write("exclude_pca_corr ~{exclude_pca_corr}\n")
 		if "~{genome_build}" != "hg38":
 			f.write("genome_build ~{genome_build}\n")
+
+		# should have more ifs to match the CWL
 		f.write("ld_r_threshold ~{ld_r_threshold}\n")
 		f.write("ld_win_size ~{ld_win_size}\n")
 		f.write("maf_threshold ~{maf_threshold}\n")
@@ -70,6 +72,18 @@ task ld_pruning {
 	}
 }
 
+task subset_gds {
+   # CWL has "scatterMethod: dotproduct"
+   # more research is needed
+}
+
+task merge_gds {
+}
+
+task check_merged_gds {
+
+}
+
 workflow b_ldpruning {
 	input {
 		Array[File] gds_files
@@ -77,6 +91,20 @@ workflow b_ldpruning {
 
 	scatter(gds_file in gds_files) {
 		call ld_pruning {
+			input:
+				gds = gds_file
+		}
+	}
+
+	# subset GDS seems to have weird scatter type
+
+	call check_merged_gds {
+		input:
+			gdss = gds_files  # should be output of previous step!!
+	}
+
+	scatter(gds_file in gds_files) { # should be output of previous step!!
+		call check_merged_gds {
 			input:
 				gds = gds_file
 		}
