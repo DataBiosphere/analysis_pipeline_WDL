@@ -1,0 +1,3 @@
+{
+  "b_ldpruning.gds_files": ["testdata/gds/1KG_phase3_subset_chr1.gds", "testdata/gds/1KG_phase3_subset_chr2.gds", "testdata/gds/1KG_phase3_subset_chr3.gds", "testdata/gds/1KG_phase3_subset_chr20.gds"]
+}

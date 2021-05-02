@@ -32,14 +32,14 @@ task ld_pruning {
 		import os
 		f = open("ld_pruning.config", "a")
 		f.write("gds_file ~{gds}\n")
-		if ~{exclude_pca_corr} != true:
-			f.write("exclude_pca_corr ~{exclude_pca_corr}")
+		if "~{exclude_pca_corr}" != "true":
+			f.write("exclude_pca_corr ~{exclude_pca_corr}\n")
 		if "~{genome_build}" != "hg38":
-			f.write("genome_build ~{genome_build}")
-		f.write("ld_r_threshold ~{ld_r_threshold}")
-		f.write("ld_win_size ~{ld_win_size}")
-		f.write("maf_threshold ~{maf_threshold}")
-		f.write("missing_threshold ~{missing_threshold}")
+			f.write("genome_build ~{genome_build}\n")
+		f.write("ld_r_threshold ~{ld_r_threshold}\n")
+		f.write("ld_win_size ~{ld_win_size}\n")
+		f.write("maf_threshold ~{maf_threshold}\n")
+		f.write("missing_threshold ~{missing_threshold}\n")
 
 		# other stuff goes here
 
