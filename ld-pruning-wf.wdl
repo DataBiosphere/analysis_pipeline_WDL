@@ -90,12 +90,30 @@ task subset_gds {
 task merge_gds {
 	input {
 		Array[File] gdss
+		String out_prefix
 
 		# runtime attributes
 		Int addldisk = 1
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 3
+	}
+
+	command <<<
+
+	>>>
+
+	runtime {
+		cpu: cpu
+		docker: "uwgac/topmed-master:2.10.0"
+		disks: "local-disk " + finalDiskSize + " HDD"
+		memory: "${memory} GB"
+		preemptibles: "${preempt}"
+	}
+	
+	output {
+		Array[File] merged_gds_output = glob("*.gds")
+		File config_file = "merge_gds.config"
 	}
 }
 
