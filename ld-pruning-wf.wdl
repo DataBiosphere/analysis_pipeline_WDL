@@ -83,10 +83,10 @@ task ld_pruning {
 	}
 }
 
-task subset_gds {
+#task subset_gds {
    # CWL has "scatterMethod: dotproduct"
    # more research is needed
-}
+#}
 
 task merge_gds {
 	input {
@@ -123,6 +123,10 @@ task merge_gds {
 	Rscript /usr/local/analysis_pipeline/R/merge_gds.R merge_gds.config
 	>>>
 
+	# may have components missing
+	Int gds_size = ceil(size(gdss, "GB"))
+	Int finalDiskSize = gds_size + addldisk
+
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
@@ -148,6 +152,22 @@ task check_merged_gds {
 		Int preempt = 3
 	}
 
+	command <<<
+	pass
+	>>>
+
+	runtime {
+		cpu: cpu
+		docker: "uwgac/topmed-master:2.10.0"
+		#disks: "local-disk " + finalDiskSize + " HDD"
+		memory: "${memory} GB"
+		preemptibles: "${preempt}"
+	}
+
+	#output {
+		#File config_file = "check_merged_gds.config"
+	#}
+
 }
 
 workflow b_ldpruning {
@@ -164,17 +184,17 @@ workflow b_ldpruning {
 
 	# subset GDS seems to have weird scatter type
 
-	call check_merged_gds {
-		input:
-			gdss = gds_files  # should be output of previous step!!
-	}
+	#call check_merged_gds {
+	#	input:
+	#		gdss = gds_files  # should be output of previous step!!
+	#}
 
-	scatter(gds_file in gds_files) { # should be output of previous step!!
-		call check_merged_gds {
-			input:
-				gds = gds_file
-		}
-	}
+	#scatter(gds_file in gds_files) { # should be output of previous step!!
+	#	call check_merged_gds {
+	#		input:
+	#			gds = gds_file
+	#	}
+	#}
 
 	meta {
 		author: "Ash O'Farrell"
