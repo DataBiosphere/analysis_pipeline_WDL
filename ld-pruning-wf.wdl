@@ -39,7 +39,7 @@ task ld_pruning {
 		if "~{exclude_pca_corr}" != "true":
 			f.write("exclude_pca_corr ~{exclude_pca_corr}\n")
 		if "~{genome_build}" != "hg38":
-			if "~{genome_build}" == "hg18" || "~{genome_build}" == "hg19":  # is this valid python?
+			if ("~{genome_build}" == "hg18" or "~{genome_build}" == "hg19"):  # is this valid python?
 				f.write("genome_build ~{genome_build}\n")
 			else:
 				# invalid
