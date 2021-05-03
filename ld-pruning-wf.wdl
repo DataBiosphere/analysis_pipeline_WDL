@@ -19,8 +19,11 @@ task ld_pruning {
 		Float maf_threshold = 0.01
 		Float missing_threshold = 0.01
 		Boolean autosome_only = true
-		Boolean exclude_pca_corr = true  # will act as String by Python
+		Boolean exclude_pca_corr = true  # will act as String in Python
 		String? out_prefix
+		# Workaround for optional files
+		Boolean def_sampleInc = defined(sample_include_file)
+		Boolean def_variantInc = defined(variant_include_file)
 		
 		# runtime attributes
 		Int addldisk = 1
@@ -35,14 +38,17 @@ task ld_pruning {
 		python << CODE
 		import os
 		f = open("ld_pruning.config", "a")
+		
 		f.write("gds_file ~{gds}\n")
 		if "~{exclude_pca_corr}" != "true":
 			f.write("exclude_pca_corr ~{exclude_pca_corr}\n")
 		if "~{genome_build}" != "hg38":
-			if ("~{genome_build}" == "hg18" or "~{genome_build}" == "hg19"):  # is this valid python?
+			if ("~{genome_build}" == "hg18" or "~{genome_build}" == "hg19"):
 				f.write("genome_build ~{genome_build}\n")
 			else:
 				# invalid
+				f.close()
+				print("Invalid ref genome. Please only select either hg38, hg19, or hg18.")
 				exit(1)
 		if ~{ld_r_threshold} != 0.32:
 			f.write("ld_r_threshold ~{ld_r_threshold}\n")
@@ -50,10 +56,12 @@ task ld_pruning {
 			f.write("ld_win_size ~{ld_win_size}\n")
 		if ~{maf_threshold} != 0.01:
 			f.write("maf_threshold ~{maf_threshold}\n")
-		if ~{missing_threshold} != 0.01
+		if ~{missing_threshold} != 0.01:
 			f.write("missing_threshold ~{missing_threshold}\n")
 
-		# need to implement sample include file
+		if "~{def_sampleInc}" == "true":
+			f.write("sample_include_file ~{sample_include_file}\n")
+
 		# need to implement variant include file
 
 		f.close()
@@ -65,10 +73,10 @@ task ld_pruning {
 	}
 	
 	# Estimate disk size required
-
-	# should include sample file...
 	Int gds_size = ceil(size(gds, "GB"))
-	Int finalDiskSize = 2*gds_size + addldisk
+	Int sample_size = if defined(sample_include_file) then ceil(size(sample_include_file, "GB")) else 0
+	Int varInclude_size = if defined(variant_include_file) then ceil(size(variant_include_file, "GB")) else 0
+	Int finalDiskSize = gds_size + sample_size + varInclude_size + addldisk
 	
 	runtime {
 		cpu: cpu
