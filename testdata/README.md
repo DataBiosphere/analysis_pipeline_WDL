@@ -10,6 +10,7 @@ The variants are in genome build hg19.
 # WDL Fork Notes
 chrX varies from what is currently (as of April 9th 2021) is on the UWGAC repo. This repo's chrX is filtered as some of the lines on the original repo's chrX are invalid and will error out. See https://github.com/UW-GAC/analysis_pipeline/issues/46
 
+### alternative_vcfs/
 In addition to the vcf.gz files stored here, the following additional test files are also included for testing alternative file types.
 * 1KG_phase3_subset_chr1.bcf
 * 1KG_phase3_subset_chr1.vcf
@@ -19,3 +20,9 @@ In addition to the vcf.gz files stored here, the following additional test files
 * 1KG_phase3_subset_chrX.vcf
 * unfiltered1KG_phase3_subset_chrX.vcf.gz -- the original chrX in the UWGAC repo
 * unfiltered1KG_phase3_subset_chrX.vcf -- the original chrX in the UWGAC repo, unzipped
+
+### gds/
+GDS files included in the gds/ folder are NOT mirrors of the files included in the original UWGAC repo. They were instead created using the current (v1.0.1) WDL version of this pipeline.
+
+### var_include/
+Variant include sample files pulled from UWGAC's repo.

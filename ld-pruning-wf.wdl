@@ -91,10 +91,8 @@ task ld_pruning {
 	}
 }
 
-#task subset_gds {
-   # CWL has "scatterMethod: dotproduct"
-   # more research is needed
-#}
+task subset_gds {
+}
 
 task merge_gds {
 	input {
@@ -181,6 +179,7 @@ task check_merged_gds {
 workflow b_ldpruning {
 	input {
 		Array[File] gds_files
+		Array[File]? variant_include_files
 	}
 
 	scatter(gds_file in gds_files) {
@@ -190,7 +189,19 @@ workflow b_ldpruning {
 		}
 	}
 
-	# subset GDS seems to have weird scatter type
+	# The CWL version of subet_gds uses scatterMethod: dotproduct
+	# I'm not aware of a WDL equivalent
+
+	scatter(gds_file in gds_files) {
+		call subset_gds {
+			input:
+				gds = gds_file,
+				sample_include_file = sample_include_file,
+				# variant include should be output of previous step
+				# lines 143 and 154 of https://github.com/UW-GAC/analysis_pipeline_cwl/blob/master/relatedness/ld-pruning-wf.cwl
+				variant_array = variant_include_files
+		}
+	}
 
 	#call check_merged_gds {
 	#	input:
