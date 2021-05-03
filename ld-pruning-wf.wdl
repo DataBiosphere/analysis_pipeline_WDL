@@ -39,21 +39,22 @@ task ld_pruning {
 		if "~{exclude_pca_corr}" != "true":
 			f.write("exclude_pca_corr ~{exclude_pca_corr}\n")
 		if "~{genome_build}" != "hg38":
-			if "~{genome_build}" == "hg18" || "~{genome_build}" == "hg19":
+			if "~{genome_build}" == "hg18" || "~{genome_build}" == "hg19":  # is this valid python?
 				f.write("genome_build ~{genome_build}\n")
 			else:
 				# invalid
 				exit(1)
 		if ~{ld_r_threshold} != 0.32:
 			f.write("ld_r_threshold ~{ld_r_threshold}\n")
+		if ~{ld_win_size} != 10:
+			f.write("ld_win_size ~{ld_win_size}\n")
+		if ~{maf_threshold} != 0.01:
+			f.write("maf_threshold ~{maf_threshold}\n")
+		if ~{missing_threshold} != 0.01
+			f.write("missing_threshold ~{missing_threshold}\n")
 
-				# should have more ifs to match the CWL
-
-		f.write("ld_win_size ~{ld_win_size}\n")
-		f.write("maf_threshold ~{maf_threshold}\n")
-		f.write("missing_threshold ~{missing_threshold}\n")
-
-		# other stuff goes here
+		# need to implement sample include file
+		# need to implement variant include file
 
 		f.close()
 		exit()
