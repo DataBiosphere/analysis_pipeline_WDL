@@ -90,7 +90,7 @@ task subset_gds {
 task merge_gds {
 	input {
 		Array[File] gdss
-		String out_prefix
+		String? out_prefix
 
 		# runtime attributes
 		Int addldisk = 1
@@ -101,6 +101,25 @@ task merge_gds {
 
 	command <<<
 
+	# CWL has an ln -s, will probably need to use copy trick again
+
+	python CODE <<
+	# if chr, etc
+
+	if "~{out_prefix}" != "":  # would this work in Python??
+		merged_gds_file_name = "~{out_prefix}" + ".gds"
+	else:
+		merged_gds_file_name = "merged.gds"
+
+	f = open("merge_gds.config", "a")
+	f.write('merged_gds_file "' + merged_gds_file_name + '"')
+
+	f.close()
+	exit()
+	CODE
+
+
+	Rscript /usr/local/analysis_pipeline/R/merge_gds.R merge_gds.config
 	>>>
 
 	runtime {
