@@ -1,8 +1,15 @@
 version 1.0
 
 # General notes:
-# Should error out if genome_build != one of these: hg38, hg19, or hg18
+# ld_pruning should error out genome_build != one of these: hg38, hg19, or hg18
 # There might be a better way of doing this in WDL than the current implementation though...
+#
+# ld_pruning seems functional but is largely untested at the moment
+#
+# The current focus is subset GDS due to a current need for that one in particular
+#
+# variables and functions exclusive to the WDL version tend to have "py_" in front and use camelCase between words
+# this is to make it clear they don't quite correlate to the CWL
 
 # [1] ld_pruning -- ld prunes a GDS file
 task ld_pruning {
@@ -15,7 +22,7 @@ task ld_pruning {
 		File? variant_include_file
 		String genome_build = "hg38"  # can also be hg18 or hg19
 		Float ld_r_threshold = 0.32  # (r^2 = 0.1)
-		Float ld_win_size = 10
+		Float ld_win_size = 10  # yes, a float, not an int
 		Float maf_threshold = 0.01
 		Float missing_threshold = 0.01
 		Boolean autosome_only = true
@@ -52,7 +59,7 @@ task ld_pruning {
 				exit(1)
 		if ~{ld_r_threshold} != 0.32:
 			f.write("ld_r_threshold ~{ld_r_threshold}\n")
-		if ~{ld_win_size} != 10:
+		if ~{ld_win_size} != 10:  # by default this compares 10.0 to 10 which evals to true
 			f.write("ld_win_size ~{ld_win_size}\n")
 		if ~{maf_threshold} != 0.01:
 			f.write("maf_threshold ~{maf_threshold}\n")
@@ -92,6 +99,73 @@ task ld_pruning {
 }
 
 task subset_gds {
+	input {
+		File gds
+		Array[File] variant_include_files
+		String? out_prefix
+		# need sample file eventually
+	}
+
+	command {
+
+		python << CODE
+
+		def py_getThisVarIncFile():
+			# Locate the variant include file corresponding to the gds file
+			# Necessary due to WDL only being able to scatter on one array
+			py_varIncFiles = ['~{sep="','" variant_include_files}']
+			py_gdsChr = py_rootPlusChr("~{gds}")[1]
+			py_debugging = []
+			for py_varIncFile in py_varIncFiles:
+				py_varIncChr = py_rootPlusChr(os.path.basename(py_varIncFile))[1]
+				if py_varIncChr == py_gdsChr:
+					return py_varIncFile
+				else:
+					py_debugging.append(py_varIncChr)
+
+			# if we get here, none found
+			os.write(2, b"variant_include_file array defined, but could not match any of them with the current gds file\n")
+			os.write(2, "more info:\n")
+			os.write(2, "\tGDS file passed in: ~{gds}\n")
+			os.write(2, "\tGDS file determined to be chromosome " + py_gdsChr + "\n")
+			os.write(2, "\tVariant include file array: " + py_varIncFiles + "\n")
+			os.write(2, "\tRespectively, these generate these chromosomes: " + py_debugging + "\n")
+
+
+		def py_rootPlusChr(py_filename):
+			# Similar to split_n_space in vcf-to-gds but not equivalent
+			# Ex: "test_data_chrX.vcf.gz" returns ["test_data_", "X"]
+			py_split = py_filename.split("chr")
+			if(unicode(str(py_split[1][1])).isnumeric()):
+				# chr10 and above
+				py_thisNamerootSplit = py_split[0]
+				py_thisChr = py_split[1][0:2]
+			else:
+				# chr9 and below + chrX
+				py_thisNamerootSplit = py_split[0]
+				py_thisChr = py_split[1][0:1]
+			return [py_thisNamerootSplit, py_thisChr]
+
+
+		f = open("subset_gds.config", "a")
+		f.write("gds_file ~{gds}\n")
+		if ['~{sep="','" variant_include_files}'] != "['dummy']":
+			f.write("variant_include_file " + py_getThisVarIncFile() + "\n")
+
+		# add in if sample include file
+
+		if "~{out_prefix}" != "":
+			chromosome = py_rootPlusChr("~{gds}")
+			f.write("subset_gds_file" + "~{out_prefix}" + "_chr" + chromosome + ".gds"
+		else:
+			chromosome = py_rootPlusChr("~{gds}")[1]
+			basename = py_rootPlusChr("~{gds}")[0]
+			f.write("subset_gds_file" + "~{out_prefix}" + "_chr" + chromosome + ".gds"
+		f.close()
+		CODE
+
+		R -q --vanilla --args subset_gds.config /usr/local/analysis_pipeline/R/subset_gds.R
+	}
 }
 
 task merge_gds {
@@ -111,6 +185,8 @@ task merge_gds {
 	# CWL has an ln -s, will probably need to use copy trick again
 
 	python CODE <<
+	import os
+
 	# if chr, etc
 
 	if "~{out_prefix}" != "":  # would this work in Python??
@@ -179,7 +255,7 @@ task check_merged_gds {
 workflow b_ldpruning {
 	input {
 		Array[File] gds_files
-		Array[File]? variant_include_files
+		Array[File] variant_include_files = ['dummy']  
 	}
 
 	scatter(gds_file in gds_files) {
@@ -192,18 +268,27 @@ workflow b_ldpruning {
 	# The CWL version of subet_gds uses scatterMethod: dotproduct
 	# I'm not aware of a WDL equivalent
 
-	scatter(gds_file in gds_files) {
-		call subset_gds {
-			input:
-				gds = gds_file,
-				sample_include_file = sample_include_file,
-				# variant include should be output of previous step
-				# lines 143 and 154 of https://github.com/UW-GAC/analysis_pipeline_cwl/blob/master/relatedness/ld-pruning-wf.cwl
-				variant_array = variant_include_files
+	# A CWL dotproduct scatter requires both arrays to have the same
+	# number of entries. Checking the len of both arrays therefore
+	# brings the CWL and WDL into closer alignment.
+
+	if (defined(variant_include_files)) {
+		if (length(gds_files) == length(variant_include_files)) {  # requires workaround A
+			scatter(gds_file in gds_files) {
+				call subset_gds {
+					input:
+						gds = gds_file,
+						# variant include should be output of previous step
+						# lines 143 and 154 of https://github.com/UW-GAC/analysis_pipeline_cwl/blob/master/relatedness/ld-pruning-wf.cwl
+						variant_include_files = variant_include_files
+				}
+			}
 		}
 	}
 
-	#call check_merged_gds {
+
+
+	#call merge_gds {
 	#	input:
 	#		gdss = gds_files  # should be output of previous step!!
 	#}
