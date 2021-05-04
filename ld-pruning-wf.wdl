@@ -93,15 +93,14 @@ task ld_pruning {
 		preemptibles: "${preempt}"
 	}
 	output {
-		Array[File] ld_pruning_output = glob("*.RData") # RData file with variant.id of pruned variants
+		File ld_pruning_output = ("pruned_variants.RData") # RData file with variant.id of pruned variants
 		File config_file = "ld_pruning.config"
 	}
 }
 
 task subset_gds {
 	input {
-		File gds
-		Array[File] variant_include_files
+		Array[File] gds_n_varinc  # [gds, variant_include_files]
 		String? out_prefix
 		# need sample file eventually
 	}
@@ -110,10 +109,15 @@ task subset_gds {
 
 		python << CODE
 
+		py_varIncArray = ['~{sep="','" gds_n_varinc}']
+		gds = py_varIncArray[0]
+		variant_include_file = py_varIncArray[1]
+		
 		def py_getThisVarIncFile():
 			# Locate the variant include file corresponding to the gds file
 			# Necessary due to WDL only being able to scatter on one array
-			py_varIncFiles = ['~{sep="','" variant_include_files}']
+			py_varIncArray = ['~{sep="','" variant_include_files}']
+			print(py_varIncArray)
 			py_gdsChr = py_rootPlusChr("~{gds}")[1]
 			py_debugging = []
 			for py_varIncFile in py_varIncFiles:
@@ -149,8 +153,7 @@ task subset_gds {
 
 		f = open("subset_gds.config", "a")
 		f.write("gds_file ~{gds}\n")
-		if ['~{sep="','" variant_include_files}'] != "['dummy']":
-			f.write("variant_include_file " + py_getThisVarIncFile() + "\n")
+		f.write("variant_include_file " + py_getThisVarIncFile() + "\n")
 
 		# add in if sample include file
 
@@ -255,7 +258,6 @@ task check_merged_gds {
 workflow b_ldpruning {
 	input {
 		Array[File] gds_files
-		Array[File] variant_include_files = ['dummy']  
 	}
 
 	scatter(gds_file in gds_files) {
@@ -268,20 +270,17 @@ workflow b_ldpruning {
 	# The CWL version of subet_gds uses scatterMethod: dotproduct
 	# I'm not aware of a WDL equivalent
 
+	# Walt pointed out we can try using zip?
+
 	# A CWL dotproduct scatter requires both arrays to have the same
 	# number of entries. Checking the len of both arrays therefore
 	# brings the CWL and WDL into closer alignment.
 
-	if (defined(variant_include_files)) {
-		if (length(gds_files) == length(variant_include_files)) {  # requires workaround A
-			scatter(gds_file in gds_files) {
-				call subset_gds {
-					input:
-						gds = gds_file,
-						# variant include should be output of previous step
-						# lines 143 and 154 of https://github.com/UW-GAC/analysis_pipeline_cwl/blob/master/relatedness/ld-pruning-wf.cwl
-						variant_include_files = variant_include_files
-				}
+	if (length(gds_files) == length(ld_pruning.ld_pruning_output)) {  # requires workaround A
+		scatter(gds_n_varinc in zip(gds_files, ld_pruning.ld_pruning_output)) {
+			call subset_gds {
+				input:
+					gds_n_varinc = gds_n_varinc
 			}
 		}
 	}
