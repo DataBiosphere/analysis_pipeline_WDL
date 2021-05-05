@@ -260,6 +260,8 @@ workflow b_ldpruning {
 		call ld_pruning {
 			input:
 				gds = gds_file,
+				sample_include_file = sample_include_file,
+				variant_include_file = variant_include_file,
 				out_prefix = out_prefix
 		}
 	}
@@ -270,6 +272,7 @@ workflow b_ldpruning {
 		call subset_gds {
 			input:
 				gds_n_varinc = gds_n_varinc,
+				sample_include_file = sample_include_file,
 				out_prefix = out_prefix
 		}
 	}

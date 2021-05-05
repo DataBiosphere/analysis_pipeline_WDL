@@ -98,6 +98,11 @@ workflow checker {
 		}
 	}
 
+	# For ld prune and subset, test that variant_include_file works by running an extra time
+	# on just chr3, as it can only take in one such file and will error on other chrs.
+
+	# Don't forget to compare running with and without the sample_include_file
+
 	scatter(gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
 		call md5sum {
 			input:
