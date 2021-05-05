@@ -260,14 +260,14 @@ workflow b_ldpruning {
 	# number of entries. Checking the len of both arrays therefore
 	# brings the CWL and WDL into closer alignment.
 
-	if (length(gds_files) == length(ld_pruning.ld_pruning_output)) {  # requires workaround A
+	#if (length(gds_files) == length(ld_pruning.ld_pruning_output)) {  # requires workaround A
 		scatter(gds_n_varinc in zip(gds_files, ld_pruning.ld_pruning_output)) {
 			call subset_gds {
 				input:
 					gds_n_varinc = gds_n_varinc
 			}
 		}
-	}
+	#}
 
 
 
