@@ -39,7 +39,7 @@ Note that `addldisk` is adding gigabytes **on top of** the WDL's best-guess esti
 |-------------------	|---------------	|---------	|----------------------------------------------------------	|
 | ld_pruning.exclude_pca_corr 	| Boolean|    true    | WIP    	|
 | ld_pruning.genome_build 		| String |    "hg38"  | WIP    	|
-| ld_pruning.ld_r_threshold		| Float  |    0.32    | WIP    	|
+| ld_pruning.ld_r_threshold		| Float  |    0.32    | R threshold (0.32^2 = 0.1)    	|
 | ld_pruning.ld_win_size 		| Float  |    10.0    | WIP    	|
 | ld_pruning.maf_threshold 		| Float  |    0.01    | WIP    	|
 | ld_pruning.missing_threshold 	| Float  |    0.01    | WIP    	|
@@ -48,5 +48,6 @@ Note that `addldisk` is adding gigabytes **on top of** the WDL's best-guess esti
 out_prefix: Prefix for all output files (except the config files), type String
 
 ## Outputs
-WIP
+ld_pruning_output: Array[File] of RData from the first task
+
 

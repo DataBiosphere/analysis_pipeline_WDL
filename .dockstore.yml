@@ -8,7 +8,6 @@ workflows:
      name: vcf-to-gds-wdl
    - subclass: WDL
      primaryDescriptorPath: /ld-pruning-wf.wdl
-     name: ld-pruning-wdl
-   - subclass: WDL
-     primaryDescriptorPath: /ld-pruning-wf.wdl
+     testParameterFiles:
+        - /ld-pruning-wf.json
      name: ld-pruning-wdl

@@ -7,14 +7,14 @@ version 1.0
 # correlate to the CWL
 
 
-# [1] ld_pruning -- ld prunes a GDS file
+# [1] ld_pruning -- calculates linkage diseq on a GDS file
 task ld_pruning {
 	input {
 		File gds
 		File? sample_include_file
 		File? variant_include_file
 		String genome_build = "hg38"  # can also be hg18 or hg19
-		Float ld_r_threshold = 0.32  # (r^2 = 0.1)
+		Float ld_r_threshold = 0.32
 		Float ld_win_size = 10  # yes, a float, not an int
 		Float maf_threshold = 0.01
 		Float missing_threshold = 0.01
