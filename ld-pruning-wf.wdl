@@ -104,7 +104,7 @@ task ld_pruning {
 
 task subset_gds {
 	input {
-		Pair[File, File] gds_n_varinc  # [gds, variant_include_files]
+		Pair[File, File] gds_n_varinc  # [gds, variant_include_file]
 		String? out_prefix
 		File? sample_include_file
 		# Workaround for optional files
@@ -252,6 +252,8 @@ workflow b_ldpruning {
 	input {
 		Array[File] gds_files
 		String? out_prefix
+		File? sample_include_file
+		File? variant_include_file
 	}
 
 	scatter(gds_file in gds_files) {

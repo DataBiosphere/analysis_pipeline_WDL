@@ -1,3 +1,5 @@
 {
-  "b_ldpruning.gds_files": ["testdata/gds/1KG_phase3_subset_chr1.gds", "testdata/gds/1KG_phase3_subset_chr2.gds", "testdata/gds/1KG_phase3_subset_chr3.gds", "testdata/gds/1KG_phase3_subset_chr20.gds"]
+  "b_ldpruning.gds_files": ["testdata/gds/1KG_phase3_subset_chr1.gds", "testdata/gds/1KG_phase3_subset_chr2.gds", "testdata/gds/1KG_phase3_subset_chr3.gds", "testdata/gds/1KG_phase3_subset_chr20.gds"],
+  "b_ldpruning.sample_include_file": "testdata/include/sample_include.RData",
+  "b_ldpruning.variant_include_file": "testdata/include/variant_include_chr3.RData"
 }
