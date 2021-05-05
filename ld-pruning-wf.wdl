@@ -154,7 +154,7 @@ task subset_gds {
 
 		#Rscript /usr/local/analysis_pipeline/R/subset_gds.R subset_gds.config
 		# CWL uses this:
-		R -q --vanilla < /usr/local/analysis_pipeline/R/ld_pruning.R --args ld_pruning.config
+		R -q --vanilla < /usr/local/analysis_pipeline/R/subset_gds.R --args subset_gds.config
 	}
 
 	runtime {
