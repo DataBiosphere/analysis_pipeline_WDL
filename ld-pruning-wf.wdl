@@ -135,17 +135,21 @@ task subset_gds {
 
 		if ("~{out_prefix}" != ""):
 			chromosome = py_rootPlusChr(gds)
-			f.write("subset_gds_file" + "~{out_prefix}" + "_chr" + chromosome + ".gds")
+			f.write("subset_gds_file " + "~{out_prefix}" + "_chr" + chromosome + ".gds")
 		else:
 			chromosome = py_rootPlusChr(gds)[1]
 			basename = py_rootPlusChr(gds)[0]
-			f.write("subset_gds_file" + "~{out_prefix}" + "_chr" + chromosome + ".gds")
+			f.write("subset_gds_file " + basename + "subset_chr" + chromosome + ".gds")
 		f.close()
 		CODE
 
 		Rscript /usr/local/analysis_pipeline/R/subset_gds.R subset_gds.config
 		# CWL uses this:
 		#R -q --vanilla --args subset_gds.config /usr/local/analysis_pipeline/R/subset_gds.R
+	}
+
+	runtime {
+		docker: "uwgac/topmed-master:2.10.0"
 	}
 }
 
