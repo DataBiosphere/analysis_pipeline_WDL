@@ -11,6 +11,7 @@ version 1.0
 # variables and functions exclusive to the WDL version tend to have "py_" in front and use camelCase between words
 # this is to make it clear they don't quite correlate to the CWL
 
+
 # [1] ld_pruning -- ld prunes a GDS file
 task ld_pruning {
 	input {
@@ -25,7 +26,7 @@ task ld_pruning {
 		Float ld_win_size = 10  # yes, a float, not an int
 		Float maf_threshold = 0.01
 		Float missing_threshold = 0.01
-		Boolean autosome_only = true
+		#Boolean autosome_only = true  # buggy
 		Boolean exclude_pca_corr = true  # will act as String in Python
 		String? out_prefix
 		# Workaround for optional files
@@ -69,7 +70,8 @@ task ld_pruning {
 		if "~{def_sampleInc}" == "true":
 			f.write("sample_include_file ~{sample_include_file}\n")
 
-		# need to implement variant include file
+		if "~{def_variantInc}" == "true":
+			f.write("variant_include_file ~{variant_include_file}\n")
 
 		f.close()
 		exit()
@@ -102,7 +104,9 @@ task subset_gds {
 	input {
 		Pair[File, File] gds_n_varinc  # [gds, variant_include_files]
 		String? out_prefix
-		# need sample file eventually
+		File? sample_include_file
+		# Workaround for optional files
+		Boolean def_sampleInc = defined(sample_include_file)
 	}
 
 	command {
@@ -131,6 +135,9 @@ task subset_gds {
 		f.write("gds_file " + gds + "\n")
 		f.write("variant_include_file " + variant_include_file + "\n")
 
+		# if
+		f.write("sample_include_file " + sample_include_file + "\n")
+
 		# add in if sample include file
 
 		if ("~{out_prefix}" != ""):
@@ -143,9 +150,9 @@ task subset_gds {
 		f.close()
 		CODE
 
-		Rscript /usr/local/analysis_pipeline/R/subset_gds.R subset_gds.config
+		#Rscript /usr/local/analysis_pipeline/R/subset_gds.R subset_gds.config
 		# CWL uses this:
-		#R -q --vanilla --args subset_gds.config /usr/local/analysis_pipeline/R/subset_gds.R
+		R -q --vanilla < /usr/local/analysis_pipeline/R/ld_pruning.R --args ld_pruning.config
 	}
 
 	runtime {
@@ -242,32 +249,26 @@ task check_merged_gds {
 workflow b_ldpruning {
 	input {
 		Array[File] gds_files
+		String? out_prefix
 	}
 
 	scatter(gds_file in gds_files) {
 		call ld_pruning {
 			input:
-				gds = gds_file
+				gds = gds_file,
+				out_prefix = out_prefix
 		}
 	}
 
-	# The CWL version of subet_gds uses scatterMethod: dotproduct
-	# I'm not aware of a WDL equivalent
 
-	# Walt pointed out we can try using zip?
-
-	# A CWL dotproduct scatter requires both arrays to have the same
-	# number of entries. Checking the len of both arrays therefore
-	# brings the CWL and WDL into closer alignment.
-
-	#if (length(gds_files) == length(ld_pruning.ld_pruning_output)) {  # requires workaround A
-		scatter(gds_n_varinc in zip(gds_files, ld_pruning.ld_pruning_output)) {
-			call subset_gds {
-				input:
-					gds_n_varinc = gds_n_varinc
-			}
+	# CWL uses a dotproduct scatter; this is the closest WDL equivalent
+	scatter(gds_n_varinc in zip(gds_files, ld_pruning.ld_pruning_output)) {
+		call subset_gds {
+			input:
+				gds_n_varinc = gds_n_varinc,
+				out_prefix = out_prefix
 		}
-	#}
+	}
 
 
 
