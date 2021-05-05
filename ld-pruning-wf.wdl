@@ -100,47 +100,21 @@ task ld_pruning {
 
 task subset_gds {
 	input {
-		Array[File] gds_n_varinc  # [gds, variant_include_files]
+		Pair[File, File] gds_n_varinc  # [gds, variant_include_files]
 		String? out_prefix
 		# need sample file eventually
 	}
 
 	command {
+		set -eux -o pipefail
 
 		python << CODE
-
-		py_varIncArray = ['~{sep="','" gds_n_varinc}']
-		gds = py_varIncArray[0]
-		variant_include_file = py_varIncArray[1]
-		
-		def py_getThisVarIncFile():
-			# Locate the variant include file corresponding to the gds file
-			# Necessary due to WDL only being able to scatter on one array
-			py_varIncArray = ['~{sep="','" variant_include_files}']
-			print(py_varIncArray)
-			py_gdsChr = py_rootPlusChr("~{gds}")[1]
-			py_debugging = []
-			for py_varIncFile in py_varIncFiles:
-				py_varIncChr = py_rootPlusChr(os.path.basename(py_varIncFile))[1]
-				if py_varIncChr == py_gdsChr:
-					return py_varIncFile
-				else:
-					py_debugging.append(py_varIncChr)
-
-			# if we get here, none found
-			os.write(2, b"variant_include_file array defined, but could not match any of them with the current gds file\n")
-			os.write(2, "more info:\n")
-			os.write(2, "\tGDS file passed in: ~{gds}\n")
-			os.write(2, "\tGDS file determined to be chromosome " + py_gdsChr + "\n")
-			os.write(2, "\tVariant include file array: " + py_varIncFiles + "\n")
-			os.write(2, "\tRespectively, these generate these chromosomes: " + py_debugging + "\n")
-
 
 		def py_rootPlusChr(py_filename):
 			# Similar to split_n_space in vcf-to-gds but not equivalent
 			# Ex: "test_data_chrX.vcf.gz" returns ["test_data_", "X"]
 			py_split = py_filename.split("chr")
-			if(unicode(str(py_split[1][1])).isnumeric()):
+			if unicode(str(py_split[1][1])).isnumeric():
 				# chr10 and above
 				py_thisNamerootSplit = py_split[0]
 				py_thisChr = py_split[1][0:2]
@@ -150,24 +124,28 @@ task subset_gds {
 				py_thisChr = py_split[1][0:1]
 			return [py_thisNamerootSplit, py_thisChr]
 
+		gds = "~{gds_n_varinc.left}"
+		variant_include_file = "~{gds_n_varinc.right}"
 
 		f = open("subset_gds.config", "a")
-		f.write("gds_file ~{gds}\n")
-		f.write("variant_include_file " + py_getThisVarIncFile() + "\n")
+		f.write("gds_file " + gds + "\n")
+		f.write("variant_include_file " + variant_include_file + "\n")
 
 		# add in if sample include file
 
-		if "~{out_prefix}" != "":
-			chromosome = py_rootPlusChr("~{gds}")
-			f.write("subset_gds_file" + "~{out_prefix}" + "_chr" + chromosome + ".gds"
+		if ("~{out_prefix}" != ""):
+			chromosome = py_rootPlusChr(gds)
+			f.write("subset_gds_file" + "~{out_prefix}" + "_chr" + chromosome + ".gds")
 		else:
-			chromosome = py_rootPlusChr("~{gds}")[1]
-			basename = py_rootPlusChr("~{gds}")[0]
-			f.write("subset_gds_file" + "~{out_prefix}" + "_chr" + chromosome + ".gds"
+			chromosome = py_rootPlusChr(gds)[1]
+			basename = py_rootPlusChr(gds)[0]
+			f.write("subset_gds_file" + "~{out_prefix}" + "_chr" + chromosome + ".gds")
 		f.close()
 		CODE
 
-		R -q --vanilla --args subset_gds.config /usr/local/analysis_pipeline/R/subset_gds.R
+		Rscript /usr/local/analysis_pipeline/R/subset_gds.R subset_gds.config
+		# CWL uses this:
+		#R -q --vanilla --args subset_gds.config /usr/local/analysis_pipeline/R/subset_gds.R
 	}
 }
 
@@ -184,6 +162,7 @@ task merge_gds {
 	}
 
 	command <<<
+	set -eux -o pipefail
 
 	# CWL has an ln -s, will probably need to use copy trick again
 
@@ -238,6 +217,7 @@ task check_merged_gds {
 	}
 
 	command <<<
+	set -eux -o pipefail
 	pass
 	>>>
 
