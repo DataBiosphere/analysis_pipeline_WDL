@@ -1,25 +1,15 @@
 version 1.0
 
 # General notes:
-# ld_pruning should error out genome_build != one of these: hg38, hg19, or hg18
-# There might be a better way of doing this in WDL than the current implementation though...
 #
-# ld_pruning seems functional but is largely untested at the moment
-#
-# The current focus is subset GDS due to a current need for that one in particular
-#
-# variables and functions exclusive to the WDL version tend to have "py_" in front and use camelCase between words
-# this is to make it clear they don't quite correlate to the CWL
-#
-# Testing needs to be done with and without sample and variant include files
+# variables and functions exclusive to the WDL version tend to have "py_" in front
+# and use camelCase between words - this is to make it clear they don't quite 
+# correlate to the CWL
 
 
 # [1] ld_pruning -- ld prunes a GDS file
 task ld_pruning {
 	input {
-
-		# will need to figure out how to deal with autosome_only = true
-
 		File gds
 		File? sample_include_file
 		File? variant_include_file
@@ -28,12 +18,9 @@ task ld_pruning {
 		Float ld_win_size = 10  # yes, a float, not an int
 		Float maf_threshold = 0.01
 		Float missing_threshold = 0.01
-		#Boolean autosome_only = true  # buggy
+		#Boolean autosome_only = true  # buggy and not in CWL
 		Boolean exclude_pca_corr = true  # will act as String in Python
 		String? out_prefix
-		# Workaround for optional files
-		Boolean def_sampleInc = defined(sample_include_file)
-		Boolean def_variantInc = defined(variant_include_file)
 		
 		# runtime attributes
 		Int addldisk = 1
@@ -56,7 +43,6 @@ task ld_pruning {
 			if ("~{genome_build}" == "hg18" or "~{genome_build}" == "hg19"):
 				f.write("genome_build ~{genome_build}\n")
 			else:
-				# invalid
 				f.close()
 				print("Invalid ref genome. Please only select either hg38, hg19, or hg18.")
 				exit(1)
@@ -76,7 +62,6 @@ task ld_pruning {
 			f.write("variant_include_file ~{variant_include_file}\n")
 
 		f.close()
-		exit()
 		CODE
 
 		echo "Calling R script ld_pruning.R"
@@ -88,6 +73,10 @@ task ld_pruning {
 	Int sample_size = if defined(sample_include_file) then ceil(size(sample_include_file, "GB")) else 0
 	Int varInclude_size = if defined(variant_include_file) then ceil(size(variant_include_file, "GB")) else 0
 	Int finalDiskSize = gds_size + sample_size + varInclude_size + addldisk
+
+	# Workaround for optional files
+	Boolean def_sampleInc = defined(sample_include_file)
+	Boolean def_variantInc = defined(variant_include_file)
 	
 	runtime {
 		cpu: cpu
@@ -97,28 +86,37 @@ task ld_pruning {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File ld_pruning_output = ("pruned_variants.RData") # RData file with variant.id of pruned variants
+		File ld_pruning_output = "pruned_variants.RData"
 		File config_file = "ld_pruning.config"
 	}
 }
 
+# [2] subset_gds -- subset a GDS file based on RData vector of variants
 task subset_gds {
 	input {
 		Pair[File, File] gds_n_varinc  # [gds, variant_include_file]
 		String? out_prefix
 		File? sample_include_file
-		# Workaround for optional files
-		Boolean def_sampleInc = defined(sample_include_file)
+
+		# runtime attributes
+		Int addldisk = 1
+		Int cpu = 2
+		Int memory = 4
+		Int preempt = 3
 	}
 
 	command {
 		set -eux -o pipefail
 
 		python << CODE
+		import os
 
 		def py_rootPlusChr(py_filename):
-			# Similar to split_n_space in vcf-to-gds but not equivalent
-			# Ex: "test_data_chrX.vcf.gz" returns ["test_data_", "X"]
+			'''
+			Similar to split_n_space in vcf-to-gds but not equivalent
+			The CWL uses nameroot for this, but I think the WDL needs the full path
+			Ex: "inputs/test_data_chrX.vcf.gz" returns ["inputs/test_data_", "X"]
+			'''
 			py_split = py_filename.split("chr")
 			if unicode(str(py_split[1][1])).isnumeric():
 				# chr10 and above
@@ -138,71 +136,33 @@ task subset_gds {
 		f.write("variant_include_file " + variant_include_file + "\n")
 
 		if "~{def_sampleInc}" == "true":
-			f.write("sample_include_file " + sample_include_file + "\n")
-
-		# add in if sample include file
+			f.write("sample_include_file ~{sample_include_file}\n")
 
 		if ("~{out_prefix}" != ""):
-			chromosome = py_rootPlusChr(gds)
-			f.write("subset_gds_file " + "~{out_prefix}" + "_chr" + chromosome + ".gds")
+			chromosome = py_rootPlusChr(gds)[1]
+			py_filename = "~{out_prefix}" + "_chr" + chromosome + ".gds"
 		else:
 			chromosome = py_rootPlusChr(gds)[1]
-			basename = py_rootPlusChr(gds)[0]
-			f.write("subset_gds_file " + basename + "subset_chr" + chromosome + ".gds")
+			basename = os.path.basename(py_rootPlusChr(gds)[0])
+			py_filename = basename + "subset_chr" + chromosome + ".gds"
+
+		f.write("subset_gds_file " + py_filename)
 		f.close()
+		with open("output_workaround.txt", "a") as g:
+			g.write(py_filename)
 		CODE
 
-		#Rscript /usr/local/analysis_pipeline/R/subset_gds.R subset_gds.config
-		# CWL uses this:
 		R -q --vanilla < /usr/local/analysis_pipeline/R/subset_gds.R --args subset_gds.config
 	}
 
-	runtime {
-		docker: "uwgac/topmed-master:2.10.0"
-	}
-}
+	# Estimate disk size required
+	Int gds_size = ceil(size(gds_n_varinc.left, "GB"))
+	Int varinc_size = ceil(size(gds_n_varinc.right, "GB"))
+	Int sample_size = if defined(sample_include_file) then ceil(size(sample_include_file, "GB")) else 0
+	Int finalDiskSize = gds_size + varinc_size + sample_size + addldisk
 
-task merge_gds {
-	input {
-		Array[File] gdss
-		String? out_prefix
-
-		# runtime attributes
-		Int addldisk = 1
-		Int cpu = 2
-		Int memory = 4
-		Int preempt = 3
-	}
-
-	command <<<
-	set -eux -o pipefail
-
-	# CWL has an ln -s, will probably need to use copy trick again
-
-	python CODE <<
-	import os
-
-	# if chr, etc
-
-	if "~{out_prefix}" != "":  # would this work in Python??
-		merged_gds_file_name = "~{out_prefix}" + ".gds"
-	else:
-		merged_gds_file_name = "merged.gds"
-
-	f = open("merge_gds.config", "a")
-	f.write('merged_gds_file "' + merged_gds_file_name + '"')
-
-	f.close()
-	exit()
-	CODE
-
-
-	Rscript /usr/local/analysis_pipeline/R/merge_gds.R merge_gds.config
-	>>>
-
-	# may have components missing
-	Int gds_size = ceil(size(gdss, "GB"))
-	Int finalDiskSize = gds_size + addldisk
+	# Workaround for optional files
+	Boolean def_sampleInc = defined(sample_include_file)
 
 	runtime {
 		cpu: cpu
@@ -211,42 +171,100 @@ task merge_gds {
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
-	
 	output {
-		Array[File] merged_gds_output = glob("*.gds")
-		File config_file = "merge_gds.config"
+		File config_file = "subset_gds.config"
+		# Seems that "/.+?(?=\.gds)/.gds" isn't valid for an output
+		# So we read a file containing a string with our filename
+		String filename = read_string("output_workaround.txt")
+		File subset_output = filename
 	}
 }
 
-task check_merged_gds {
-	input {
-		File gds
+# task merge_gds {
+# 	input {
+# 		Array[File] gdss
+# 		String? out_prefix
 
-		# runtime attributes
-		Int addldisk = 1
-		Int cpu = 2
-		Int memory = 4
-		Int preempt = 3
-	}
+# 		# runtime attributes
+# 		Int addldisk = 1
+# 		Int cpu = 2
+# 		Int memory = 4
+# 		Int preempt = 3
+# 	}
 
-	command <<<
-	set -eux -o pipefail
-	pass
-	>>>
+# 	command <<<
+# 	set -eux -o pipefail
 
-	runtime {
-		cpu: cpu
-		docker: "uwgac/topmed-master:2.10.0"
-		#disks: "local-disk " + finalDiskSize + " HDD"
-		memory: "${memory} GB"
-		preemptibles: "${preempt}"
-	}
+# 	# CWL has an ln -s, will probably need to use copy trick again
 
-	#output {
-		#File config_file = "check_merged_gds.config"
-	#}
+# 	python CODE <<
+# 	import os
 
-}
+# 	# if chr, etc
+
+# 	if "~{out_prefix}" != "":  # would this work in Python??
+# 		merged_gds_file_name = "~{out_prefix}" + ".gds"
+# 	else:
+# 		merged_gds_file_name = "merged.gds"
+
+# 	f = open("merge_gds.config", "a")
+# 	f.write('merged_gds_file "' + merged_gds_file_name + '"')
+
+# 	f.close()
+# 	exit()
+# 	CODE
+
+
+# 	Rscript /usr/local/analysis_pipeline/R/merge_gds.R merge_gds.config
+# 	>>>
+
+# 	# may have components missing
+# 	Int gds_size = ceil(size(gdss, "GB"))
+# 	Int finalDiskSize = gds_size + addldisk
+
+# 	runtime {
+# 		cpu: cpu
+# 		docker: "uwgac/topmed-master:2.10.0"
+# 		disks: "local-disk " + finalDiskSize + " HDD"
+# 		memory: "${memory} GB"
+# 		preemptibles: "${preempt}"
+# 	}
+	
+# 	output {
+# 		Array[File] merged_gds_output = glob("*.gds")
+# 		File config_file = "merge_gds.config"
+# 	}
+# }
+
+# task check_merged_gds {
+# 	input {
+# 		File gds
+
+# 		# runtime attributes
+# 		Int addldisk = 1
+# 		Int cpu = 2
+# 		Int memory = 4
+# 		Int preempt = 3
+# 	}
+
+# 	command <<<
+# 	set -eux -o pipefail
+# 	pass
+# 	>>>
+
+# 	runtime {
+# 		cpu: cpu
+# 		docker: "uwgac/topmed-master:2.10.0"
+# 		#disks: "local-disk " + finalDiskSize + " HDD"
+# 		memory: "${memory} GB"
+# 		preemptibles: "${preempt}"
+# 	}
+
+# 	#output {
+# 		#File config_file = "check_merged_gds.config"
+# 	#}
+
+# }
 
 workflow b_ldpruning {
 	input {
@@ -266,7 +284,6 @@ workflow b_ldpruning {
 		}
 	}
 
-
 	# CWL uses a dotproduct scatter; this is the closest WDL equivalent
 	scatter(gds_n_varinc in zip(gds_files, ld_pruning.ld_pruning_output)) {
 		call subset_gds {
@@ -276,7 +293,6 @@ workflow b_ldpruning {
 				out_prefix = out_prefix
 		}
 	}
-
 
 
 	#call merge_gds {

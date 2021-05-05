@@ -30,7 +30,8 @@ Note that this pipeline only directly takes in variant_include_file in the first
 | ld_pruning.addldisk 			| int  | 1       | Extra disk space to allot for 1st task    	|
 | ld_pruning.cpu	 			| int  | 2       | Runtime cores to allot for 1st task           |
 | ld_pruning.memory  			| int  | 4       | Runtime memory to allot for 1st task   	    |
-| ld_pruning.preempt 			| int  | 3       | # of preemptible VM tries for 1st task        |
+| ld_pruning.preempt 			| int  | 3       | # of preemptible VM tries for 1st task        |  
+
 Note that `addldisk` is adding gigabytes **on top of** the WDL's best-guess estimate of disk space needed based on the size of your inputs.
 
 ### Tuning Your LD Pruning
