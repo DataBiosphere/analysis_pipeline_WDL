@@ -10,6 +10,8 @@ version 1.0
 #
 # variables and functions exclusive to the WDL version tend to have "py_" in front and use camelCase between words
 # this is to make it clear they don't quite correlate to the CWL
+#
+# Testing needs to be done with and without sample and variant include files
 
 
 # [1] ld_pruning -- ld prunes a GDS file
@@ -135,8 +137,8 @@ task subset_gds {
 		f.write("gds_file " + gds + "\n")
 		f.write("variant_include_file " + variant_include_file + "\n")
 
-		# if
-		f.write("sample_include_file " + sample_include_file + "\n")
+		if "~{def_sampleInc}" == "true":
+			f.write("sample_include_file " + sample_include_file + "\n")
 
 		# add in if sample include file
 
