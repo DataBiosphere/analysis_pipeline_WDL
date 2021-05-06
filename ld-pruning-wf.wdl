@@ -61,6 +61,16 @@ task ld_pruning {
 		if "~{def_variantInc}" == "true":
 			f.write("variant_include_file ~{variant_include_file}\n")
 
+		# this doesn't seem to actually do anything, but is in the CWL?
+		if "chr" in "~{gds}":
+			parts = os.path.splitext(os.path.basename("~{gds}"))[0].split("chr")
+			outfile_temp = "pruned_variants_chr" + parts[1] + ".RData"
+			print(outfile_temp)
+		else:
+			outfile_temp = "pruned_variants.RData"
+		if "~{out_prefix}" != "":
+			outfile_temp = "~{out_prefix}" + "_" + outfile_temp
+
 		f.close()
 		CODE
 
