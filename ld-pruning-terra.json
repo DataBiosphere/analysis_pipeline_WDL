@@ -1,0 +1,9 @@
+{
+   "b_ldpruning.gds_files": [
+ "gs://topmed_workflow_testing/UWGAC_WDL/TEMPORARY/1KG_phase3_subset_chr1.gds",
+ "gs://topmed_workflow_testing/UWGAC_WDL/TEMPORARY/1KG_phase3_subset_chr2.gds",
+ "gs://topmed_workflow_testing/UWGAC_WDL/TEMPORARY/1KG_phase3_subset_chr3.gds",
+ "gs://topmed_workflow_testing/UWGAC_WDL/TEMPORARY/1KG_phase3_subset_chr20.gds"
+],
+  "b_ldpruning.ld_pruning.genome_build": "hg38"
+}
