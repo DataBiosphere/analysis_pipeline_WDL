@@ -34,16 +34,18 @@ workflow analysis_pipeline_WDL {
 		}
 	}
 
-	scatter(gds_file in unique_variant_id.unique_variant_id_gds_per_chr) {
+	scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
 		call megastepB.ld_pruning {
 			input:
-				gds = gds_file
+				gds = gds
 		}
 	}
-	scatter(gds_n_varinc in zip(gds_file in unique_variant_id.unique_variant_id_gds_per_chr, ld_pruning.ld_pruning_output)) {
-		call subset_gds {
+
+	scatter(gds_n_varinc in zip(unique_variant_id.unique_variant_id_gds_per_chr, ld_pruning.ld_pruning_output)) {
+		call megastepB.subset_gds {
 			input:
 				gds_n_varinc = gds_n_varinc
 		}
 	}
+
 }
