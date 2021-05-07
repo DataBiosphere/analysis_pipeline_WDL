@@ -159,8 +159,6 @@ task subset_gds {
 
 		f.write("subset_gds_file " + py_filename)
 		f.close()
-		with open("output_workaround.txt", "a") as g:
-			g.write(py_filename)
 		CODE
 
 		R -q --vanilla < /usr/local/analysis_pipeline/R/subset_gds.R --args subset_gds.config
@@ -185,9 +183,7 @@ task subset_gds {
 	output {
 		File config_file = "subset_gds.config"
 		# Seems that "/.+?(?=\.gds)/.gds" isn't valid for an output
-		# So we read a file containing a string with our filename
-		String filename = read_string("output_workaround.txt")
-		File subset_output = filename
+		File subset_output = glob("*.gds")[0]
 	}
 }
 
