@@ -1,8 +1,10 @@
 version 1.0
 
-# Please be sure to read the caveats on Github
+# Caveat programmator: Please be sure to read the readme on Github
+# If this workflow is run locally, there is a decent chance it will lock up Docker
+# A Docker lockup is system-wide and persists outside Cromwell -- restart Docker to fix it
 
-import "https://raw.githubusercontent.com/aofarrel/TOPMed_Pipeline_First_Step_WDL/master/vcf-to-gds-wf.wdl" as megastepA
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/main/vcf-to-gds-wf.wdl" as megastepA
 
 task md5sum {
 	input {
@@ -49,40 +51,19 @@ workflow checker {
 		Array[File] vcf_files
 		Array[String] format = ["GT"]
 		Boolean check_gds = true   #careful now...
-
-		# standard workflow runtime attributes
-		# [1] vcf2gds
-		Int vcfgds_cpu = 1
-		Int vcfgds_disk = 60
-		Int vcfgds_memory = 4
-		# [2] uniquevarids
-		Int uniquevars_cpu = 1
-		Int uniquevars_disk = 60
-		Int uniquevars_memory = 4
-		# [3] checkgds
-		Int checkgds_cpu = 1
-		Int checkgds_disk = 60
-		Int checkgds_memory = 4
-
 	}
 
 	scatter(vcf_file in vcf_files) {
 		call megastepA.vcf2gds {
 			input:
 				vcf = vcf_file,
-				format = format,
-				cpu = vcfgds_cpu,
-				disk = vcfgds_disk,
-				memory = vcfgds_memory
+				format = format
 		}
 	}
 	
 	call megastepA.unique_variant_id {
 		input:
-			gdss = vcf2gds.gds_output,
-			cpu = uniquevars_cpu,
-			disk = uniquevars_disk,
-			memory = uniquevars_memory
+			gdss = vcf2gds.gds_output
 	}
 	
 	if(check_gds) {
@@ -90,18 +71,10 @@ workflow checker {
 			call megastepA.check_gds {
 				input:
 					gds = gds,
-					vcfs = vcf_files,
-					cpu = checkgds_cpu,
-					disk = checkgds_disk,
-					memory = checkgds_memory
+					vcfs = vcf_files
 			}
 		}
 	}
-
-	# For ld prune and subset, test that variant_include_file works by running an extra time
-	# on just chr3, as it can only take in one such file and will error on other chrs.
-
-	# Don't forget to compare running with and without the sample_include_file
 
 	scatter(gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
 		call md5sum {
@@ -111,6 +84,11 @@ workflow checker {
 				truth_info = truth_info
 		}
 	}
+
+	# For ld prune and subset, test that variant_include_file works by running an extra time
+	# on just chr3, as it can only take in one such file and will error on other chrs.
+
+	# Don't forget to compare running with and without the sample_include_file
 
 
 	meta {
