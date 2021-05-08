@@ -6,7 +6,6 @@ version 1.0
 # and use camelCase between words - this is to make it clear they don't quite 
 # correlate to the CWL
 
-
 # [1] ld_pruning -- calculates linkage diseq on a GDS file
 task ld_pruning {
 	input {
@@ -70,7 +69,7 @@ task ld_pruning {
 		if "~{out_prefix}" != "":
 			outfile_temp = "~{out_prefix}" + "_" + outfile_temp
 
-		f.write("outfile_temp " + outfile_temp + "\n")
+		f.write("out_file " + outfile_temp + "\n")
 
 		f.close()
 		CODE
@@ -97,7 +96,7 @@ task ld_pruning {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File ld_pruning_output = "pruned_variants.RData"
+		File ld_pruning_output = glob("*.RData")[0]
 		File config_file = "ld_pruning.config"
 	}
 }
