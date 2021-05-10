@@ -6,7 +6,6 @@ version 1.0
 # and use camelCase between words - this is to make it clear they don't quite 
 # correlate to the CWL
 
-
 # [1] ld_pruning -- calculates linkage diseq on a GDS file
 task ld_pruning {
 	input {
@@ -101,7 +100,7 @@ task ld_pruning {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File ld_pruning_output = "pruned_variants.RData"
+		File ld_pruning_output = glob("*.RData")[0]
 		File config_file = "ld_pruning.config"
 	}
 
@@ -164,8 +163,6 @@ task subset_gds {
 
 		f.write("subset_gds_file " + py_filename)
 		f.close()
-		with open("output_workaround.txt", "a") as g:
-			g.write(py_filename)
 		CODE
 
 		R -q --vanilla < /usr/local/analysis_pipeline/R/subset_gds.R --args subset_gds.config
@@ -190,9 +187,7 @@ task subset_gds {
 	output {
 		File config_file = "subset_gds.config"
 		# Seems that "/.+?(?=\.gds)/.gds" isn't valid for an output
-		# So we read a file containing a string with our filename
-		String filename = read_string("output_workaround.txt")
-		File subset_output = filename
+		File subset_output = glob("*.gds")[0]
 	}
 }
 
