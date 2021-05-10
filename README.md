@@ -3,9 +3,6 @@
 [![WDL 1.0 shield](https://img.shields.io/badge/WDL-1.0-lightgrey.svg)](https://github.com/openwdl/wdl/blob/main/versions/1.0/SPEC.md)  
 This is a work-in-progress project to implement some components of the University of Washington [TOPMed pipeline](https://github.com/UW-GAC/analysis_pipeline) into Workflow Description Lauange (WDL) in a way that closely mimics [the CWL version of the UW Pipeline](https://github.com/UW-GAC/analysis_pipeline_cwl). In other words, this is a WDL that mimics a CWL that mimics a Python pipeline. All three pipelines use the same underlying R scripts which do most of the heavy lifting, making their results directly comparable.
 
-## Motivation
-The original goal of this undertaking was to provide sample preparation options for a subset of users on Terra, as the existing sample preparation notebook did not run well on TOPMed Freeze 8 data due to a large increase in the number of variants. While we hope that this can eventually be used for that case, the scope has since widened for other forms of analysis, and as a case study of interoperability between CWL-based platforms and WDL-based platforms. For that reason, this pipeline is designed to be as close to the CWL version as possible.
-
 ## Features
 * This pipeline is very similiar to the CWL version and the main differences between the two [are documented](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/documentation/cwl-vs-wdl.md)
 * As it works in a Docker container, it does not have any external dependencies other than the usual setup required for [WDL](https://software.broadinstitute.org/wdl/documentation/quickstart) and [Cromwell](http://cromwell.readthedocs.io/en/develop/)
