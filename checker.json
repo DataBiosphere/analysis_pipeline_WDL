@@ -1,6 +1,6 @@
 {
   "checker.wfA_option_check_gds": true,
-  "checker.wfA_truth_info": "gs://topmed_workflow_testing/UWGAC_WDL/checker/info.txt",
+  "checker.wfA_truth_info": "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/info.txt",
   "checker.wfA_option_format": ["GT"],
   "checker.wfA_test_vcfs": [
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr1.vcf.gz",
