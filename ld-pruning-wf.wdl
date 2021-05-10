@@ -32,45 +32,49 @@ task ld_pruning {
 		set -eux -o pipefail
 
 		echo "Generating config file"
+		# noquotes = argument has no quotes in the config file to match CWL config EXACTLY
 		python << CODE
 		import os
 		f = open("ld_pruning.config", "a")
-		
-		f.write("gds_file ~{gds}\n")
+		f.write('gds_file "~{gds}"\n')
 		if "~{exclude_pca_corr}" != "true":
-			f.write("exclude_pca_corr ~{exclude_pca_corr}\n")
-		if "~{genome_build}" != "hg38":
+			f.write("exclude_pca_corr ~{exclude_pca_corr}\n")  # noquotes
+
+		# to match CWL exactly, genome_build is written even if default value
+		if "~{genome_build}" == "hg38":
+			f.write('genome_build "~{genome_build}"\n')
+		else:
 			if ("~{genome_build}" == "hg18" or "~{genome_build}" == "hg19"):
-				f.write("genome_build ~{genome_build}\n")
+				f.write('genome_build "~{genome_build}"\n')
 			else:
 				f.close()
 				print("Invalid ref genome. Please only select either hg38, hg19, or hg18.")
 				exit(1)
+		
 		if ~{ld_r_threshold} != 0.32:
-			f.write("ld_r_threshold ~{ld_r_threshold}\n")
+			f.write("ld_r_threshold ~{ld_r_threshold}\n")  # noquotes
 		if ~{ld_win_size} != 10:  # by default this compares 10.0 to 10 which evals to true
-			f.write("ld_win_size ~{ld_win_size}\n")
+			f.write("ld_win_size ~{ld_win_size}\n")  # noquotes
 		if ~{maf_threshold} != 0.01:
-			f.write("maf_threshold ~{maf_threshold}\n")
+			f.write("maf_threshold ~{maf_threshold}\n")  # noquotes
 		if ~{missing_threshold} != 0.01:
-			f.write("missing_threshold ~{missing_threshold}\n")
+			f.write("missing_threshold ~{missing_threshold}\n")  # noquotes
 
 		if "~{def_sampleInc}" == "true":
-			f.write("sample_include_file ~{sample_include_file}\n")
+			f.write('sample_include_file "~{sample_include_file}"\n')
 
 		if "~{def_variantInc}" == "true":
-			f.write("variant_include_file ~{variant_include_file}\n")
+			f.write('variant_include_file "~{variant_include_file}"\n')
 
 		if "chr" in "~{gds}":
 			parts = os.path.splitext(os.path.basename("~{gds}"))[0].split("chr")
 			outfile_temp = "pruned_variants_chr" + parts[1] + ".RData"
-			print(outfile_temp)
 		else:
 			outfile_temp = "pruned_variants.RData"
 		if "~{out_prefix}" != "":
 			outfile_temp = "~{out_prefix}" + "_" + outfile_temp
 
-		f.write("outfile_temp " + outfile_temp + "\n")
+		f.write('out_file "' + outfile_temp + '"\n')
 
 		f.close()
 		CODE
@@ -100,6 +104,7 @@ task ld_pruning {
 		File ld_pruning_output = "pruned_variants.RData"
 		File config_file = "ld_pruning.config"
 	}
+
 }
 
 # [2] subset_gds -- subset a GDS file based on RData vector of variants
