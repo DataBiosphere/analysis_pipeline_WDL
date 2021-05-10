@@ -46,17 +46,19 @@ workflow checker {
 	input {
 		# checker-specific
 		File wfA_truth_info
+		File wfB_truth_info
 		Array[File] wfA_truth_gds
+		Array[File] wfB_truth_subset
 
 		# standard workflow
-		Array[File] wfA_test_vcf
+		Array[File] wfA_test_vcfs
 		Boolean wfA_option_check_gds = true   #careful now...
 	}
 
-	scatter(vcf_file in vcf_files) {
+	scatter(wfA_test_vcf in wfA_test_vcfs) {
 		call megastepA.vcf2gds {
 			input:
-				vcf = vcf_file
+				vcf = wfA_test_vcf
 		}
 	}
 	
@@ -70,19 +72,19 @@ workflow checker {
 			call megastepA.check_gds {
 				input:
 					gds = gds,
-					vcfs = vcf_files
+					vcfs = wfA_test_vcfs
 			}
 		}
 	}
 
-	scatter(wfA_gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
-		call md5sum {
-			input:
-				gds_test = wfA_gds_test,
-				gds_truth = wfA_truth_gds,
-				truth_info = wfA_truth_info
-		}
-	}
+	#scatter(wfA_gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
+	#	call md5sum {
+	#		input:
+	#			gds_test = wfA_gds_test,
+	#			gds_truth = wfA_truth_gds,
+	#			truth_info = wfA_truth_info
+	#	}
+	#}
 
 	# For ld prune and subset, test that variant_include_file works by running an extra time
 	# on just chr3, as it can only take in one such file and will error on other chrs.
@@ -103,7 +105,7 @@ workflow checker {
 		}
 	}
 
-	scatter(wfB_gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
+	scatter(wfB_gds_test in subset_gds.subset_output) {
 		call md5sum {
 			input:
 				gds_test = wfB_gds_test,
