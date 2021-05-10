@@ -191,92 +191,6 @@ task subset_gds {
 	}
 }
 
-# task merge_gds {
-# 	input {
-# 		Array[File] gdss
-# 		String? out_prefix
-
-# 		# runtime attributes
-# 		Int addldisk = 1
-# 		Int cpu = 2
-# 		Int memory = 4
-# 		Int preempt = 3
-# 	}
-
-# 	command <<<
-# 	set -eux -o pipefail
-
-# 	# CWL has an ln -s, will probably need to use copy trick again
-
-# 	python CODE <<
-# 	import os
-
-# 	# if chr, etc
-
-# 	if "~{out_prefix}" != "":  # would this work in Python??
-# 		merged_gds_file_name = "~{out_prefix}" + ".gds"
-# 	else:
-# 		merged_gds_file_name = "merged.gds"
-
-# 	f = open("merge_gds.config", "a")
-# 	f.write('merged_gds_file "' + merged_gds_file_name + '"')
-
-# 	f.close()
-# 	exit()
-# 	CODE
-
-
-# 	Rscript /usr/local/analysis_pipeline/R/merge_gds.R merge_gds.config
-# 	>>>
-
-# 	# may have components missing
-# 	Int gds_size = ceil(size(gdss, "GB"))
-# 	Int finalDiskSize = gds_size + addldisk
-
-# 	runtime {
-# 		cpu: cpu
-# 		docker: "uwgac/topmed-master:2.10.0"
-# 		disks: "local-disk " + finalDiskSize + " HDD"
-# 		memory: "${memory} GB"
-# 		preemptibles: "${preempt}"
-# 	}
-	
-# 	output {
-# 		Array[File] merged_gds_output = glob("*.gds")
-# 		File config_file = "merge_gds.config"
-# 	}
-# }
-
-# task check_merged_gds {
-# 	input {
-# 		File gds
-
-# 		# runtime attributes
-# 		Int addldisk = 1
-# 		Int cpu = 2
-# 		Int memory = 4
-# 		Int preempt = 3
-# 	}
-
-# 	command <<<
-# 	set -eux -o pipefail
-# 	pass
-# 	>>>
-
-# 	runtime {
-# 		cpu: cpu
-# 		docker: "uwgac/topmed-master:2.10.0"
-# 		#disks: "local-disk " + finalDiskSize + " HDD"
-# 		memory: "${memory} GB"
-# 		preemptibles: "${preempt}"
-# 	}
-
-# 	#output {
-# 		#File config_file = "check_merged_gds.config"
-# 	#}
-
-# }
-
 workflow b_ldpruning {
 	input {
 		Array[File] gds_files
@@ -305,18 +219,6 @@ workflow b_ldpruning {
 		}
 	}
 
-
-	#call merge_gds {
-	#	input:
-	#		gdss = gds_files  # should be output of previous step!!
-	#}
-
-	#scatter(gds_file in gds_files) { # should be output of previous step!!
-	#	call check_merged_gds {
-	#		input:
-	#			gds = gds_file
-	#	}
-	#}
 
 	meta {
 		author: "Ash O'Farrell"
