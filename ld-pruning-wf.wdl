@@ -219,6 +219,10 @@ workflow b_ldpruning {
 		}
 	}
 
+	output {
+		Array[File] subset = subset_gds.subset_output
+	}
+
 
 	meta {
 		author: "Ash O'Farrell"
