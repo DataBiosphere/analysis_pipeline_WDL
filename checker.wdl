@@ -53,12 +53,14 @@ workflow checker {
 		# standard workflow
 		Array[File] wfA_test_vcfs
 		Boolean wfA_option_check_gds = true   #careful now...
+		Array[String] wfA_option_format
 	}
 
 	scatter(wfA_test_vcf in wfA_test_vcfs) {
 		call megastepA.vcf2gds {
 			input:
-				vcf = wfA_test_vcf
+				vcf = wfA_test_vcf,
+				format = wfA_option_format
 		}
 	}
 	
