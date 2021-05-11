@@ -330,30 +330,40 @@ task check_merged_gds {
 
 	command <<<
 	set -eux -o pipefail
+
 	python << CODE
 	import os
-	gds_name = ""
-	gds_file = [].append("~{gds}")
-	print("one")
-	print(gds_file)
-	gds = gds_file[0].path
-	print("two")
-	print(gds)
+	gds = "~{gds}"
 	gds_first_part = gds.split('chr')[0]
-	gds_second_part = gds.split('chr')[1].split('.')
-	print(gds_first_part)
-	print(gds_second_part)
-	gds_second_part.shift()
-	gds_name = gds_first_part + 'chr .' + gds_second_part.join('.')
+	gds_second_part = gds.split('chr')[1]
+
+	# grab the chr number
+	g = open("chr_number", "a")
+	if(unicode(str(gds_second_part[1])).isnumeric()):
+		# two digit number
+		g.write(gds_second_part[:2])
+		gds_second_part = gds_second_part[2:]
+	else:
+		# one digit number or Y/X/M
+		g.write(gds_second_part[0])
+		gds_second_part = gds_second_part[1:]
+	g.close()
+
+	gds_name = gds_first_part + 'chr ' + gds_second_part
 	f = open("check_merged_gds.config", "a")
 	f.write('gds_file "' + gds_name + '"\n')
-	f.write('merged_gds_file "' + inputs.merged_gds_file.path + '"\n')
+	f.write('merged_gds_file "~{merged}"\n')
 	f.close
 	exit()
 	CODE
 
-	R -q --vanilla < /usr/local/analysis_pipeline/R/check_merged_gds.R --args check_merged_gds.config
+	echo "Setting chromosome number"
+	BASH_CHR=$(<chr_number)
+	echo "Chromosme number is ${BASH_CHR}"
+
+	R -q --vanilla < /usr/local/analysis_pipeline/R/check_merged_gds.R --args check_merged_gds.config --chromosome ${BASH_CHR}
 	>>>
+	# Estimate disk size required
 	Int gds_size = ceil(size(gds, "GB"))
 	Int finalDiskSize = gds_size * 3 + addldisk
 
