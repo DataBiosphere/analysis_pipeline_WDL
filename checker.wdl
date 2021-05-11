@@ -5,7 +5,7 @@ version 1.0
 # A Docker lockup is system-wide and persists outside Cromwell -- restart Docker to fix it
 
 import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/v1.0.1/vcf-to-gds-wf.wdl" as megastepA
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-ld-pruning/ld-pruning-wf.wdl" as megastepB
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-merge-gds/ld-pruning-wf.wdl" as megastepB
 
 task md5sum {
 	input {
