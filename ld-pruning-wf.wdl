@@ -300,6 +300,7 @@ task merge_gds {
 	# Estimate disk size required
 	Int gds_size = ceil(size(gdss, "GB"))
 	Int finalDiskSize = gds_size * 3 + addldisk
+	String filename = select_first([out_prefix, "merged"])
 
 	runtime {
 		cpu: cpu
@@ -310,7 +311,7 @@ task merge_gds {
 	}
 	
 	output {
-		File merged_gds_output = glob("*.gds")[0]
+		File merged_gds_output = filename + ".gds"
 		File config_file = "merge_gds.config"
 	}
 }
