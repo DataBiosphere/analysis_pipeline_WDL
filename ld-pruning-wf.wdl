@@ -316,35 +316,59 @@ task merge_gds {
 	}
 }
 
-# task check_merged_gds {
-# 	input {
-# 		File gds
+task check_merged_gds {
+	input {
+		File gds
+		File merged
 
-# 		# runtime attributes
-# 		Int addldisk = 1
-# 		Int cpu = 2
-# 		Int memory = 4
-# 		Int preempt = 3
-# 	}
+		#runtime attributes
+		Int addldisk = 1
+		Int cpu = 2
+		Int memory = 4
+		Int preempt = 3
+	}
 
-# 	command <<<
-# 	set -eux -o pipefail
-# 	pass
-# 	>>>
+	command <<<
+	set -eux -o pipefail
+	python << CODE
+	import os
+	gds_name = ""
+	gds_file = [].append("~{gds}")
+	print("one")
+	print(gds_file)
+	gds = gds_file[0].path
+	print("two")
+	print(gds)
+	gds_first_part = gds.split('chr')[0]
+	gds_second_part = gds.split('chr')[1].split('.')
+	print(gds_first_part)
+	print(gds_second_part)
+	gds_second_part.shift()
+	gds_name = gds_first_part + 'chr .' + gds_second_part.join('.')
+	f = open("check_merged_gds.config", "a")
+	f.write('gds_file "' + gds_name + '"\n')
+	f.write('merged_gds_file "' + inputs.merged_gds_file.path + '"\n')
+	f.close
+	exit()
+	CODE
 
-# 	runtime {
-# 		cpu: cpu
-# 		docker: "uwgac/topmed-master:2.10.0"
-# 		#disks: "local-disk " + finalDiskSize + " HDD"
-# 		memory: "${memory} GB"
-# 		preemptibles: "${preempt}"
-# 	}
+	R -q --vanilla < /usr/local/analysis_pipeline/R/check_merged_gds.R --args check_merged_gds.config
+	>>>
+	Int gds_size = ceil(size(gds, "GB"))
+	Int finalDiskSize = gds_size * 3 + addldisk
 
-# 	#output {
-# 		#File config_file = "check_merged_gds.config"
-# 	#}
+	runtime {
+		cpu: cpu
+		docker: "uwgac/topmed-master:2.10.0"
+		disks: "local-disk " + finalDiskSize + " HDD"
+		memory: "${memory} GB"
+		preemptibles: "${preempt}"
+	}
+	output {
+		File config_file = "check_merged_gds.config"
+	}
 
-# }
+}
 
 workflow b_ldpruning {
 	input {
@@ -378,6 +402,15 @@ workflow b_ldpruning {
 		input:
 			gdss = subset_gds.subset_output,
 			out_prefix = out_prefix
+	}
+
+	scatter(subset_gds in subset_gds.subset_output) {
+		call check_merged_gds {
+			input:
+				gds = subset_gds,
+				merged = merge_gds.merged_gds_output
+
+		}
 	}
 
 
