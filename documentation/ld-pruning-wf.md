@@ -13,10 +13,7 @@ Note that this pipeline only directly takes in variant_include_file in the first
 * gds_files
 	* An array of GDS files, with names that contain "chr" + the number/letter of the chromosome, such as ["chr1.gds", "chr2.gds"]
 	* Required (all others are optional)
-* sample_include_file_gds
-	* RData file with vector of sample.id to include in the output GDS.
-	* If not provided, all samples in the GDS files are included.
-* sample_include_file_pruning
+* sample_include_file
 	* RData file with vector of sample.id to use for LD pruning (unrelated samples are recommended).
 	* If not provided, all samples in the GDS files are included.
 * variant_include_file
