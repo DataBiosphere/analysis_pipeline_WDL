@@ -25,6 +25,7 @@ Due to how Cromwell works, local runs may draw too much memory; [see here for mo
 
 ## Further reading
 * [checker workflow](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/documentation/checker.md)
+* [ld-pruning-wf](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/documentation/ld-pruning-wf.md)
 * [vcf-to-gds-wf](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/documentation/vcf-to-gds-wf.md)
 
 

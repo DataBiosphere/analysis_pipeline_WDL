@@ -28,6 +28,10 @@ Note that this pipeline only directly takes in variant_include_file in the first
 | ld_pruning.cpu	 			| int  | 2       | Runtime cores to allot for 1st task          |
 | ld_pruning.memory  			| int  | 4       | Runtime memory to allot for 1st task   	    |
 | ld_pruning.preempt 			| int  | 3       | # of preemptible VM tries for 1st task       |
+| merge_gds.addldisk 			| int  | 1       | Extra disk space to allot for 3rd task    	|
+| merge_gds.cpu	 				| int  | 2       | Runtime cores to allot for 3rd task          |
+| merge_gds.memory  			| int  | 4       | Runtime memory to allot for 3rd task   	    |
+| merge_gds.preempt 			| int  | 3       | # of preemptible VM tries for 3rd task       |
 | subset_gds.addldisk 			| int  | 1       | Extra disk space to allot for 2nd task    	|
 | subset_gds.cpu	 			| int  | 2       | Runtime cores to allot for 2nd task          |
 | subset_gds.memory  			| int  | 4       | Runtime memory to allot for 2nd task   	    |
