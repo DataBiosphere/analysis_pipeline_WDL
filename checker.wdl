@@ -51,6 +51,7 @@ workflow checker {
 		Array[File] wfA_truth_gds
 		Array[File] wfB_truth_defaults_subset
 		Array[File] wfB_truth_nondefaults_subset
+		File wfB_truth_defaults_merged
 		# used for testing non-defaults
 		String wfB_option_nondefault_genome_build = "hg19"
 		Float wfB_option_nondefault_ld_r_threshold = 0.3
@@ -119,6 +120,18 @@ workflow checker {
 				gds_truth = wfB_truth_defaults_subset,
 				truth_info = wfB_truth_defaults_info
 		}
+	}
+
+	call merge_gds as merge_defaults {
+		input:
+			gdss = subset_defaults.subset_output
+	}
+
+	call md5sum as md5sum_wfB_defaults_merge {
+		input:
+			gds_test = merge_defaults.merge_output,
+			gds_truth = wfB_truth_defaults_merged,
+			truth_info = wfB_truth_defaults_info
 	}
 
 	scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
