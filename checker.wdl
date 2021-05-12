@@ -24,6 +24,7 @@ task md5sum {
 	md5sum ~{gds_test} > sum.txt
 	test_basename="$(basename -- ~{gds_test})"
 	echo "test file: ${test_basename}"
+	echo "truth file(s): ~{sep=' ' gds_truth}"
 
 	for i in ~{sep=' ' gds_truth}
 	do
@@ -52,6 +53,7 @@ workflow checker {
 		Array[File] wfB_truth_defaults_subset
 		Array[File] wfB_truth_nondefaults_subset
 		File wfB_truth_defaults_merged
+		File wfB_truth_nondefaults_merged
 		# used for testing non-defaults
 		String wfB_option_nondefault_genome_build = "hg19"
 		Float wfB_option_nondefault_ld_r_threshold = 0.3
@@ -67,6 +69,8 @@ workflow checker {
 		Array[String] wfA_option_format
 	}
 
+
+	# Run workflow A
 	scatter(wfA_test_vcf in wfA_test_vcfs) {
 		call megastepA.vcf2gds {
 			input:
@@ -90,6 +94,7 @@ workflow checker {
 		}
 	}
 
+	# Check workflow A
 	scatter(wfA_gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
 		call md5sum as md5sum_wfA {
 			input:
@@ -99,6 +104,7 @@ workflow checker {
 		}
 	}
 
+	# Run workflow B with default settings
 	scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
 		call megastepB.ld_pruning as prune_defaults {
 			input:
@@ -113,6 +119,21 @@ workflow checker {
 		}
 	}
 
+	call megastepB.merge_gds as merge_defaults {
+		input:
+			gdss = subset_defaults.subset_output
+	}
+
+	scatter(subset_gds in subset_defaults.subset_output) {
+		call megastepB.check_merged_gds as check_merged_defaults {
+			input:
+				gds = subset_gds,
+				merged = merge_defaults.merged_gds_output
+
+		}
+	}
+
+	# Check the first half of workflow B with default settings
 	scatter(wfB_gds_test in subset_defaults.subset_output) {
 		call md5sum as md5sum_wfB_defaults {
 			input:
@@ -121,19 +142,15 @@ workflow checker {
 				truth_info = wfB_truth_defaults_info
 		}
 	}
-
-	call merge_gds as merge_defaults {
-		input:
-			gdss = subset_defaults.subset_output
-	}
-
+	# Check the second half of workflow B with default settings
 	call md5sum as md5sum_wfB_defaults_merge {
 		input:
-			gds_test = merge_defaults.merge_output,
-			gds_truth = wfB_truth_defaults_merged,
+			gds_test = merge_defaults.merged_gds_output,
+			gds_truth = [wfB_truth_defaults_merged],
 			truth_info = wfB_truth_defaults_info
 	}
 
+	# Run workflow B with non-default settings
 	scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
 		call megastepB.ld_pruning as prune_nondefaults {
 			input:
@@ -155,6 +172,21 @@ workflow checker {
 		}
 	}
 
+	call megastepB.merge_gds as merge_nondefaults {
+		input:
+			gdss = subset_nondefaults.subset_output,
+			out_prefix = wfB_option_nondefault_out_prefix
+	}
+
+	scatter(subset_gds in subset_nondefaults.subset_output) {
+		call megastepB.check_merged_gds as check_merged_nondefaults {
+			input:
+				gds = subset_gds,
+				merged = merge_nondefaults.merged_gds_output
+
+		}
+	}
+	# Check the first half of workflow B with non-default settings
 	scatter(wfB_gds_test in subset_nondefaults.subset_output) {
 		call md5sum as md5sum_wfB_nondefaults {
 			input:
@@ -163,7 +195,14 @@ workflow checker {
 				truth_info = wfB_truth_nondefaults_info
 		}
 	}
-
+	# Check the second half of workflow B with non-default settings
+	call md5sum as md5sum_wfB_nondefaults_merge {
+		input:
+			gds_test = merge_nondefaults.merged_gds_output,
+			gds_truth = [wfB_truth_nondefaults_merged],
+			truth_info = wfB_truth_defaults_info
+	}
+	
 
 	meta {
 		author: "Ash O'Farrell"
