@@ -11,19 +11,25 @@ Note that this pipeline only directly takes in variant_include_file in the first
 
 ### Input Files
 * gds_files
+	* Required
 	* An array of GDS files, with names that contain "chr" + the number/letter of the chromosome, such as ["chr1.gds", "chr2.gds"]
-	* Required (all others are optional)
 * sample_include_file
-	* RData file with vector of sample.id to use for LD pruning (unrelated samples are recommended).
-	* If not provided, all samples in the GDS files are included.
+	* Optional
+	* RData file with vector of sample.id to use for LD pruning (unrelated samples are recommended)
+	* If not provided, all samples in the GDS files are included
 * variant_include_file
-	* RData file with vector of variant.id to consider for LD pruning.
-	* If not provided, all variants in the GDS files are included.
+	* Optional
+	* RData file with vector of variant.id to consider for LD pruning
+	* If not provided, all variants in the GDS files are included
 
 
 ### Runtime Attributes
 | variable          			| type | default | info   										|
 |---------------------------	|---   |-------- |------------------------------------------	|
+| check_merged_gds.addldisk		| int  | 1       | Extra disk space to allot for 4th task    	|
+| check_merged_gds.cpu	 		| int  | 2       | Runtime cores to allot for 4th task          |
+| check_merged_gds.memory  		| int  | 4       | Runtime memory to allot for 4th task   	    |
+| check_merged_gds.preempt 		| int  | 3       | # of preemptible VM tries for 4th task       |
 | ld_pruning.addldisk 			| int  | 1       | Extra disk space to allot for 1st task    	|
 | ld_pruning.cpu	 			| int  | 2       | Runtime cores to allot for 1st task          |
 | ld_pruning.memory  			| int  | 4       | Runtime memory to allot for 1st task   	    |

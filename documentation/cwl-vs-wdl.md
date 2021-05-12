@@ -9,6 +9,7 @@
 ## "Not Strictly Necessary But In WDL This Makes More Sense"
 * The original CWL allocates memory and CPUs on an overall level, while the WDL does it on a task level. In other words, the WDL is more granular.  
 	* Reasoning: GCS has stricter requirements than AWS regarding storage. Doing it this way also allows the check GDS step, which takes a lot more resources, to call more than the rest of the the WDL, saving money.
+* The WDL allows the user to use [preemptible machines](https://cloud.google.com/compute/docs/instances/preemptible) for all tasks.  
 
 ## Different Design Choices
 * The CWL imports other CWLs. The WDL does not import other WDLs, except in the case of the checker workflow.  
@@ -26,7 +27,9 @@
 * The WDL can correctly handle a mixture of file extensions, not so much by design, but due to the specifics of implementation. The CWL will handle such a mixture incorrectly in check_gds (but can correctly handle a homogenous group, such as all being bcf files).
 
 # Workflow B
-This section is unorganized as it is still being developed.  
+## Strictly Necessary Changes  
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().
 * The output prefix is not used for the subset_gds task in the CWL (at least on SB), but is used in the WDL.
 
+## Different Design Choices
+* exclude_PCA_corr is written to configuration files in the WDL but not the CWL. This may be a bug in the CWL, see [#14](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/14).
