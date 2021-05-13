@@ -32,7 +32,7 @@ task ld_pruning {
 
 	# Estimate disk size required
 	Int gds_size = ceil(size(gds, "GB"))
-	Int finalDiskSize = gds_size + addldisk
+	Int final_disk_dize = gds_size + addldisk
 
 	# Workaround for optional files
 	Boolean defSampleInclude = defined(sample_include_file)
@@ -96,7 +96,7 @@ task ld_pruning {
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
-		disks: "local-disk " + finalDiskSize + " HDD"
+		disks: "local-disk " + final_disk_dize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -123,7 +123,7 @@ task subset_gds {
 	
 	# Estimate disk size required
 	Int gds_size = ceil(size(gds_n_varinc.left, "GB"))
-	Int finalDiskSize = gds_size + addldisk
+	Int final_disk_dize = gds_size + addldisk
 
 	# Workaround for optional files
 	Boolean defSampleInclude = defined(sample_include_file)
@@ -179,7 +179,7 @@ task subset_gds {
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
-		disks: "local-disk " + finalDiskSize + " HDD"
+		disks: "local-disk " + final_disk_dize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -204,7 +204,7 @@ task merge_gds {
 
 	# Estimate disk size required
 	Int gds_size = ceil(size(gdss, "GB"))
-	Int finalDiskSize = gds_size * 3 + addldisk
+	Int final_disk_dize = gds_size * 3 + addldisk
 	String filename = select_first([out_prefix, "merged"])
 
 	command <<<
@@ -305,7 +305,7 @@ task merge_gds {
 
 	runtime {
 		cpu: cpu
-		disks: "local-disk " + finalDiskSize + " HDD"
+		disks: "local-disk " + final_disk_dize + " HDD"
 		docker: "uwgac/topmed-master:2.10.0"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -339,7 +339,7 @@ task check_merged_gds {
 
 	# Estimate disk size required
 	Int gds_size = ceil(size(gds, "GB"))
-	Int finalDiskSize = gds_size * 3 + addldisk
+	Int final_disk_dize = gds_size * 3 + addldisk
 
 	command <<<
 		set -eux -o pipefail
@@ -380,7 +380,7 @@ task check_merged_gds {
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
-		disks: "local-disk " + finalDiskSize + " HDD"
+		disks: "local-disk " + final_disk_dize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
