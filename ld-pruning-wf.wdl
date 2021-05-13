@@ -29,6 +29,17 @@ task ld_pruning {
 		Int memory = 4
 		Int preempt = 3
 	}
+
+	# Estimate disk size required
+	Int gds_size = ceil(size(gds, "GB"))
+	Int sample_size = if defined(sample_include_file) then ceil(size(sample_include_file, "GB")) else 0
+	Int varInclude_size = if defined(variant_include_file) then ceil(size(variant_include_file, "GB")) else 0
+	Int finalDiskSize = gds_size + sample_size + varInclude_size + addldisk
+
+	# Workaround for optional files
+	Boolean defSampleInclude = defined(sample_include_file)
+	Boolean defVariantInclude = defined(variant_include_file)
+	
 	command {
 		set -eux -o pipefail
 
@@ -38,6 +49,8 @@ task ld_pruning {
 		import os
 		f = open("ld_pruning.config", "a")
 		f.write('gds_file "~{gds}"\n')
+
+		# this logic is slightly different from the CWL intentionally
 		if "~{exclude_pca_corr}" != "true":
 			f.write("exclude_pca_corr ~{exclude_pca_corr}\n")  # noquotes
 
@@ -83,16 +96,7 @@ task ld_pruning {
 		echo "Calling R script ld_pruning.R"
 		Rscript /usr/local/analysis_pipeline/R/ld_pruning.R ld_pruning.config
 	}
-	
-	# Estimate disk size required
-	Int gds_size = ceil(size(gds, "GB"))
-	Int sample_size = if defined(sample_include_file) then ceil(size(sample_include_file, "GB")) else 0
-	Int varInclude_size = if defined(variant_include_file) then ceil(size(variant_include_file, "GB")) else 0
-	Int finalDiskSize = gds_size + sample_size + varInclude_size + addldisk
 
-	# Workaround for optional files
-	Boolean defSampleInclude = defined(sample_include_file)
-	Boolean defVariantInclude = defined(variant_include_file)
 	
 	runtime {
 		cpu: cpu
@@ -121,7 +125,16 @@ task subset_gds {
 		Int memory = 4
 		Int preempt = 3
 	}
+	
+	# Estimate disk size required
+	Int gds_size = ceil(size(gds_n_varinc.left, "GB"))
+	Int varinc_size = ceil(size(gds_n_varinc.right, "GB"))
+	Int sample_size = if defined(sample_include_file) then ceil(size(sample_include_file, "GB")) else 0
+	Int finalDiskSize = gds_size + varinc_size + sample_size + addldisk
 
+	# Workaround for optional files
+	Boolean defSampleInclude = defined(sample_include_file)
+	
 	command {
 		set -eux -o pipefail
 
@@ -170,15 +183,6 @@ task subset_gds {
 		R -q --vanilla < /usr/local/analysis_pipeline/R/subset_gds.R --args subset_gds.config
 	}
 
-	# Estimate disk size required
-	Int gds_size = ceil(size(gds_n_varinc.left, "GB"))
-	Int varinc_size = ceil(size(gds_n_varinc.right, "GB"))
-	Int sample_size = if defined(sample_include_file) then ceil(size(sample_include_file, "GB")) else 0
-	Int finalDiskSize = gds_size + varinc_size + sample_size + addldisk
-
-	# Workaround for optional files
-	Boolean defSampleInclude = defined(sample_include_file)
-
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
@@ -204,6 +208,11 @@ task merge_gds {
 		Int memory = 4
 		Int preempt = 3
 	}
+
+	# Estimate disk size required
+	Int gds_size = ceil(size(gdss, "GB"))
+	Int finalDiskSize = gds_size * 3 + addldisk
+	String filename = select_first([out_prefix, "merged"])
 
 	command <<<
 		set -eux -o pipefail
@@ -300,10 +309,6 @@ task merge_gds {
 
 		Rscript /usr/local/analysis_pipeline/R/merge_gds.R merge_gds.config
 	>>>
-	# Estimate disk size required
-	Int gds_size = ceil(size(gdss, "GB"))
-	Int finalDiskSize = gds_size * 3 + addldisk
-	String filename = select_first([out_prefix, "merged"])
 
 	runtime {
 		cpu: cpu
@@ -339,44 +344,45 @@ task check_merged_gds {
 		Int preempt = 3
 	}
 
-	command <<<
-	set -eux -o pipefail
-
-	python << CODE
-	import os
-	gds = "~{gds}"
-	gds_first_part = gds.split('chr')[0]
-	gds_second_part = gds.split('chr')[1]
-
-	# grab the chr number
-	g = open("chr_number", "a")
-	if(unicode(str(gds_second_part[1])).isnumeric()):
-		# two digit number
-		g.write(gds_second_part[:2])
-		gds_second_part = gds_second_part[2:]
-	else:
-		# one digit number or Y/X/M
-		g.write(gds_second_part[0])
-		gds_second_part = gds_second_part[1:]
-	g.close()
-
-	gds_name = gds_first_part + 'chr ' + gds_second_part
-	f = open("check_merged_gds.config", "a")
-	f.write('gds_file "' + gds_name + '"\n')
-	f.write('merged_gds_file "~{merged}"\n')
-	f.close
-	exit()
-	CODE
-
-	echo "Setting chromosome number"
-	BASH_CHR=$(<chr_number)
-	echo "Chromosme number is ${BASH_CHR}"
-
-	R -q --vanilla < /usr/local/analysis_pipeline/R/check_merged_gds.R --args check_merged_gds.config --chromosome ${BASH_CHR}
-	>>>
 	# Estimate disk size required
 	Int gds_size = ceil(size(gds, "GB"))
 	Int finalDiskSize = gds_size * 3 + addldisk
+
+	command <<<
+		set -eux -o pipefail
+
+		python << CODE
+		import os
+		gds = "~{gds}"
+		gds_first_part = gds.split('chr')[0]
+		gds_second_part = gds.split('chr')[1]
+
+		# grab the chr number
+		g = open("chr_number", "a")
+		if(unicode(str(gds_second_part[1])).isnumeric()):
+			# two digit number
+			g.write(gds_second_part[:2])
+			gds_second_part = gds_second_part[2:]
+		else:
+			# one digit number or Y/X/M
+			g.write(gds_second_part[0])
+			gds_second_part = gds_second_part[1:]
+		g.close()
+
+		gds_name = gds_first_part + 'chr ' + gds_second_part
+		f = open("check_merged_gds.config", "a")
+		f.write('gds_file "' + gds_name + '"\n')
+		f.write('merged_gds_file "~{merged}"\n')
+		f.close
+		exit()
+		CODE
+
+		echo "Setting chromosome number"
+		BASH_CHR=$(<chr_number)
+		echo "Chromosme number is ${BASH_CHR}"
+
+		R -q --vanilla < /usr/local/analysis_pipeline/R/check_merged_gds.R --args check_merged_gds.config --chromosome ${BASH_CHR}
+	>>>
 
 	runtime {
 		cpu: cpu

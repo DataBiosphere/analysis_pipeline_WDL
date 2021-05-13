@@ -4,8 +4,8 @@ version 1.0
 # If this workflow is run locally, there is a decent chance it will lock up Docker
 # A Docker lockup is system-wide and persists outside Cromwell -- restart Docker to fix it
 
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/v1.0.1/vcf-to-gds-wf.wdl" as megastepA
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-merge-gds/ld-pruning-wf.wdl" as megastepB
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/v1.0.1/vcf-to-gds-wf.wdl" as workflowA
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-merge-gds/ld-pruning-wf.wdl" as workflowB
 
 task md5sum {
 	input {
@@ -70,23 +70,25 @@ workflow checker {
 	}
 
 
-	# Run workflow A
+
+	####################################
+	#            Workflow A            #
+	#           vcf-to-gds-wf          #
+	####################################
 	scatter(wfA_test_vcf in wfA_test_vcfs) {
-		call megastepA.vcf2gds {
+		call workflowA.vcf2gds {
 			input:
 				vcf = wfA_test_vcf,
 				format = wfA_option_format
 		}
 	}
-	
-	call megastepA.unique_variant_id {
+	call workflowA.unique_variant_id {
 		input:
 			gdss = vcf2gds.gds_output
 	}
-	
 	if(wfA_option_check_gds) {
 		scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
-			call megastepA.check_gds {
+			call workflowA.check_gds {
 				input:
 					gds = gds,
 					vcfs = wfA_test_vcfs
@@ -94,7 +96,9 @@ workflow checker {
 		}
 	}
 
-	# Check workflow A
+	# # # # # # # # # # # # #
+	#        Checker        #
+	# # # # # # # # # # # # #
 	scatter(wfA_gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
 		call md5sum as md5sum_wfA {
 			input:
@@ -104,36 +108,37 @@ workflow checker {
 		}
 	}
 
-	# Run workflow B with default settings
+	####################################
+	#            Workflow B            #
+	#      ld-pruning-wf, default      #
+	####################################
 	scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
-		call megastepB.ld_pruning as prune_defaults {
+		call workflowB.ld_pruning as prune_defaults {
 			input:
 				gds = gds
 		}
 	}
-
 	scatter(gds_n_varinc in zip(unique_variant_id.unique_variant_id_gds_per_chr, prune_defaults.ld_pruning_output)) {
-		call megastepB.subset_gds as subset_defaults {
+		call workflowB.subset_gds as subset_defaults {
 			input:
 				gds_n_varinc = gds_n_varinc
 		}
 	}
-
-	call megastepB.merge_gds as merge_defaults {
+	call workflowB.merge_gds as merge_defaults {
 		input:
 			gdss = subset_defaults.subset_output
 	}
-
 	scatter(subset_gds in subset_defaults.subset_output) {
-		call megastepB.check_merged_gds as check_merged_defaults {
+		call workflowB.check_merged_gds as check_merged_defaults {
 			input:
 				gds = subset_gds,
 				merged = merge_defaults.merged_gds_output
-
 		}
 	}
 
-	# Check the first half of workflow B with default settings
+	# # # # # # # # # # # # #
+	#        Checker        #
+	# # # # # # # # # # # # #
 	scatter(wfB_gds_test in subset_defaults.subset_output) {
 		call md5sum as md5sum_wfB_defaults {
 			input:
@@ -142,7 +147,6 @@ workflow checker {
 				truth_info = wfB_truth_defaults_info
 		}
 	}
-	# Check the second half of workflow B with default settings
 	call md5sum as md5sum_wfB_defaults_merge {
 		input:
 			gds_test = merge_defaults.merged_gds_output,
@@ -150,9 +154,12 @@ workflow checker {
 			truth_info = wfB_truth_defaults_info
 	}
 
-	# Run workflow B with non-default settings
+	####################################
+	#            Workflow B            #
+	#    ld-pruning-wf, non-default    #
+	####################################
 	scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
-		call megastepB.ld_pruning as prune_nondefaults {
+		call workflowB.ld_pruning as prune_nondefaults {
 			input:
 				gds = gds,
 				genome_build = wfB_option_nondefault_genome_build,
@@ -164,29 +171,28 @@ workflow checker {
 				out_prefix = wfB_option_nondefault_out_prefix
 		}
 	}
-
 	scatter(gds_n_varinc in zip(unique_variant_id.unique_variant_id_gds_per_chr, prune_nondefaults.ld_pruning_output)) {
-		call megastepB.subset_gds as subset_nondefaults {
+		call workflowB.subset_gds as subset_nondefaults {
 			input:
 				gds_n_varinc = gds_n_varinc
 		}
 	}
-
-	call megastepB.merge_gds as merge_nondefaults {
+	call workflowB.merge_gds as merge_nondefaults {
 		input:
 			gdss = subset_nondefaults.subset_output,
 			out_prefix = wfB_option_nondefault_out_prefix
 	}
-
 	scatter(subset_gds in subset_nondefaults.subset_output) {
-		call megastepB.check_merged_gds as check_merged_nondefaults {
+		call workflowB.check_merged_gds as check_merged_nondefaults {
 			input:
 				gds = subset_gds,
 				merged = merge_nondefaults.merged_gds_output
-
 		}
 	}
-	# Check the first half of workflow B with non-default settings
+
+	# # # # # # # # # # # # #
+	#        Checker        #
+	# # # # # # # # # # # # #
 	scatter(wfB_gds_test in subset_nondefaults.subset_output) {
 		call md5sum as md5sum_wfB_nondefaults {
 			input:
@@ -195,7 +201,6 @@ workflow checker {
 				truth_info = wfB_truth_nondefaults_info
 		}
 	}
-	# Check the second half of workflow B with non-default settings
 	call md5sum as md5sum_wfB_nondefaults_merge {
 		input:
 			gds_test = merge_nondefaults.merged_gds_output,
@@ -203,6 +208,10 @@ workflow checker {
 			truth_info = wfB_truth_defaults_info
 	}
 	
+
+
+
+
 
 	meta {
 		author: "Ash O'Farrell"
