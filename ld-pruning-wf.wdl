@@ -59,10 +59,10 @@ task ld_pruning {
 		if ~{missing_threshold} != 0.01:
 			f.write("missing_threshold ~{missing_threshold}\n")  # noquotes
 
-		if "~{def_sampleInc}" == "true":
+		if "~{defSampleInclude}" == "true":
 			f.write('sample_include_file "~{sample_include_file}"\n')
 
-		if "~{def_variantInc}" == "true":
+		if "~{defVariantInclude}" == "true":
 			f.write('variant_include_file "~{variant_include_file}"\n')
 
 		if "chr" in "~{gds}":
@@ -89,8 +89,8 @@ task ld_pruning {
 	Int finalDiskSize = gds_size + sample_size + varInclude_size + addldisk
 
 	# Workaround for optional files
-	Boolean def_sampleInc = defined(sample_include_file)
-	Boolean def_variantInc = defined(variant_include_file)
+	Boolean defSampleInclude = defined(sample_include_file)
+	Boolean defVariantInclude = defined(variant_include_file)
 	
 	runtime {
 		cpu: cpu
@@ -150,7 +150,7 @@ task subset_gds {
 		f.write("gds_file " + gds + "\n")
 		f.write("variant_include_file " + variant_include_file + "\n")
 
-		if "~{def_sampleInc}" == "true":
+		if "~{defSampleInclude}" == "true":
 			f.write("sample_include_file ~{sample_include_file}\n")
 
 		if ("~{out_prefix}" != ""):
@@ -175,7 +175,7 @@ task subset_gds {
 	Int finalDiskSize = gds_size + varinc_size + sample_size + addldisk
 
 	# Workaround for optional files
-	Boolean def_sampleInc = defined(sample_include_file)
+	Boolean defSampleInclude = defined(sample_include_file)
 
 	runtime {
 		cpu: cpu
