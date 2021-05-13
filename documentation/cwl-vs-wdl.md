@@ -17,7 +17,7 @@ This list is not intended as an exhaustive list of every difference. These are t
 # Workflow A --- vcf-to-gds-wf.wdl
 ## Strictly Necessary Changes  
 * The WDL relocalizes all files into the working directory in the unique variant IDs step. [This issue is explained in detail here](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/2).
-* In order to pass chromosome numbers into check_gds, chromosome number is written to a file (completely seperate from the configuration file) in the inline Python section. Upon exiting the Python block,  
+* In order to pass chromosome numbers into check_gds, chromosome number is written to a file (completely seperate from the configuration file) in the inline Python section. Upon exiting the Python block, this extra file is read in BASH and then passed to the Rscript call as an argument (as opposed to being in the configuration file). Although the actual call to the R script is identical as the CWL also passes the chr number as an argument, the CWL is able to rely on its inline Javascript to do this, while the WDL must use this bizarre workaround to pass the chr number out of the Python scope.     
 
 ## "Not Strictly Necessary But In WDL This Makes More Sense"
 * The WDL will not start the check_gds task if check_gds is false. The CWL will start the check_gds task regardless and generate a config file, and the true/false only applies to calling the  script.
@@ -30,6 +30,7 @@ This list is not intended as an exhaustive list of every difference. These are t
 ## Strictly Necessary Changes
 * Similiar to Workflow A's file relocalization trick in unique_variant_ids, this workflow's merge_gds task has to use the same workaround.
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().
+* The workaround used by Workflow A's check_gds to get chromosome number (see above) is also used by check_merged_gds for the same reason.  
 
 ## Different Design Choices
 * The output prefix is not used for the subset_gds task in the CWL, but is used in the WDL. It appears to be intended to be used based on what I see in the CWL's code, but on SB it does not get used in that task.  
