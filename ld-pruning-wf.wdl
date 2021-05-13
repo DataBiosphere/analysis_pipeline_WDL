@@ -9,6 +9,8 @@ version 1.0
 # [1] ld_pruning -- calculates linkage diseq on a GDS file
 task ld_pruning {
 	input {
+		# Defaults are coded here and in the inline Python
+		# If the defaults change, make sure to change them here and in the Python
 		File gds
 		File? sample_include_file
 		File? variant_include_file
