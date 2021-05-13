@@ -24,7 +24,7 @@ task ld_pruning {
 		String? out_prefix
 		
 		# runtime attributes
-		Int addldisk = 1
+		Int addldisk = 5
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 3
@@ -32,9 +32,7 @@ task ld_pruning {
 
 	# Estimate disk size required
 	Int gds_size = ceil(size(gds, "GB"))
-	Int sample_size = if defined(sample_include_file) then ceil(size(sample_include_file, "GB")) else 0
-	Int varInclude_size = if defined(variant_include_file) then ceil(size(variant_include_file, "GB")) else 0
-	Int finalDiskSize = gds_size + sample_size + varInclude_size + addldisk
+	Int finalDiskSize = gds_size + addldisk
 
 	# Workaround for optional files
 	Boolean defSampleInclude = defined(sample_include_file)
@@ -117,7 +115,7 @@ task subset_gds {
 		File? sample_include_file
 
 		# runtime attributes
-		Int addldisk = 1
+		Int addldisk = 5
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 3
@@ -125,9 +123,7 @@ task subset_gds {
 	
 	# Estimate disk size required
 	Int gds_size = ceil(size(gds_n_varinc.left, "GB"))
-	Int varinc_size = ceil(size(gds_n_varinc.right, "GB"))
-	Int sample_size = if defined(sample_include_file) then ceil(size(sample_include_file, "GB")) else 0
-	Int finalDiskSize = gds_size + varinc_size + sample_size + addldisk
+	Int finalDiskSize = gds_size + addldisk
 
 	# Workaround for optional files
 	Boolean defSampleInclude = defined(sample_include_file)
@@ -200,7 +196,7 @@ task merge_gds {
 		String? out_prefix
 
 		# runtime attributes
-		Int addldisk = 1
+		Int addldisk = 5
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 3
@@ -335,7 +331,7 @@ task check_merged_gds {
 		File merged
 
 		#runtime attributes
-		Int addldisk = 1
+		Int addldisk = 5
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 3
