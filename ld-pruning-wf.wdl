@@ -55,15 +55,12 @@ task ld_pruning {
 			f.write("exclude_pca_corr ~{exclude_pca_corr}\n")  # noquotes
 
 		# to match CWL exactly, genome_build is written even if default value
-		if "~{genome_build}" == "hg38":
-			f.write('genome_build "~{genome_build}"\n')
+		if "~{genome_build}" not in ['hg18', 'hg19', 'hg38']:
+			f.close()
+			print("Invalid ref genome. Please only select either hg38, hg19, or hg18.")
+			exit(1)
 		else:
-			if ("~{genome_build}" == "hg18" or "~{genome_build}" == "hg19"):
-				f.write('genome_build "~{genome_build}"\n')
-			else:
-				f.close()
-				print("Invalid ref genome. Please only select either hg38, hg19, or hg18.")
-				exit(1)
+			f.write('genome_build "~{genome_build}"\n')
 		
 		if ~{ld_r_threshold} != 0.32:
 			f.write("ld_r_threshold ~{ld_r_threshold}\n")  # noquotes
