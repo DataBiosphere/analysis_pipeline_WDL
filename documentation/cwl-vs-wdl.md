@@ -8,13 +8,13 @@
 
 ## "Not Strictly Necessary But In WDL This Makes More Sense"
 * The original CWL allocates memory and CPUs on an overall level, while the WDL does it on a task level. In other words, the WDL is more granular.  
-	* Reasoning: GCS has stricter requirements than AWS regarding storage. Doing it this way also allows the check GDS step, which takes a lot more resources, to call more than the rest of the the WDL, saving money.
+	* Reasoning: GCS has stricter requirements than AWS regarding storage. Doing it this way also allows resource-heavy tasks (such as check_gds in vcf-to-gds-wf) to only use the large number of resources they need in their respective task, instead of the whole workflow.  
 
 ## Different Design Choices
 * The CWL imports other CWLs. The WDL does not import other WDLs, except in the case of the checker workflow.  
 	* Reasoning: It is possible for WDLs to contain just tasks and be imported into another task, but in some contexts it can be slightly less secure.
 
-# Workflow A
+# Workflow A --- vcf-to-gds-wf.wdl
 ## Strictly Necessary Changes  
 * The WDL relocalizes all files into the working directory in the unique variant IDs step. [This issue is explained in detail here](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/2).
 
@@ -25,8 +25,14 @@
 ## Error Handling
 * The WDL can correctly handle a mixture of file extensions, not so much by design, but due to the specifics of implementation. The CWL will handle such a mixture incorrectly in check_gds (but can correctly handle a homogenous group, such as all being bcf files).
 
-# Workflow B
-This section is unorganized as it is still being developed.  
+# Workflow B --- ld-pruning-wf.wdl
+## Strictly Necessary Changes
+* Similiar to Workflow A's file relocalization trick in unique_variant_ids, this workflow's merge_gds task has to use the same workaround.
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().
-* The output prefix is not used for the subset_gds task in the CWL (at least on SB), but is used in the WDL.
+
+## Different Design Choices
+* The output prefix is not used for the subset_gds task in the CWL, but is used in the WDL. It appears to be intended to be used based on what I see in the CWL's code, but on SB it does not get used in that task.  
+
+## Error Handling
+* The CWL appears to contain a bug where `exclude_PCA_cor` being set to false is not respected. See #14 for more info. The WDL avoids this using slightly different logic.
 
