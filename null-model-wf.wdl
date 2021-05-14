@@ -13,18 +13,18 @@ task null_model_r {
 
 		# optional stuff
 		File? conditional_variant_file
-		Array[File]? covars
-		File? family
+		Array[String]? covars
+		String? family
 		Array[File]? gds_files
-		File? group_var
-		File? inverse_normal
+		String? group_var
+		Boolean? inverse_normal
 		Int? n_pcs
-		File? norm_bygroup
+		Boolean? norm_bygroup
 		String? output_prefix
 		File? pca_file
 		File? relatedness_matrix_file
-		Int? rescale_variance
-		Int? resid_covars
+		String? rescale_variance
+		Boolean? resid_covars
 		File? sample_include_file
 		
 		# runtime attributes
@@ -40,7 +40,15 @@ task null_model_r {
 	Int finalDiskSize = phenotype_size + addldisk
 
 	# Workaround
-	Boolean isDefinedGDS = defined(gds_files)
+	# Strictly speaking this is only needed for Array variables
+	# But we'll do it for most of 'em for consistency's sake
+	Boolean isdefined_conditvar = defined(conditional_variant_file)
+	Boolean isdefined_covars = defined(covars)
+	Boolean isdefined_gds = defined(gds_files)
+	Boolean isdefined_matrix = defined(relatedness_matrix_file)
+	Boolean isdefined_pca = defined(pca_file)
+	Boolean isdefined_sample = defined(sample_include_file)
+	
 
 	command <<<
 		set -eux -o pipefail
@@ -81,22 +89,19 @@ task null_model_r {
 
 		f.write('outcome ~{outcome}')
 		f.write('phenotype_file ~{phenotype_file}')
-		if "~{isDefinedGDS}" == "true":  # double check this isn't supposed to be True
+		if "~{isdefined_gds}" == "true":  # double check this isn't supposed to be capital-T True
 			py_gds_array = ['~{sep="','" gds_files}']
 			gds = py_gds_array[0]
 			py_splitup = split_n_space(gds)[0]
 			chr = split_n_space(gds)[1]
 			f.write('gds_file "' + py_splitup + chr + '"')
-
+		if "~{isdefined_pca}" == "true":
+			f.write('pca_file "~{pca_file}"\n')
+		if "~{isdefined_thematrix}" == "true":
+			f.write('related_matrix_file "~{related_matrix_file}"\n')
+		if ""
 			 
 		############
-		  }
-		  if(inputs.pca_file){
-			  arguments.push('pca_file "' + inputs.pca_file.path + '"')
-		  }
-		  if(inputs.relatedness_matrix_file){
-			  arguments.push('relatedness_matrix_file "' + inputs.relatedness_matrix_file.path + '"')
-		  }
 		  if(inputs.family){
 			  arguments.push('family ' + inputs.family)
 		  }
@@ -133,8 +138,62 @@ task null_model_r {
 			  arguments.push('norm_bygroup ' + inputs.norm_bygroup)
 		  }
 		f.close()
+
+		'''
+		The CWL then contains this. I... do not know what it does.
+
+		class: InlineJavascriptRequirement
+		  expressionLib:
+		  - |2-
+
+			var setMetadata = function(file, metadata) {
+				if (!('metadata' in file))
+					file['metadata'] = metadata;
+				else {
+					for (var key in metadata) {
+						file['metadata'][key] = metadata[key];
+					}
+				}
+				return file
+			};
+
+			var inheritMetadata = function(o1, o2) {
+				var commonMetadata = {};
+				if (!Array.isArray(o2)) {
+					o2 = [o2]
+				}
+				for (var i = 0; i < o2.length; i++) {
+					var example = o2[i]['metadata'];
+					for (var key in example) {
+						if (i == 0)
+							commonMetadata[key] = example[key];
+						else {
+							if (!(commonMetadata[key] == example[key])) {
+								delete commonMetadata[key]
+							}
+						}
+					}
+				}
+				if (!Array.isArray(o1)) {
+					o1 = setMetadata(o1, commonMetadata)
+				} else {
+					for (var i = 0; i < o1.length; i++) {
+						o1[i] = setMetadata(o1[i], commonMetadata)
+					}
+				}
+				return o1;
+			};
+		'''
+
+
+
+
+
 		exit()
 		CODE
+
+
+		
 
 		echo "Calling R script null_model.R"
 		Rscript /usr/local/analysis_pipeline/R/null_model.R null_model.config
