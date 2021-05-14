@@ -240,7 +240,9 @@ task merge_gds {
 
 		def split_on_chromosome(file):
 			# if input is "amishchr1.gds"
-			# output is ["amish", ".gds", "chr"]
+			# output is ["amish", "1.gds", "chr"]
+			# if input is "amishchr1.gds"
+			# output is ["amish", "1.gds", "chr"]
 			chrom_num = file
 			if "chr" in chrom_num:
 				chrom_num = chrom_num.split("chr")
@@ -251,19 +253,22 @@ task merge_gds {
 
 		def write_config(chr_array, precisely_one_gds_split):
 			chrs = ' '.join(chr_array)
+			split_gds = precisely_one_gds_split
+
+			print(split_gds)
+			print(split_gds[1])
+			print(split_gds[1][1])
+			print(split_gds[1][2])
 
 			f = open("merge_gds.config", "a")
 			f.write('chromosomes "' + chrs + '"\n')
-			f.write('gds_file "')
-			f.write(precisely_one_gds_split[0])  # first part
-			f.write(precisely_one_gds_split[2])  # string "chr"
-			f.write(' ')  # space where R script inserts chr number
-			if(unicode(str(precisely_one_gds_split[1][1])).isnumeric()):
+			f.write('gds_file "' + split_gds[0] + 'chr ')
+			if(unicode(str(split_gds[1][1])).isnumeric()):
 				# two digit number
-				f.write(precisely_one_gds_split[1][2:])
+				f.write(split_gds[1][2:])
 			else:
 				# one digit number or Y/X/M
-				f.write(precisely_one_gds_split[1][1:])
+				f.write(split_gds[1][1:])
 			f.write('"')
 			if "~{out_prefix}" != "":
 				merged_gds_file_name = "~{out_prefix}" + ".gds"
