@@ -9,7 +9,7 @@ version 1.0
 # [1] ld_pruning -- calculates linkage diseq on a GDS file
 task ld_pruning {
 	input {
-		File gds
+		File gds_file
 
 		# optional
 		File? sample_include_file
@@ -31,7 +31,7 @@ task ld_pruning {
 	}
 
 	# Estimate disk size required
-	Int gds_size = ceil(size(gds, "GB"))
+	Int gds_size = ceil(size(gds_file, "GB"))
 	Int final_disk_dize = gds_size + addldisk
 
 	# Workaround for optional files
@@ -46,7 +46,7 @@ task ld_pruning {
 		python << CODE
 		import os
 		f = open("ld_pruning.config", "a")
-		f.write('gds_file "~{gds}"\n')
+		f.write('gds_file "~{gds_file}"\n')
 
 		# this logic is slightly different from the CWL intentionally
 		if "~{exclude_pca_corr}" != "true":
@@ -75,8 +75,8 @@ task ld_pruning {
 		if "~{defVariantInclude}" == "true":
 			f.write('variant_include_file "~{variant_include_file}"\n')
 
-		if "chr" in "~{gds}":
-			parts = os.path.splitext(os.path.basename("~{gds}"))[0].split("chr")
+		if "chr" in "~{gds_file}":
+			parts = os.path.splitext(os.path.basename("~{gds_file}"))[0].split("chr")
 			outfile_temp = "pruned_variants_chr" + parts[1] + ".RData"
 		else:
 			outfile_temp = "pruned_variants.RData"
@@ -226,9 +226,6 @@ task merge_gds {
 		python << CODE
 		import os
 
-
-
-
 		def find_chromosome(file):
 			chr_array = []
 			chrom_num = split_on_chromosome(file)
@@ -240,9 +237,6 @@ task merge_gds {
 				# one digit number or Y/X/M
 				chr_array.append(chrom_num[1][0])
 			return "".join(chr_array)
-
-
-
 
 		def split_on_chromosome(file):
 			# if input is "amishchr1.gds"
@@ -327,7 +321,7 @@ task merge_gds {
 
 task check_merged_gds {
 	input {
-		File gds
+		File gds_file
 		File merged
 
 		#runtime attributes
@@ -338,7 +332,7 @@ task check_merged_gds {
 	}
 
 	# Estimate disk size required
-	Int gds_size = ceil(size(gds, "GB"))
+	Int gds_size = ceil(size(gds_file, "GB"))
 	Int final_disk_dize = gds_size * 3 + addldisk
 
 	command <<<
@@ -346,7 +340,7 @@ task check_merged_gds {
 
 		python << CODE
 		import os
-		gds = "~{gds}"
+		gds = "~{gds_file}"
 		gds_first_part = gds.split('chr')[0]
 		gds_second_part = gds.split('chr')[1]
 
@@ -401,7 +395,7 @@ workflow ldpruning {
 	scatter(gds_file in gds_files) {
 		call ld_pruning {
 			input:
-				gds = gds_file,
+				gds_file = gds_file,
 				sample_include_file = sample_include_file,
 				variant_include_file = variant_include_file,
 				out_prefix = out_prefix
@@ -427,7 +421,7 @@ workflow ldpruning {
 	scatter(subset_gds in subset_gds.subset_output) {
 		call check_merged_gds {
 			input:
-				gds = subset_gds,
+				gds_file = subset_gds,
 				merged = merge_gds.merged_gds_output
 
 		}

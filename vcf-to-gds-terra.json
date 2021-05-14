@@ -1,5 +1,5 @@
 {
-  "a_vcftogds.vcf_files": [
+  "vcftogds.vcf_files": [
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr1.vcf.gz",
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr2.vcf.gz",
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr3.vcf.gz",
@@ -24,9 +24,9 @@
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr22.vcf.gz",
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chrX.vcf.gz"
 ],
-  "a_vcftogds.vcf2gds.addldisk": 1,
-  "a_vcftogds.unique_variant_id.addldisk": 1,
-  "a_vcftogds.check_gds": true,
-  "a_vcftogds.checkgds.addldisk": 1,
-  "a_vcftogds.check_gds.preemptible_tries": 1
+  "vcftogds.vcf2gds.addldisk": 1,
+  "vcftogds.unique_variant_id.addldisk": 1,
+  "vcftogds.check_gds": true,
+  "vcftogds.checkgds.addldisk": 1,
+  "vcftogds.check_gds.preemptible_tries": 1
 }
