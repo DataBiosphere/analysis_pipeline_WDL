@@ -90,6 +90,14 @@ rmd_files:
 * Type: *Array[File]*  
 * R markdown files used to generate the HTML reports  
 
+null_model_phenotypes:
+* Type: *File*
+* Phenotype file containing all covariates used in the model (often used in GENESIS association workflows)
+
+null_model_file:
+* Type: *Array[File]*
+* todo
+
 ## Common Issues
 * If **PCA File** is not provided, the **Number of PCs to include as covariates** parameter **must** be set to 0.
 * **PCA File** must be an RData object output from the *pcair* function in the GENESIS package.
