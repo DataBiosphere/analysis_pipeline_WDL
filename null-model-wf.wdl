@@ -3,34 +3,70 @@ version 1.0
 # [1] null_model_r
 task null_model_r {
 	input {
-		String? output_prefix
+		# these are in rough alphabetical order here
+		# for sanity's sake, but the inline Python
+		# follows the original order of the CWL
+
+		# required files
 		String outcome
 		File phenotype_file
-		Array[File]? gds_files
-		File? pca_file
-		File? related_matrix_file
-		File? family
+
+		# optional stuff
 		File? conditional_variant_file
 		Array[File]? covars
+		File? family
+		Array[File]? gds_files
 		File? group_var
 		File? inverse_normal
 		Int? n_pcs
+		File? norm_bygroup
+		String? output_prefix
+		File? pca_file
+		File? relatedness_matrix_file
 		Int? rescale_variance
 		Int? resid_covars
 		File? sample_include_file
-		File? norm_bygroup
+		
 		# runtime attributes
 		Int addldisk = 1
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 3
 	}
+	
+	# Estimate disk size required
+	Int phenotype_size = ceil(size(phenotype_file, "GB"))
+	# other files, etc
+	Int finalDiskSize = phenotype_size + addldisk
+
+	# Workaround
+	Boolean isDefinedGDS = defined(gds_files)
+
 	command <<<
 		set -eux -o pipefail
 
 		echo "Generating config file"
 		python << CODE
 		import os
+		def split_n_space(py_splitstring):
+		# Return [file name with chr name replaced by space, chr name]
+		# Ex: test_data_chrX.gdsreturns ["test_data_chr .gds", "X"]
+			if(unicode(str(py_splitstring[1][1])).isnumeric()):
+				# chr10 and above
+				py_thisVcfWithSpace = "".join([
+					py_splitstring[0],
+					"chr ",
+					py_splitstring[1][2:]])
+				py_thisChr = py_splitstring[1][0:2]
+			else:
+				# chr9 and below + chrX
+				py_thisVcfWithSpace = "".join([
+					py_splitstring[0],
+					"chr ",
+					py_splitstring[1][1:]])
+				py_thisChr = py_splitstring[1][0:1]
+			return [py_thisVcfWithSpace, py_thisChr]
+
 		f = open("null_model.config", "a")
 		if "~{output_prefix}" != "":
 			filename = "~{output_prefix}_null_model"
@@ -46,25 +82,6 @@ task null_model_r {
 		f.write('outcome ~{outcome}')
 		f.write('phenotype_file ~{phenotype_file}')
 		if "~{isDefinedGDS}" == "true":  # double check this isn't supposed to be True
-			def split_n_space(py_splitstring):
-			# Return [file name with chr name replaced by space, chr name]
-			# Ex: test_data_chrX.gdsreturns ["test_data_chr .gds", "X"]
-				if(unicode(str(py_splitstring[1][1])).isnumeric()):
-					# chr10 and above
-					py_thisVcfWithSpace = "".join([
-						py_splitstring[0],
-						"chr ",
-						py_splitstring[1][2:]])
-					py_thisChr = py_splitstring[1][0:2]
-				else:
-					# chr9 and below + chrX
-					py_thisVcfWithSpace = "".join([
-						py_splitstring[0],
-						"chr ",
-						py_splitstring[1][1:]])
-					py_thisChr = py_splitstring[1][0:1]
-				return [py_thisVcfWithSpace, py_thisChr]
-
 			py_gds_array = ['~{sep="','" gds_files}']
 			gds = py_gds_array[0]
 			py_splitup = split_n_space(gds)[0]
@@ -122,14 +139,6 @@ task null_model_r {
 		echo "Calling R script null_model.R"
 		Rscript /usr/local/analysis_pipeline/R/null_model.R null_model.config
 	>>>
-	
-	# Estimate disk size required
-	Int phenotype_size = ceil(size(phenotype_file, "GB"))
-	# other files, etc
-	Int finalDiskSize = phenotype_size + addldisk
-
-	# Workaround
-	Boolean isDefinedGDS = defined(gds_files)
 	
 	runtime {
 		cpu: cpu
