@@ -4,7 +4,7 @@
 ## Inputs
 phenotype_file:
 * Type: *File*
-* todo
+* todo  
 outcome:
 * Type: *String*
 * Name of column in phenotype file containing outcome variable.
@@ -43,12 +43,20 @@ Note that `addldisk` is adding gigabytes **on top of** the WDL's best-guess esti
 | null_model_r.resid_covars 				| Boolean| true   | Applies only if Inverse normal is TRUE. Logical for whether covariates should be included in the second null model using the residuals as the outcome variable.    	|
 | null_model_r.sample_include_file 			| File | n/a |  RData file with vector of sample.id to include.		|
 
+### Additional Report Settings
+n_categories_boxplot:
+* Int? (optional)
+* Number of catagories in box plot. Default is 10.
+
 † In the CWL, this is type enum, which doesn't exist in WDL.
 
 ### Outputs
-todo:
-* Type: *Array[File]*
-* todo
-  
+html_reports:  
+* Type: *Array[File]*  
+* HTML reports  
+rmd_files:  
+* Type: *Array[File]*  
+* R markdown files used to generate the HTML reports  
+
 
 
