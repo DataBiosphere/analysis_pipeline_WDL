@@ -322,7 +322,7 @@ task merge_gds {
 task check_merged_gds {
 	input {
 		File gds_file
-		File merged
+		File merged_gds_file
 
 		#runtime attributes
 		Int addldisk = 5
@@ -359,7 +359,7 @@ task check_merged_gds {
 		gds_name = gds_first_part + 'chr ' + gds_second_part
 		f = open("check_merged_gds.config", "a")
 		f.write('gds_file "' + gds_name + '"\n')
-		f.write('merged_gds_file "~{merged}"\n')
+		f.write('merged_gds_file "~{merged_gds_file}"\n')
 		f.close
 		exit()
 		CODE
@@ -422,7 +422,7 @@ workflow ldpruning {
 		call check_merged_gds {
 			input:
 				gds_file = subset_gds,
-				merged = merge_gds.merged_gds_output
+				merged_gds_file = merge_gds.merged_gds_output
 
 		}
 	}
