@@ -250,7 +250,7 @@ task check_gds {
 	}
 }
 
-workflow a_vcftogds {
+workflow vcftogds {
 	input {
 		Array[File] vcf_files
 		Array[String] format = ["GT"]

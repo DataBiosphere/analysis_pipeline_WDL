@@ -318,13 +318,7 @@ task merge_gds {
 }
 
 # [4] check_merged_gds -- check a merged GDS file against its inputs
-#
-# This code is nearly identical to the implementation of check_gds in vcf-to-gds-wf.wdl
-# because, like check_gds, you have to remove the chr number of your input file and
-# instead pass it on the command line. It begs the question of "why not just pass in
-# the full name of the file since it's only looking for one file?" but alas it must
-# be passed in this way due to how the R script works.
-#
+
 task check_merged_gds {
 	input {
 		File gds
@@ -390,7 +384,7 @@ task check_merged_gds {
 
 }
 
-workflow b_ldpruning {
+workflow ldpruning {
 	input {
 		Array[File] gds_files
 		String? out_prefix
