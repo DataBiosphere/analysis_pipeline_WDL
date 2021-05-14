@@ -9,9 +9,9 @@ version 1.0
 # [1] ld_pruning -- calculates linkage diseq on a GDS file
 task ld_pruning {
 	input {
-		# Defaults are coded here and in the inline Python
-		# If the defaults change, make sure to change them here and in the Python
 		File gds
+
+		# optional
 		File? sample_include_file
 		File? variant_include_file
 		String genome_build = "hg38"  # can also be hg18 or hg19
@@ -111,6 +111,8 @@ task ld_pruning {
 task subset_gds {
 	input {
 		Pair[File, File] gds_n_varinc  # [gds, variant_include_file]
+
+		# optional
 		String? out_prefix
 		File? sample_include_file
 
@@ -193,6 +195,8 @@ task subset_gds {
 task merge_gds {
 	input {
 		Array[File] gdss
+
+		# optional
 		String? out_prefix
 
 		# runtime attributes
