@@ -1,4 +1,4 @@
 {
-  "b_ldpruning.gds_files": ["testdata/gds/1KG_phase3_subset_chr1.gds", "testdata/gds/1KG_phase3_subset_chr2.gds", "testdata/gds/1KG_phase3_subset_chr3.gds", "testdata/gds/1KG_phase3_subset_chr20.gds"],
-  "b_ldpruning.ld_pruning.genome_build": "hg38"
+  "ldpruning.gds_files": ["test-data-and-truths/gds/a_vcf2gds/1KG_phase3_subset_chr1.gds", "test-data-and-truths/gds/a_vcf2gds/1KG_phase3_subset_chr2.gds", "test-data-and-truths/gds/a_vcf2gds/1KG_phase3_subset_chr3.gds", "test-data-and-truths/gds/a_vcf2gds/1KG_phase3_subset_chr20.gds"],
+  "ldpruning.ld_pruning.genome_build": "hg38"
 }
