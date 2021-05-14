@@ -33,7 +33,7 @@ task null_model_r {
 		Int memory = 4
 		Int preempt = 3
 	}
-	
+
 	# Estimate disk size required
 	Int phenotype_size = ceil(size(phenotype_file, "GB"))
 	# other files, etc
@@ -179,75 +179,11 @@ task null_model_report {
 		python << CODE
 		import os
 
-		def find_chromosome(file):
-			chr_array = []
-			chrom_num = split_on_chromosome(file)
-			if(unicode(str(chrom_num[1][1])).isnumeric()):
-				# two digit number
-				chr_array.append(chrom_num[1][0])
-				chr_array.append(chrom_num[1][1])
-			else:
-				# one digit number or Y/X/M
-				chr_array.append(chrom_num[1][0])
-			return "".join(chr_array)
-
-		def split_on_chromosome(file):
-			# if input is "amishchr1.gds"
-			# output is ["amish", ".gds", "chr"]
-			chrom_num = file
-			if "chr" in chrom_num:
-				chrom_num = chrom_num.split("chr")
-				chrom_num.append("chr")
-			else:
-				return "error-invalid-inputs"
-			return chrom_num
-
-		def write_config(chr_array, precisely_one_gds_split):
-			f = open("unique_variant_ids.config", "a")
-			f.write("chromosomes ")
-			f.write("'")
-			for chr in chr_array:
-				f.write(chr)
-				f.write(" ")
-			f.write("'")
-			f.write("\ngds_file ")
-			f.write("'")
-			f.write(precisely_one_gds_split[0])  # first part
-			f.write(precisely_one_gds_split[2])  # string "chr"
-			f.write(" ")  # space where R script inserts chr number
-			if(unicode(str(precisely_one_gds_split[1][1])).isnumeric()):
-				# two digit number
-				f.write(precisely_one_gds_split[1][2:])
-			else:
-				# one digit number or Y/X/M
-				f.write(precisely_one_gds_split[1][1:])
-			f.write("'")
-			f.close()
-
-		gds_array_fullpath = ['~{sep="','" gdss}']
-		gds_array_basenames = []
-		for fullpath in gds_array_fullpath:
-			gds_array_basenames.append(os.path.basename(fullpath))
-
-		# make list of all chromosomes found in input files
-		chr_array = []
-		for gds_file in gds_array_basenames:
-			this_chr = find_chromosome(gds_file)
-			if this_chr == "error-invalid-inputs":
-				print("Unable to determine chromosome number from inputs.")
-				print("Please ensure your files contain ''chr'' followed by")
-				print("the number of letter of the chromosome (chr1, chr2, etc)")
-				exit(1)
-			else:
-				chr_array.append(this_chr)
 		
-		# assuming all gds files have same pattern in filename, any one will do
-		one_valid_gds_split = split_on_chromosome(gds_array_basenames[0])
-		write_config(chr_array, one_valid_gds_split)
 		CODE
 		
-		echo "Calling uniqueVariantIDs.R"
-		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
+		echo "Calling null_model_report.R"
+		Rscript /usr/local/analysis_pipeline/R/null_model_report.R null_model_report.config
 	>>>
 	# Estimate disk size required
 	Int gdss_size = ceil(size(gdss, "GB"))
