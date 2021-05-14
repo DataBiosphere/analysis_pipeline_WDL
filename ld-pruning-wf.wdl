@@ -226,6 +226,9 @@ task merge_gds {
 		python << CODE
 		import os
 
+
+
+
 		def find_chromosome(file):
 			chr_array = []
 			chrom_num = split_on_chromosome(file)
@@ -237,6 +240,9 @@ task merge_gds {
 				# one digit number or Y/X/M
 				chr_array.append(chrom_num[1][0])
 			return "".join(chr_array)
+
+
+
 
 		def split_on_chromosome(file):
 			# if input is "amishchr1.gds"
@@ -269,6 +275,11 @@ task merge_gds {
 				# one digit number or Y/X/M
 				f.write(precisely_one_gds_split[1][1:])
 			f.write("'")
+			if "~{out_prefix}" != "":
+				merged_gds_file_name = "~{out_prefix}" + ".gds"
+			else:
+				merged_gds_file_name = "merged.gds"
+			f.write('\nmerged_gds_file "' + merged_gds_file_name + '"')
 			f.close()
 
 		gds_array_fullpath = ['~{sep="','" gdss}']
@@ -292,15 +303,6 @@ task merge_gds {
 		one_valid_gds_split = split_on_chromosome(gds_array_basenames[0])
 		write_config(chr_array, one_valid_gds_split)
 
-		if "~{out_prefix}" != "":
-			merged_gds_file_name = "~{out_prefix}" + ".gds"
-		else:
-			merged_gds_file_name = "merged.gds"
-
-		f = open("merge_gds.config", "a")
-		f.write('\nmerged_gds_file "' + merged_gds_file_name + '"')
-
-		f.close()
 		exit()
 		CODE
 
