@@ -31,11 +31,6 @@ The type of regression used is based on the values given for the variables `rela
 | provided            	| binomial 	| generalized linear mixed 	|
 | provided            	| poisson  	| generalized linear mixed 	|
 
-## Common Issues
-
-* If **PCA File** is not provided, the **Number of PCs to include as covariates** parameter **must** be set to 0.
-* **PCA File** must be an RData object output from the *pcair* function in the GENESIS package.
-* The null model job can be very computationally demanding in large samples (e.g. > 20K). GENESIS supports using sparse representations of matrices in the **Relatedness matrix file** via the R Matrix package, and this can substantially reduce memory usage and CPU time.
 
 ## Inputs
 phenotype_file:
@@ -93,6 +88,12 @@ html_reports:
 rmd_files:  
 * Type: *Array[File]*  
 * R markdown files used to generate the HTML reports  
+
+## Common Issues
+* If **PCA File** is not provided, the **Number of PCs to include as covariates** parameter **must** be set to 0.
+* **PCA File** must be an RData object output from the *pcair* function in the GENESIS package.
+* The null model job can be very computationally demanding in large samples (e.g. > 20K). GENESIS supports using sparse representations of matrices in the **Relatedness matrix file** via the R Matrix package, and this can substantially reduce memory usage and CPU time.
+
 
 ## More Information
 * [Original Python pipeline's description](https://github.com/UW-GAC/analysis_pipeline#null-model)
