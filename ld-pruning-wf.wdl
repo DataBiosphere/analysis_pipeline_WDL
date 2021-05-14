@@ -246,9 +246,7 @@ task merge_gds {
 				chrom_num = chrom_num.split("chr")
 				chrom_num.append("chr")
 			else:
-				print("Error: Cannot split on chr number.")
-				print("Make sure your chromsome numbers are written after 'chr' not 'chromosome' or 'c' in your file names.")
-				exit(1)
+				return "error-invalid-inputs"
 			return chrom_num
 
 		def write_config(chr_array, precisely_one_gds_split):
