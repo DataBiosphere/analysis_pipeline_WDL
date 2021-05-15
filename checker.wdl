@@ -115,7 +115,7 @@ workflow checker {
 	scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
 		call workflowB.ld_pruning as prune_defaults {
 			input:
-				gds = gds
+				gds_file = gds
 		}
 	}
 	scatter(gds_n_varinc in zip(unique_variant_id.unique_variant_id_gds_per_chr, prune_defaults.ld_pruning_output)) {
@@ -131,8 +131,8 @@ workflow checker {
 	scatter(subset_gds in subset_defaults.subset_output) {
 		call workflowB.check_merged_gds as check_merged_defaults {
 			input:
-				gds = subset_gds,
-				merged = merge_defaults.merged_gds_output
+				gds_file = subset_gds,
+				merged_gds_file = merge_defaults.merged_gds_output
 		}
 	}
 
@@ -161,7 +161,7 @@ workflow checker {
 	scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
 		call workflowB.ld_pruning as prune_nondefaults {
 			input:
-				gds = gds,
+				gds_file = gds,
 				genome_build = wfB_option_nondefault_genome_build,
 				ld_r_threshold = wfB_option_nondefault_ld_r_threshold,
 				ld_win_size = wfB_option_nondefault_ld_win_size,
@@ -185,8 +185,8 @@ workflow checker {
 	scatter(subset_gds in subset_nondefaults.subset_output) {
 		call workflowB.check_merged_gds as check_merged_nondefaults {
 			input:
-				gds = subset_gds,
-				merged = merge_nondefaults.merged_gds_output
+				gds_file = subset_gds,
+				merged_gds_file = merge_nondefaults.merged_gds_output
 		}
 	}
 

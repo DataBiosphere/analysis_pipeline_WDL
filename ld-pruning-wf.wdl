@@ -329,6 +329,8 @@ task check_merged_gds {
 		gds = "~{gds_file}"
 		gds_first_part = gds.split('chr')[0]
 		gds_second_part = gds.split('chr')[1]
+		print(gds_first_part)
+		print(gds_second_part)
 
 		# grab the chr number
 		g = open("chr_number", "a")
