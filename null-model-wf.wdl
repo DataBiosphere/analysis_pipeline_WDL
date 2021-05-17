@@ -99,15 +99,14 @@ task null_model_r {
 			f.write('pca_file "~{pca_file}"\n')
 		if "~{isdefined_thematrix}" == "true":
 			f.write('related_matrix_file "~{related_matrix_file}"\n')
-		if ""
+		if "~{family}" != "":
+			f.write('family ~{family}\n')
+		if "~{isdefined_conditvar}" == "true":
+			f.write('conditional_variant_file "~{conditional_variant_file}"\n')
+		if "~{isdefined_covars}" == "true":
+			f.write('covars "~{sep="," covars}"\n')
 			 
 		############
-		  if(inputs.family){
-			  arguments.push('family ' + inputs.family)
-		  }
-		  if(inputs.conditional_variant_file){
-			  arguments.push('conditional_variant_file "' + inputs.conditional_variant_file.path + '"')
-		  }
 		  if(inputs.covars){
 			  temp = []
 			  for(var i=0; i<inputs.covars.length; i++){
@@ -260,7 +259,7 @@ task null_model_report {
 	}
 }
 
-workflow e_nullmodel {
+workflow nullmodel {
 	input {
 		Array[File] vcf_files
 		Array[String] format = ["GT"]
