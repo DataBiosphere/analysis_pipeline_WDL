@@ -24,6 +24,9 @@ GDS files created as the output of the unique_variant_IDs task. They were instea
 #### gds/b_ldpruning
 The merged GDS file as the output of the merge_gds task, which also underwent LD pruning on the default settings.
 
+## null_model
+Test files pulled from UWGAC Github that relate to testing the null model workflow.
+
 ## vcfs/
 These are the same vcf.gz files as can be found in the UWGAC, with the exception of chrX. This repo's chrX is filtered as some of the lines on the original repo's chrX are invalid and will error out. See https://github.com/UW-GAC/analysis_pipeline/issues/46.
 
