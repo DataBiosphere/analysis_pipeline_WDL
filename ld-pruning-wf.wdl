@@ -92,7 +92,6 @@ task ld_pruning {
 		Rscript /usr/local/analysis_pipeline/R/ld_pruning.R ld_pruning.config
 	}
 
-	
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
@@ -243,7 +242,10 @@ task merge_gds {
 				chrom_num = file.split("chr")[1]
 				return chrom_num
 			else:
-				return "error-invalid-inputs"
+				print("Unable to determine chromosome number from inputs.")
+				print("Please ensure your files contain ''chr'' followed by")
+				print("the number of letter of the chromosome (chr1, chr2, etc)")
+				exit(1)
 
 		def write_config(chrs, path):
 			f = open("merge_gds.config", "a")
@@ -272,13 +274,7 @@ task merge_gds {
 		chr_array = []
 		for gds_file in gds_array_basenames:
 			chrom_num = find_chromosome(gds_file)
-			if chrom_num == "error-invalid-inputs":
-				print("Unable to determine chromosome number from inputs.")
-				print("Please ensure your files contain ''chr'' followed by")
-				print("the number of letter of the chromosome (chr1, chr2, etc)")
-				exit(1)
-			else:
-				chr_array.append(chrom_num)
+			chr_array.append(chrom_num)
 		chrs = ' '.join(chr_array)
 
 		write_config(chrs, path)
