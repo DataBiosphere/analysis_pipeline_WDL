@@ -61,7 +61,7 @@ Note that `addldisk` is adding gigabytes **on top of** the WDL's best-guess esti
 |---------------------------------------	|----------|------- |------------------------------------	|
 | null_model_r.conditional_variant_file 	| File     | n/a    | RData file with a data.frame of identifiers for variants to be included as covariates for conditional analysis. Columns should include “chromosome” and “variant.id” that match the variant.id in the GDS files. The alternate allele dosage of these variants will be included as covariates in the analysis.	|
 | null_model_r.covars 						| Array[String]     | n/a   | Names of columns phenotype_file containing covariates.		|
-| null_model_r.family						| String†  | "gaussian"   | Depending on the output type (quantitative or qualitative) one of possible values should be chosen: gaussian, binomial, poisson.    	|
+| null_model_r.family						| String†  | n/a   | Depending on the output type (quantitative or qualitative) one of possible values should be chosen: gaussian, binomial, poisson.    	|
 | null_model_r.gds_files 					| Array[File]     | n/a   | List of gds files. Required if conditional_variant_file is specified.    	|
 | null_model_r.group_var 					| String     | n/a   | Name of covariate to provide groupings for heterogeneous residual error variances in the mixed model.    	|
 | null_model_r.inverse_normal 				| Boolean† | true   | TRUE if a two-stage model should be implemented. Stage 1: a null model is fit using the original outcome variable. Stage 2: a second null model is fit using the inverse-normal transformed residuals from Stage 1 as the outcome variable. When FALSE, only the Stage 1 model is fit.  Only applies when Family is “gaussian”.   	|

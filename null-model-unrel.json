@@ -4,5 +4,6 @@
   "nullmodel.sample_include_file": "test-data-and-truths/null_model/unrelated.RData",
   "nullmodel.outcome": "outcome",
   "nullmodel.covars": ["sex", "Population"],
-  "nullmodel.n_pcs": 4
+  "nullmodel.n_pcs": 4,
+  "nullmodel.family": "gaussian"
 }

@@ -1,6 +1,5 @@
 version 1.0
 
-
 # [1] null_model_r
 task null_model_r {
 	input {
@@ -11,11 +10,11 @@ task null_model_r {
 		# required files
 		String outcome
 		File phenotype_file
+		String family  # required on SB
 
 		# optional stuff
 		File? conditional_variant_file
 		Array[String]? covars
-		String? family
 		Array[File]? gds_files
 		String? group_var
 		Boolean? inverse_normal
@@ -107,7 +106,7 @@ task null_model_r {
 		if "~{isdefined_conditvar}" == "true":
 			f.write('conditional_variant_file "~{conditional_variant_file}"\n')
 		if "~{isdefined_covars}" == "true":
-			f.write('covars "~{sep="," covars}"\n')
+			f.write('covars ""~{sep=" " covars}""\n')
 		if "~{group_var}" != "":
 			f.write('group_var "~{group_var}"\n')
 		if "~{isdefined_inverse}" == "true":
@@ -201,14 +200,14 @@ task null_model_report {
 		# for sanity's sake, but the inline Python
 		# follows the original order of the CWL
 
-		# required files
+		# required
+		String family
 		String outcome
 		File phenotype_file
 
-		# optional stuff
+		# optional
 		File? conditional_variant_file
 		Array[String]? covars
-		String? family
 		Array[File]? gds_files
 		String? group_var
 		Boolean? inverse_normal
@@ -265,12 +264,12 @@ workflow nullmodel {
 		# n_categories_boxplot and the runtime
 		# attributes are the only task-level ones
 
+		String family
 		File phenotype_file
 		String outcome
 
 		File? conditional_variant_file
 		Array[String]? covars
-		String? family
 		Array[File]? gds_files
 		String? group_var
 		Boolean? inverse_normal
@@ -286,11 +285,11 @@ workflow nullmodel {
 	
 	call null_model_r {
 		input:
+			family = family,
 			phenotype_file = phenotype_file,
 			outcome = outcome,
 			conditional_variant_file = conditional_variant_file,
 			covars = covars,
-			family = family,
 			gds_files = gds_files,
 			group_var = group_var,
 			inverse_normal = inverse_normal,
