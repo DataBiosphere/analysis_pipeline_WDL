@@ -18,7 +18,7 @@ However, option A will still occasionally cause Docker to lock up, and depending
 ## A: Running on a limited number of files instead of setting up Cromwell
 Launch command: `dockstore workflow launch --local-entry ld-pruning-wf.wdl --json ld-pruning-local.json`
 
-The -local JSONs included in this repository have only a handful of files in them, and can be used to run locally in a way that is unlikely to cause lockups or sigkills. However, as the lockups will still happen from time to time, be aware of the symptoms:
+The -local JSONs included in this repository have only a handful of files in them, and can be used to run locally in a way that is unlikely to cause lockups or sigkills. However, as the lockups will still happen from time to time; be aware of the symptoms:
 * Within Cromwell, new tasks will move from status - to WaitingForReturnCode, but will then get stuck in WaitingForReturnCode
 * Outside of Cromwell, you will not be able to run any Docker containers even if you control-C'ed out of your stalled workflow
 These lockups can be fixed by restarting Docker, which is done most easily via the top bar option if you Docker Desktop installed.
@@ -51,7 +51,7 @@ backend {
 	  	  actor-factory = "cromwell.backend.impl.sfs.config.ConfigBackendLifecycleActorFactory"
 	  	  
 		  # The backend custom configuration.
-	        config {
+	  	  config {
 	  	  	  # Optional limits on the number of concurrent jobs
 	  	  	  concurrent-job-limit = 1
 [...]
