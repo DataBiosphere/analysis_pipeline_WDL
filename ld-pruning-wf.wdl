@@ -141,10 +141,7 @@ task subset_gds {
 			The CWL uses nameroot for this, but I think the WDL needs the full path
 			Ex: "inputs/test_data_chrX.vcf.gz" returns ["inputs/test_data_", "X"]
 			'''
-			if "chr" in py_filename:
-				chrom_num = file.split("chr")[1]
-				return chrom_num
-			else:
+			if "chr" not in py_filename:
 				print("Unable to determine chromosome number from inputs.")
 				print("Please ensure your files contain ''chr'' followed by")
 				print("the number of letter of the chromosome (chr1, chr2, etc)")
