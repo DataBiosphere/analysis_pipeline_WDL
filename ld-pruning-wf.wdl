@@ -141,6 +141,14 @@ task subset_gds {
 			The CWL uses nameroot for this, but I think the WDL needs the full path
 			Ex: "inputs/test_data_chrX.vcf.gz" returns ["inputs/test_data_", "X"]
 			'''
+			if "chr" in py_filename:
+				chrom_num = file.split("chr")[1]
+				return chrom_num
+			else:
+				print("Unable to determine chromosome number from inputs.")
+				print("Please ensure your files contain ''chr'' followed by")
+				print("the number of letter of the chromosome (chr1, chr2, etc)")
+				exit(1)
 			py_split = py_filename.split("chr")
 			if unicode(str(py_split[1][1])).isnumeric():
 				# chr10 and above
@@ -238,14 +246,8 @@ task merge_gds {
 			return "".join(chr_array)
 
 		def split_on_chromosome(file):
-			if "chr" in file:
-				chrom_num = file.split("chr")[1]
-				return chrom_num
-			else:
-				print("Unable to determine chromosome number from inputs.")
-				print("Please ensure your files contain ''chr'' followed by")
-				print("the number of letter of the chromosome (chr1, chr2, etc)")
-				exit(1)
+			chrom_num = file.split("chr")[1]
+			return chrom_num
 
 		def write_config(chrs, path):
 			f = open("merge_gds.config", "a")
