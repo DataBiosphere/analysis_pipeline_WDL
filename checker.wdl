@@ -21,7 +21,10 @@ task md5sum {
 	echo "The container version refers to the container used in applicable tasks in the WDL and is the important value here."
 	echo "If container versions are equivalent, there should be no difference in GDS output between a local run and a run on Terra."
 	
+	md5sum ~{gds_test} > sum_before.txt
 	md5sum ~{gds_test} > sum.txt
+
+
 	test_basename="$(basename -- ~{gds_test})"
 	echo "test file: ${test_basename}"
 	echo "truth file(s): ~{sep=' ' gds_truth}"
@@ -29,7 +32,9 @@ task md5sum {
 	for i in ~{sep=' ' gds_truth}
 	do
 		truth_basename="$(basename -- ${i})"
+		echo "$(basename -- ${i})"
 		if [ "${test_basename}" == "${truth_basename}" ]; then
+			echo "$(cut -f1 -d' ' sum.txt)" ${i}
 			echo "$(cut -f1 -d' ' sum.txt)" ${i} | md5sum --check
 		fi
 	done
