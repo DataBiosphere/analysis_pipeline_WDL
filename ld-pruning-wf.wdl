@@ -346,7 +346,7 @@ task check_merged_gds {
 		gds_name = gds_first_part + 'chr ' + gds_second_part
 		f = open("check_merged_gds.config", "a")
 		f.write('gds_file "' + gds_name + '"\n')
-		f.write('merged_gds_file "~{merged_gds_file}"\n')
+		f.write('merged_gds_file "~{merged_gds_file}"')
 		f.close
 		exit()
 		CODE

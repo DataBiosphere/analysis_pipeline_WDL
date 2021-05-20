@@ -205,7 +205,7 @@ workflow checker {
 		input:
 			gds_test = merge_nondefaults.merged_gds_output,
 			gds_truth = [wfB_truth_nondefaults_merged],
-			truth_info = wfB_truth_defaults_info
+			truth_info = wfB_truth_nondefaults_info
 	}
 	
 
