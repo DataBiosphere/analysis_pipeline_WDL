@@ -15,9 +15,7 @@ The original pipeline had arguments relating to runtime such as `ncores` and `cl
 ### Terra users
 For Terra users, it is recommended to import via Dockstore. Importing the correct JSON file for your workflow at the workflow field entry page will fill in test data and recommended runtime attributes for said test data. For example, load `vcf-to-gds-terra.json` for `vcf-to-gds.wfl`. If you are using your own data, please be sure to increase your runtime attributes appropriately.  
 ### Local users
-For local users, it is recommended to use either the latest build of Cromwell or the Dockstore CLI. Assuming you have cloned the repository and are in the working directory, the command would be:  
-`dockstore workflow launch --local-entry vcf-to-gds-wf.wdl --json vcf-to-gds-local.json`  
-Due to how Cromwell works, local runs may draw too much memory; [see here for more info and migitation strategies](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/1). This memory issue does **not** affect Terra users.  
+Running these workflows locally is technically possible, but this is not officially supported due to how the local version of Cromwell handles local resources. Please see [this document](https://github.com/DataBiosphere/analysis_pipeline_WDL/main/documentation/running-locally.md) for specifics on running locally.
 
 ## Further reading
 * [checker workflow](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/documentation/checker.md)
