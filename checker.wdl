@@ -16,14 +16,14 @@ task md5sum {
 
 	command <<<
 
+	set -eux -o pipefail
+
 	echo "Information about these truth files:"
 	head -n 3 "~{truth_info}"
 	echo "The container version refers to the container used in applicable tasks in the WDL and is the important value here."
 	echo "If container versions are equivalent, there should be no difference in GDS output between a local run and a run on Terra."
 	
-	md5sum ~{gds_test} > sum_before.txt
 	md5sum ~{gds_test} > sum.txt
-
 
 	test_basename="$(basename -- ~{gds_test})"
 	echo "test file: ${test_basename}"
@@ -34,7 +34,6 @@ task md5sum {
 		truth_basename="$(basename -- ${i})"
 		echo "$(basename -- ${i})"
 		if [ "${test_basename}" == "${truth_basename}" ]; then
-			echo "$(cut -f1 -d' ' sum.txt)" ${i}
 			echo "$(cut -f1 -d' ' sum.txt)" ${i} | md5sum --check
 		fi
 	done
@@ -172,7 +171,7 @@ workflow checker {
 				ld_win_size = wfB_option_nondefault_ld_win_size,
 				maf_threshold = wfB_option_nondefault_maf_threshold,
 				missing_threshold = wfB_option_nondefault_missing_threshold,
-				exclude_pca_corr = wfB_option_nondefault_exclude_pca_corr,
+				#exclude_pca_corr = wfB_option_nondefault_exclude_pca_corr,  # bugged
 				out_prefix = wfB_option_nondefault_out_prefix
 		}
 	}
