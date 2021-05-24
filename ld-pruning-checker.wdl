@@ -3,7 +3,6 @@ version 1.0
 # Caveat programmator: Please be sure to read the readme on Github
 # WARNING: If you do not change the settings here, this pipeline is DESIGNED TO FAIL.
 
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/v1.0.1/vcf-to-gds-wf.wdl" as workflowA
 import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-merge-gds/ld-pruning-wf.wdl" as workflowB
 
 task md5sum {
@@ -57,22 +56,22 @@ workflow checker_ldprune {
 		Array[File] gds_with_unique_var_ids
 
 		# checker-specific
-		File wfB_truth_defaults_info
-		File wfB_truth_nondefaults_info
-		Array[File] wfB_truth_nondefaults_RData  # only for nondefaults
-		Array[File] wfB_truth_defaults_subset
-		Array[File] wfB_truth_nondefaults_subset
-		File wfB_truth_defaults_merged
-		File wfB_truth_nondefaults_merged
+		File truth_defaults_info
+		File truth_nondefaults_info
+		Array[File] truth_nondefaults_RData  # only for nondefaults
+		Array[File] truth_defaults_subset
+		Array[File] truth_nondefaults_subset
+		File truth_defaults_merged
+		File truth_nondefaults_merged
 
 		# used for testing non-defaults
-		String wfB_option_nondefault_genome_build = "hg19"
-		Float wfB_option_nondefault_ld_r_threshold = 0.3
-		Float wfB_option_nondefault_ld_win_size = 10.1
-		Float wfB_option_nondefault_maf_threshold = 0.05
-		Float wfB_option_nondefault_missing_threshold = 0.02
-		Boolean wfB_option_nondefault_exclude_pca_corr = false
-		String? wfB_option_nondefault_out_prefix = "includePCA_hg19_10.1win_0.3r_0.05MAF_0.02missing"
+		String option_nondefault_genome_build = "hg19"
+		Float option_nondefault_ld_r_threshold = 0.3
+		Float option_nondefault_ld_win_size = 10.1
+		Float option_nondefault_maf_threshold = 0.05
+		Float option_nondefault_missing_threshold = 0.02
+		Boolean option_nondefault_exclude_pca_corr = false
+		String? option_nondefault_out_prefix = "includePCA_hg19_10.1win_0.3r_0.05MAF_0.02missing"
 
 	}
 
@@ -100,12 +99,12 @@ workflow checker_ldprune {
 	# # # # # # # # # # # # #
 	#     md5 -- subset     #
 	# # # # # # # # # # # # #
-	scatter(wfB_gds_test in default_step2_subset.subset_output) {
+	scatter(gds_test in default_step2_subset.subset_output) {
 		call md5sum as default_md5_1_subset {
 			input:
-				test = wfB_gds_test,
-				truth = wfB_truth_defaults_subset,
-				truth_info = wfB_truth_defaults_info
+				test = gds_test,
+				truth = truth_defaults_subset,
+				truth_info = truth_defaults_info
 		}
 	}
 
@@ -131,8 +130,8 @@ workflow checker_ldprune {
 	call md5sum as default_md5_2_merge {
 		input:
 			test = default_step3_merge.merged_gds_output,
-			truth = [wfB_truth_defaults_merged],
-			truth_info = wfB_truth_defaults_info
+			truth = [truth_defaults_merged],
+			truth_info = truth_defaults_info
 	}
 
 	####################################
@@ -147,13 +146,13 @@ workflow checker_ldprune {
 		call workflowB.ld_pruning as nondef_step1_prune {
 			input:
 				gds_file = gds,
-				genome_build = wfB_option_nondefault_genome_build,
-				ld_r_threshold = wfB_option_nondefault_ld_r_threshold,
-				ld_win_size = wfB_option_nondefault_ld_win_size,
-				maf_threshold = wfB_option_nondefault_maf_threshold,
-				missing_threshold = wfB_option_nondefault_missing_threshold,
-				exclude_pca_corr = wfB_option_nondefault_exclude_pca_corr,  # bugged
-				out_prefix = wfB_option_nondefault_out_prefix
+				genome_build = option_nondefault_genome_build,
+				ld_r_threshold = option_nondefault_ld_r_threshold,
+				ld_win_size = option_nondefault_ld_win_size,
+				maf_threshold = option_nondefault_maf_threshold,
+				missing_threshold = option_nondefault_missing_threshold,
+				exclude_pca_corr = option_nondefault_exclude_pca_corr,  # bugged
+				out_prefix = option_nondefault_out_prefix
 		}
 	}
 
@@ -162,12 +161,12 @@ workflow checker_ldprune {
 	# # # # # # # # # # # # #
 	# Yes, it's true, the non-defaults case has an extra check
 	# This is because the CWL handles exclude_pca_corr oddly
-	scatter(wfB_gds_test in nondef_step1_prune.ld_pruning_output) {
+	scatter(gds_test in nondef_step1_prune.ld_pruning_output) {
 		call md5sum as md5_nondef_1_rdata {
 			input:
-				test = wfB_gds_test,
-				truth = wfB_truth_nondefaults_subset,
-				truth_info = wfB_truth_nondefaults_info
+				test = gds_test,
+				truth = truth_nondefaults_subset,
+				truth_info = truth_nondefaults_info
 		}
 	}
 
@@ -184,12 +183,12 @@ workflow checker_ldprune {
 	# # # # # # # # # # # # #
 	#     md5 -- subset     #
 	# # # # # # # # # # # # #
-	scatter(wfB_gds_test in nondef_step2_subset.subset_output) {
+	scatter(gds_test in nondef_step2_subset.subset_output) {
 		call md5sum as md5_nondef_2_subset {
 			input:
-				test = wfB_gds_test,
-				truth = wfB_truth_nondefaults_subset,
-				truth_info = wfB_truth_nondefaults_info
+				test = gds_test,
+				truth = truth_nondefaults_subset,
+				truth_info = truth_nondefaults_info
 		}
 	}
 
@@ -199,7 +198,7 @@ workflow checker_ldprune {
 	call workflowB.merge_gds as nondef_step3_merge {
 		input:
 			gdss = nondef_step2_subset.subset_output,
-			out_prefix = wfB_option_nondefault_out_prefix
+			out_prefix = option_nondefault_out_prefix
 	}
 	scatter(subset_gds in nondef_step2_subset.subset_output) {
 		call workflowB.check_merged_gds as nondef_step4_checkmerge {
@@ -215,7 +214,7 @@ workflow checker_ldprune {
 	call md5sum as md5_nondef_3_merge {
 		input:
 			test = nondef_step3_merge.merged_gds_output,
-			truth = [wfB_truth_nondefaults_merged],
-			truth_info = wfB_truth_nondefaults_info
+			truth = [truth_nondefaults_merged],
+			truth_info = truth_nondefaults_info
 	}
 }
