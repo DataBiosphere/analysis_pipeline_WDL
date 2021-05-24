@@ -10,6 +10,9 @@ task md5sum {
 		File test
 		Array[File] truth
 		File truth_info
+		# having an input that depends upon a previous task's output reigns in
+		# cromwell's tendencies to run tasks out of order
+		File? enforce_chronological_order
 	}
 
 	command <<<
@@ -46,6 +49,10 @@ task md5sum {
 		docker: "python:3.8-slim"
 		memory: "2 GB"
 		preemptible: 2
+	}
+
+	output {
+		File enforce_chronological_order
 	}
 
 }
@@ -118,7 +125,6 @@ workflow checker_ldprune {
 		call workflowB.check_merged_gds as default_step4_checkmerge {
 			input:
 				gds_file = subset_gds,
-
 				merged_gds_file = default_step3_merge.merged_gds_output
 		}
 	}
@@ -130,7 +136,8 @@ workflow checker_ldprune {
 		input:
 			test = default_step3_merge.merged_gds_output,
 			truth = [truth_defaults_merged],
-			truth_info = truth_defaults_info
+			truth_info = truth_defaults_info,
+			enforce_chronological_order = default_md5_1_subset.enforce_chronological_order
 	}
 
 	####################################
@@ -197,6 +204,8 @@ workflow checker_ldprune {
 		input:
 			test = nondef_step3_merge.merged_gds_output,
 			truth = [truth_nondefaults_merged],
-			truth_info = truth_nondefaults_info
+			truth_info = truth_nondefaults_info,
+			enforce_chronological_order = md5_nondef_2_subset.enforce_chronological_order
+
 	}
 }
