@@ -58,7 +58,6 @@ workflow checker_ldprune {
 		# checker-specific
 		File truth_defaults_info
 		File truth_nondefaults_info
-		Array[File] truth_nondefaults_RData  # only for nondefaults
 		Array[File] truth_defaults_subset
 		Array[File] truth_nondefaults_subset
 		File truth_defaults_merged
@@ -70,7 +69,7 @@ workflow checker_ldprune {
 		Float option_nondefault_ld_win_size = 10.1
 		Float option_nondefault_maf_threshold = 0.05
 		Float option_nondefault_missing_threshold = 0.02
-		Boolean option_nondefault_exclude_pca_corr = false
+		#Boolean option_nondefault_exclude_pca_corr = false  # skipped due to CWL bug
 		String? option_nondefault_out_prefix = "includePCA_hg19_10.1win_0.3r_0.05MAF_0.02missing"
 
 	}
@@ -140,7 +139,7 @@ workflow checker_ldprune {
 	####################################
 
 	####################################
-	#     LD prune (generate RData)    #
+	#   LD prune (RData) and subset    #
 	####################################
 	scatter(gds in gds_with_unique_var_ids) {
 		call workflowB.ld_pruning as nondef_step1_prune {
@@ -151,28 +150,11 @@ workflow checker_ldprune {
 				ld_win_size = option_nondefault_ld_win_size,
 				maf_threshold = option_nondefault_maf_threshold,
 				missing_threshold = option_nondefault_missing_threshold,
-				exclude_pca_corr = option_nondefault_exclude_pca_corr,  # bugged
+				#exclude_pca_corr = option_nondefault_exclude_pca_corr,  # beware CWL bug
 				out_prefix = option_nondefault_out_prefix
 		}
 	}
 
-	# # # # # # # # # # # # #
-	#      md5 -- RData     #
-	# # # # # # # # # # # # #
-	# Yes, it's true, the non-defaults case has an extra check
-	# This is because the CWL handles exclude_pca_corr oddly
-	scatter(gds_test in nondef_step1_prune.ld_pruning_output) {
-		call md5sum as md5_nondef_1_rdata {
-			input:
-				test = gds_test,
-				truth = truth_nondefaults_subset,
-				truth_info = truth_nondefaults_info
-		}
-	}
-
-	####################################
-	#     subset GDS based on RData    #
-	####################################
 	scatter(gds_n_varinc in zip(gds_with_unique_var_ids, nondef_step1_prune.ld_pruning_output)) {
 		call workflowB.subset_gds as nondef_step2_subset {
 			input:
