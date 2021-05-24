@@ -1,7 +1,6 @@
 version 1.0
 
 # Caveat programmator: Please be sure to read the readme on Github
-# WARNING: If you do not change the settings here, this pipeline is DESIGNED TO FAIL.
 
 import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-merge-gds/ld-pruning-wf.wdl" as workflowB
 
@@ -207,5 +206,10 @@ workflow checker_ldprune {
 			truth_info = truth_nondefaults_info,
 			enforce_chronological_order = md5_nondef_2_subset.enforce_chronological_order
 
+	}
+
+	meta {
+		author: "Ash O'Farrell"
+		email: "aofarrel@ucsc.edu"
 	}
 }
