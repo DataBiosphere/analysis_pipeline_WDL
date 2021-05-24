@@ -23,25 +23,24 @@ task md5sum {
 	echo "The container version refers to the container used in applicable tasks in the WDL and is the important value here."
 	echo "If container versions are equivalent, there should be no difference in GDS output between a local run and a run on Terra."
 	
-	md5sum ~{test} > sumbefore.txt
 	md5sum ~{test} > sum.txt
 
 	test_basename="$(basename -- ~{test})"
 	echo "test file: ${test_basename}"
-	echo "truth file(s): ~{sep=' ' truth}"
 
 	for i in ~{sep=' ' truth}
 	do
 		truth_basename="$(basename -- ${i})"
-		echo "$(basename -- ${i})"
 		if [ "${test_basename}" == "${truth_basename}" ]; then
-			echo "$(cut -f1 -d' ' sum.txt)" ${i} | md5sum --check
-			actual_truth=${i}
+			actual_truth="$i"
+			break
 		fi
 	done
 
 	# must be done outside while and if or else `set -eux -o pipefail` is ignored
-	echo "$(cut -f1 -d' ' sum.txt)" ${actual_truth} | md5sum --check
+	echo "$(cut -f1 -d' ' sum.txt)" $actual_truth | md5sum --check
+
+	touch previous_task_dummy_output
 	>>>
 
 	runtime {
@@ -51,7 +50,7 @@ task md5sum {
 	}
 
 	output {
-		File enforce_chronological_order
+		File enforce_chronological_order = "previous_task_dummy_output"
 	}
 
 }
@@ -105,7 +104,7 @@ workflow checker_ldprune {
 	#     md5 -- subset     #
 	# # # # # # # # # # # # #
 	scatter(gds_test in default_step2_subset.subset_output) {
-		call md5sum as default_md5_1_subset {
+		call md5sum as default_md5_subset {
 			input:
 				test = gds_test,
 				truth = truth_defaults_subset,
@@ -131,12 +130,12 @@ workflow checker_ldprune {
 	# # # # # # # # # # # # #
 	#     md5 -- merged     #
 	# # # # # # # # # # # # #
-	call md5sum as default_md5_2_merge {
+	call md5sum as default_md5_merge {
 		input:
 			test = default_step3_merge.merged_gds_output,
 			truth = [truth_defaults_merged],
 			truth_info = truth_defaults_info,
-			enforce_chronological_order = default_md5_1_subset.enforce_chronological_order
+			enforce_chronological_order = default_md5_subset.enforce_chronological_order[0]
 	}
 
 	####################################
@@ -156,7 +155,7 @@ workflow checker_ldprune {
 				ld_win_size = option_nondefault_ld_win_size,
 				maf_threshold = option_nondefault_maf_threshold,
 				missing_threshold = option_nondefault_missing_threshold,
-				#exclude_pca_corr = option_nondefault_exclude_pca_corr,  # beware CWL bug
+				#exclude_pca_corr = option_nondefault_exclude_pca_corr,  # beware of CWL bug
 				out_prefix = option_nondefault_out_prefix
 		}
 	}
@@ -172,7 +171,7 @@ workflow checker_ldprune {
 	#     md5 -- subset     #
 	# # # # # # # # # # # # #
 	scatter(gds_test in nondef_step2_subset.subset_output) {
-		call md5sum as md5_nondef_2_subset {
+		call md5sum as nondef_md5_subset {
 			input:
 				test = gds_test,
 				truth = truth_nondefaults_subset,
@@ -199,12 +198,12 @@ workflow checker_ldprune {
 	# # # # # # # # # # # # #
 	#     md5 -- merged     #
 	# # # # # # # # # # # # #
-	call md5sum as md5_nondef_3_merge {
+	call md5sum as nondef_md5_merge {
 		input:
 			test = nondef_step3_merge.merged_gds_output,
 			truth = [truth_nondefaults_merged],
 			truth_info = truth_nondefaults_info,
-			enforce_chronological_order = md5_nondef_2_subset.enforce_chronological_order
+			enforce_chronological_order = nondef_md5_subset.enforce_chronological_order[0]
 
 	}
 
