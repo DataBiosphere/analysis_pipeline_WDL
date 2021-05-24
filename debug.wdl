@@ -3,12 +3,11 @@ version 1.0
 # Caveat programmator: Please be sure to read the readme on Github
 # WARNING: If you do not change the settings here, this pipeline is DESIGNED TO FAIL.
 
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-merge-gds/ld-pruning-wf.wdl" as workflowB
-
 task md5sum {
 	input {
 		File test
 		Array[File] truth
+		File? dummyfile
 	}
 
 	command <<<
@@ -29,14 +28,15 @@ task md5sum {
 	do
 		truth_basename="$(basename -- ${i})"
 		if [ "${test_basename}" == "${truth_basename}" ]; then
-			echo "$(cut -f1 -d' ' sum.txt)" ${i} | md5sum --check
-			actual_truth="${i}"
+			actual_truth="$i"
 			break
 		fi
 	done
 
 	# must be done outside while and if or else `set -eux -o pipefail` is ignored
-	echo "$(cut -f1 -d' ' sum.txt)" $(actual_truth) | md5sum --check
+	echo "$(cut -f1 -d' ' sum.txt)" $actual_truth | md5sum --check
+
+	touch dummyfile.txt
 	>>>
 
 	runtime {
@@ -45,12 +45,14 @@ task md5sum {
 		preemptible: 2
 	}
 
+	output {
+		File dummy = "dummyfile.txt"
+	}
+
 }
 
 workflow debug {
 	input {
-		# inputs
-		Array[File] gds_with_unique_var_ids
 
 		# checker-specific
 		Array[File] wfB_truth_nondefaults_RData
@@ -78,7 +80,7 @@ workflow debug {
 		call md5sum as md5_nondef_1_rdata {
 			input:
 				test = test_rdata,
-				truth = wfB_truth_nondefaults_subset
+				truth = wfB_truth_nondefaults_RData,
 		}
 	}
 
@@ -89,7 +91,8 @@ workflow debug {
 		call md5sum as md5_nondef_2_subset {
 			input:
 				test = test_subset,
-				truth = wfB_truth_nondefaults_subset
+				truth = wfB_truth_nondefaults_subset,
+				dummyfile = md5_nondef_1_rdata.dummy[0],
 		}
 	}
 
@@ -99,6 +102,7 @@ workflow debug {
 	call md5sum as md5_nondef_3_merge {
 		input:
 			test = test_merged,
-			truth = [wfB_truth_nondefaults_merged]
+			truth = [wfB_truth_nondefaults_merged],
+			dummyfile = md5_nondef_2_subset.dummy[0]
 	}
 }
