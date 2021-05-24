@@ -117,7 +117,7 @@ workflow checker_ldprune {
 				test = gds_test,
 				truth = truth_nondefaults_subset,
 				truth_info = truth_nondefaults_info,
-				enforce_chronological_order = subset_gds.config_file[0]
+				enforce_chronological_order = nondef_step2_subset.config_file[0]
 		}
 	}
 
@@ -147,7 +147,7 @@ workflow checker_ldprune {
 			test = nondef_step3_merge.merged_gds_output,
 			truth = [truth_nondefaults_merged],
 			truth_info = truth_nondefaults_info,
-			enforce_chronological_order = nondef_step4_checkmerge.enforce_chronological_order[0]
+			enforce_chronological_order = nondef_step4_checkmerge.config_file[0]
 
 	}
 
