@@ -81,65 +81,6 @@ workflow checker_ldprune {
 
 	####################################
 	#            Workflow B            #
-	#      ld-pruning-wf, default      #
-	####################################
-
-	####################################
-	#   LD prune (RData) and subset    #
-	####################################
-	scatter(gds in gds_with_unique_var_ids) {
-		call workflowB.ld_pruning as default_step1_prune {
-			input:
-				gds_file = gds
-		}
-	}
-	scatter(gds_n_varinc in zip(gds_with_unique_var_ids, default_step1_prune.ld_pruning_output)) {
-		call workflowB.subset_gds as default_step2_subset {
-			input:
-				gds_n_varinc = gds_n_varinc
-		}
-	}
-
-	# # # # # # # # # # # # #
-	#     md5 -- subset     #
-	# # # # # # # # # # # # #
-	scatter(gds_test in default_step2_subset.subset_output) {
-		call md5sum as default_md5_subset {
-			input:
-				test = gds_test,
-				truth = truth_defaults_subset,
-				truth_info = truth_defaults_info
-		}
-	}
-
-	####################################
-	#  Merge GDS and check merged GDS  #
-	####################################
-	call workflowB.merge_gds as default_step3_merge {
-		input:
-			gdss = default_step2_subset.subset_output
-	}
-	scatter(subset_gds in default_step2_subset.subset_output) {
-		call workflowB.check_merged_gds as default_step4_checkmerge {
-			input:
-				gds_file = subset_gds,
-				merged_gds_file = default_step3_merge.merged_gds_output
-		}
-	}
-
-	# # # # # # # # # # # # #
-	#     md5 -- merged     #
-	# # # # # # # # # # # # #
-	call md5sum as default_md5_merge {
-		input:
-			test = default_step3_merge.merged_gds_output,
-			truth = [truth_defaults_merged],
-			truth_info = truth_defaults_info,
-			enforce_chronological_order = default_md5_subset.enforce_chronological_order[0]
-	}
-
-	####################################
-	#            Workflow B            #
 	#    ld-pruning-wf, non-default    #
 	####################################
 
@@ -175,7 +116,8 @@ workflow checker_ldprune {
 			input:
 				test = gds_test,
 				truth = truth_nondefaults_subset,
-				truth_info = truth_nondefaults_info
+				truth_info = truth_nondefaults_info,
+				enforce_chronological_order = subset_gds.config_file[0]
 		}
 	}
 
@@ -185,7 +127,9 @@ workflow checker_ldprune {
 	call workflowB.merge_gds as nondef_step3_merge {
 		input:
 			gdss = nondef_step2_subset.subset_output,
-			out_prefix = option_nondefault_out_prefix
+			out_prefix = option_nondefault_out_prefix,
+			enforce_chronological_order = nondef_md5_subset.enforce_chronological_order[0]
+
 	}
 	scatter(subset_gds in nondef_step2_subset.subset_output) {
 		call workflowB.check_merged_gds as nondef_step4_checkmerge {
@@ -203,8 +147,69 @@ workflow checker_ldprune {
 			test = nondef_step3_merge.merged_gds_output,
 			truth = [truth_nondefaults_merged],
 			truth_info = truth_nondefaults_info,
-			enforce_chronological_order = nondef_md5_subset.enforce_chronological_order[0]
+			enforce_chronological_order = nondef_step4_checkmerge.enforce_chronological_order[0]
 
+	}
+
+	####################################
+	#            Workflow B            #
+	#      ld-pruning-wf, default      #
+	####################################
+
+	####################################
+	#   LD prune (RData) and subset    #
+	####################################
+	scatter(gds in gds_with_unique_var_ids) {
+		call workflowB.ld_pruning as default_step1_prune {
+			input:
+				gds_file = gds,
+				enforce_chronological_order = nondef_md5_merge.enforce_chronological_order
+		}
+	}
+	scatter(gds_n_varinc in zip(gds_with_unique_var_ids, default_step1_prune.ld_pruning_output)) {
+		call workflowB.subset_gds as default_step2_subset {
+			input:
+				gds_n_varinc = gds_n_varinc
+		}
+	}
+
+	# # # # # # # # # # # # #
+	#     md5 -- subset     #
+	# # # # # # # # # # # # #
+	scatter(gds_test in default_step2_subset.subset_output) {
+		call md5sum as default_md5_subset {
+			input:
+				test = gds_test,
+				truth = truth_defaults_subset,
+				truth_info = truth_defaults_info
+		}
+	}
+
+	####################################
+	#  Merge GDS and check merged GDS  #
+	####################################
+	call workflowB.merge_gds as default_step3_merge {
+		input:
+			gdss = default_step2_subset.subset_output,
+			enforce_chronological_order = default_md5_subset.enforce_chronological_order[0]
+	}
+	scatter(subset_gds in default_step2_subset.subset_output) {
+		call workflowB.check_merged_gds as default_step4_checkmerge {
+			input:
+				gds_file = subset_gds,
+				merged_gds_file = default_step3_merge.merged_gds_output
+		}
+	}
+
+	# # # # # # # # # # # # #
+	#     md5 -- merged     #
+	# # # # # # # # # # # # #
+	call md5sum as default_md5_merge {
+		input:
+			test = default_step3_merge.merged_gds_output,
+			truth = [truth_defaults_merged],
+			truth_info = truth_defaults_info,
+			enforce_chronological_order = default_step4_checkmerge.config_file[0]
 	}
 
 	meta {
