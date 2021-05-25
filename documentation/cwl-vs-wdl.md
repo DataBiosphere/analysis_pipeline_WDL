@@ -32,7 +32,7 @@ This list is not intended as an exhaustive list of every difference. These are t
 * The workaround used by Workflow A's check_gds to get chromosome number (see above) is also used by check_merged_gds for the same reason.  
 
 ## Different Outputs
-Seven Bridges or its AWS backend appears to sort numbers alphabetically rather than numerically in some contexts, resulting in merged GDS files having their variants ordered differently than when the same script is run in a WDL context on a local machine or Terra (GCS backend) on the same inputs. For the testdata inputs, all variants in the output files were checked and found to be equivalent across the CWL and the WDL by splitting the variant files into subsets with correct numeric ordering. In other words, they ought to be functionally equivalent in spite of not md5ing to the same value. See #22 for more information.   
+Seven Bridges or its AWS backend appears to sort numbers alphabetically rather than numerically in some contexts, resulting in merged GDS files having their variants ordered differently than when the same script is run in a WDL context on a local machine or Terra (GCS backend) on the same inputs. For the testdata inputs, all variants in the output files were checked and found to be equivalent across the CWL and the WDL by splitting the variant files into subsets with correct numeric ordering. In other words, they ought to be functionally equivalent in spite of not md5ing to the same value. See [#22](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/22) for more information.   
 
 ## Error Handling
 * The CWL appears to contain a bug where `exclude_PCA_cor` being set to false is not respected. See #14 for more info. The WDL avoids this using slightly different logic.
