@@ -188,7 +188,10 @@ task null_model_r {
 	}
 	output {
 		File config_file = "null_model.config"  # globbed in CWL?
-
+		File null_model_phenotypes = "*phenotypes.RData"  # should inherit metadata
+		Array[File] null_model_files = if output_prefix != "" then "{output_prefix}_null_model*RData" else "*null_model*RData"
+		File null_model_params = "*.params"
+		# todo: null model output https://github.com/aofarrel/analysis_pipeline_cwl/blob/63e0ef1b4a8d1547cb2967ab8ebef4466292a07b/association/tools/null_model_r.cwl#L347
 	}
 }
 
@@ -235,12 +238,12 @@ task null_model_report {
 		echo "Generating config file"
 		python << CODE
 		import os
-		f = open("null_model.config", "a")
+		f = open("null_model_report.config", "a")
 		f.write("family ~{family}\n")
 		if "~{isdefined_inverse}" == "true":
 			f.write("inverse_normal ~{inverse_normal}\n")
-		if "~{out_prefix}" != "":
-			f.write('out_prefix "~{out_prefix}"\n')
+		if "~{output_prefix}" != "":
+			f.write('out_prefix "~{output_prefix}"\n')
 		else:
 			f.write('out_prefix "null_model"\n')
 		if "~{isdefined_catbox}" == "true":
@@ -279,6 +282,7 @@ task null_model_report {
 		preemptibles: "${preempt}"
 	}
 	output {
+		File null_model_report_config = "null_model_report.config"  # glob in CWL?
 		Array[File] html_reports = glob("*.html")
 		Array[File] rmd_files = glob("*.rmd")
 	}
@@ -329,6 +333,13 @@ workflow nullmodel {
 			resid_covars = resid_covars,
 			sample_include_file = sample_include_file
 	}
+
+	#call null_model_report {
+	#	input:
+	#		family = family,
+	#		outcome = outcome,
+	#		phenotype_file = phenotype_file
+	#}
 
 	meta {
 		author: "Ash O'Farrell"
