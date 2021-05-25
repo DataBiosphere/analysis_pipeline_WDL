@@ -235,6 +235,18 @@ task null_model_report {
 		echo "Generating config file"
 		python << CODE
 		import os
+		f = open("null_model.config", "a")
+		f.write("family ~{family}\n")
+		if "~{isdefined_inverse}" == "true":
+			f.write("inverse_normal ~{inverse_normal}\n")
+		if "~{out_prefix}" != "":
+			f.write('out_prefix "~{out_prefix}"\n')
+		else:
+			f.write('out_prefix "null_model"\n')
+		if "~{isdefined_catbox}" == "true":
+			f.write("n_catagories_boxplot ~{n_categories_boxplot}\n")
+		f.close
+
 		CODE
 		
 		echo "Calling null_model_report.R"
@@ -243,6 +255,21 @@ task null_model_report {
 	# Estimate disk size required
 	Int phenotype_size = ceil(size(phenotype_file, "GB"))
 	Int finalDiskSize = 2*phenotype_size + addldisk
+
+	# Workaround
+	# Strictly speaking this is only needed for Array variables
+	# But we'll do it for most of 'em for consistency's sake
+	Boolean isdefined_catbox = defined(n_categories_boxplot)
+	Boolean isdefined_conditvar = defined(conditional_variant_file)
+	Boolean isdefined_covars = defined(covars)
+	Boolean isdefined_gds = defined(gds_files)
+	Boolean isdefined_inverse = defined(inverse_normal)
+	Boolean isdefined_matrix = defined(relatedness_matrix_file)
+	Boolean isdefined_norm = defined(norm_bygroup)
+	Boolean isdefined_pca = defined(pca_file)
+	Boolean isdefined_resid = defined(resid_covars)
+	Boolean isdefined_sample = defined(sample_include_file)
+	
 
 	runtime {
 		cpu: cpu
