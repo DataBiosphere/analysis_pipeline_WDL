@@ -83,7 +83,7 @@ task null_model_r {
 			filename = "~{output_prefix}_null_model"
 			f.write('out_prefix "' + filename + '"\n')
 			phenotype_filename = "~{output_prefix}_phenotypes.RData"
-			f.write('out_phenotype_file"' + phenotype_filename + '"\n')
+			f.write('out_phenotype_file "' + phenotype_filename + '"\n')
 		
 		else:
 			f.write('out_prefix "null_model"\n')

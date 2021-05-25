@@ -1,4 +1,5 @@
 {
+  "nullmodel.output_prefix": "test",
   "nullmodel.phenotype_file": "test-data-and-truths/null_model/1KG_phase3_subset_annot.RData",
   "nullmodel.pca_file": "test-data-and-truths/null_model/pcair.RData",
   "nullmodel.sample_include_file": "test-data-and-truths/null_model/unrelated.RData",
