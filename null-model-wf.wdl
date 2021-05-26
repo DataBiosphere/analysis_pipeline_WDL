@@ -205,8 +205,13 @@ task null_model_report {
 
 		# required
 		String family
-		String outcome
+		#String outcome  # not consistent in CWL? check!
 		File phenotype_file
+
+		# passed in from previous
+		File null_model_params
+		Array[File]? null_model_files  # CWL treats as optional
+
 
 		# optional
 		File? conditional_variant_file
@@ -334,12 +339,21 @@ workflow nullmodel {
 			sample_include_file = sample_include_file
 	}
 
-	#call null_model_report {
-	#	input:
-	#		family = family,
-	#		outcome = outcome,
-	#		phenotype_file = phenotype_file
-	#}
+	call null_model_report {
+		input:
+			family = family,
+			inverse_normal = inverse_normal,
+			null_model_params = null_model_r.null_model_params,
+			phenotype_file = phenotype_file,
+			sample_include_file = sample_include_file,
+			pca_file = pca_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			null_model_files = null_model_r.null_model_files,
+			output_prefix = output_prefix,
+			conditional_variant_file = conditional_variant_file,
+			gds_files = gds_files
+
+	}
 
 	meta {
 		author: "Ash O'Farrell"
