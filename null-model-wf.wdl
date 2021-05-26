@@ -188,9 +188,9 @@ task null_model_r {
 	}
 	output {
 		File config_file = "null_model.config"  # globbed in CWL?
-		File null_model_phenotypes = "*phenotypes.RData"  # should inherit metadata
-		Array[File] null_model_files = if output_prefix != "" then "{output_prefix}_null_model*RData" else "*null_model*RData"
-		File null_model_params = "*.params"
+		File null_model_phenotypes = glob("*phenotypes.RData")[0]  # should inherit metadata
+		Array[File] null_model_files = glob("${output_prefix}*null_model*RData")
+		File null_model_params = glob("*.params")[0]
 		# todo: null model output https://github.com/aofarrel/analysis_pipeline_cwl/blob/63e0ef1b4a8d1547cb2967ab8ebef4466292a07b/association/tools/null_model_r.cwl#L347
 	}
 }
