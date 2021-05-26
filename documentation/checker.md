@@ -13,6 +13,7 @@ If relying on the truth files located in topmed_workflow_testing, make sure to r
 ChrX is not in the pipeline's JSON to prevent people who intend on piping the output of this pipeline directly into ld-pruning-checker. However, an input file and truth file are found in the same buckets as the other input and truth buckets for chrX, so you may run this checker on chrX too if you'd like.
 
 ## ld-pruning-checker.wdl
+**Estimated cost on Terra: $1.39**  
 Due to how variables in the original pipeline are accessed, ld-pruning is hardcoded to fail on non-autosomes. The provided test data is only autosomes.
 
 This workflow checks ld-pruning twice, one with default inputs, and one with a variety of non-default inputs.
