@@ -187,6 +187,21 @@ task null_model_r {
 		preemptibles: "${preempt}"
 	}
 	output {
+		# cwl.output.json on SB has duplicated outputs
+		# configs:
+		# * null_model.config
+		# * ! null_model.config.null_model.params
+		# null_model_files:
+		# * ! test_null_model_invnorm.RData
+		# * test_null_model_invnorm_reportonly.RData
+		# * test_null_model_reportonly.RData
+		# null_model_output:
+		# * ! test_null_model_invnorm.RData
+		# null_model_params:
+		# * ! null_model.config.null_model.params
+		# null_model_phenotypes:
+		# * test_phenotypes.RData
+
 		File config_file = "null_model.config"  # globbed in CWL?
 		File null_model_phenotypes = glob("*phenotypes.RData")[0]  # should inherit metadata
 		Array[File] null_model_files = glob("${output_prefix}*null_model*RData")
@@ -229,7 +244,7 @@ task null_model_report {
 		File? sample_include_file
 		
 		# report-specific variable
-		Int? n_categories_boxplot
+		Int n_categories_boxplot = 10
 
 		# runtime attr
 		Int addldisk = 1
@@ -251,8 +266,7 @@ task null_model_report {
 			f.write('out_prefix "~{output_prefix}"\n')
 		else:
 			f.write('out_prefix "null_model"\n')
-		if "~{isdefined_catbox}" == "true":
-			f.write("n_catagories_boxplot ~{n_categories_boxplot}\n")
+		f.write("n_categories_boxplot ~{n_categories_boxplot}\n")
 		f.close
 
 		CODE
@@ -267,7 +281,6 @@ task null_model_report {
 	# Workaround
 	# Strictly speaking this is only needed for Array variables
 	# But we'll do it for most of 'em for consistency's sake
-	Boolean isdefined_catbox = defined(n_categories_boxplot)
 	Boolean isdefined_conditvar = defined(conditional_variant_file)
 	Boolean isdefined_covars = defined(covars)
 	Boolean isdefined_gds = defined(gds_files)
