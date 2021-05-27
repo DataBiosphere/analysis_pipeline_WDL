@@ -55,6 +55,7 @@ task null_model_r {
 
 	# basename workaround
 	String base_phenotype = basename(phenotype_file)
+	String base_conditvar = basename(conditional_variant_file)
 	
 
 	command <<<
@@ -271,6 +272,19 @@ task null_model_report {
 		cp ~{phenotype_file} .
 		if [ ~{isdefined_pca} ]; then
 			cp ~{pca_file} .
+		fi
+		if [ ~{isdefined_matrix} ]; then
+			cp ~{relatedness_matrix_file} .
+		fi
+		if [ ~{isdefined_conditvar} ]; then
+			cp ~{conditional_variant_file} .
+		fi
+		if [ ~{isdefined_gds} ]; then
+			GDS_FILESS=(~{sep=" " gds_files})
+			for GDS_FILE in ${GDS_FILESS[@]};
+			do
+				cp ${GDS_FILE} .
+			done
 		fi
 
 		echo "Generating config file"
