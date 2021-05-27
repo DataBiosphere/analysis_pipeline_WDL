@@ -3,7 +3,6 @@ version 1.0
 # Caveat programmator: Please be sure to read the readme on Github
 
 import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/v1.0.1/vcf-to-gds-wf.wdl" as workflowA
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-merge-gds/ld-pruning-wf.wdl" as workflowB
 
 task md5sum {
 	input {
