@@ -271,6 +271,7 @@ task null_model_report {
 		cp ~{phenotype_file} .
 		if [ ~{isdefined_pca} ]; then
 			cp ~{pca_file} .
+		fi
 
 		echo "Generating config file"
 		python << CODE
