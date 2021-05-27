@@ -1,11 +1,5 @@
 version 1.0
 
-# General notes:
-#
-# variables and functions exclusive to the WDL version tend to have "py_" in front
-# and use camelCase between words - this is to make it clear they don't quite 
-# correlate to the CWL
-
 # [1] ld_pruning -- calculates linkage diseq on a GDS file
 task ld_pruning {
 	input {
