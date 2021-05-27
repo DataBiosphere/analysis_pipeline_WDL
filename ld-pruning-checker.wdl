@@ -2,7 +2,7 @@ version 1.0
 
 # Caveat programmator: Please be sure to read the readme on Github
 
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-merge-gds/ld-pruning-wf.wdl" as workflowB
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-merge-gds/ld-pruning-wf.wdl" as test_run_ldpruning
 
 task md5sum {
 	input {
@@ -80,7 +80,6 @@ workflow checker_ldprune {
 	}
 
 	####################################
-	#            Workflow B            #
 	#    ld-pruning-wf, non-default    #
 	####################################
 
@@ -88,7 +87,7 @@ workflow checker_ldprune {
 	#   LD prune (RData) and subset    #
 	####################################
 	scatter(gds in gds_with_unique_var_ids) {
-		call workflowB.ld_pruning as nondef_step1_prune {
+		call test_run_ldpruning.ld_pruning as nondef_step1_prune {
 			input:
 				gds_file = gds,
 				genome_build = option_nondefault_genome_build,
@@ -102,7 +101,7 @@ workflow checker_ldprune {
 	}
 
 	scatter(gds_n_varinc in zip(gds_with_unique_var_ids, nondef_step1_prune.ld_pruning_output)) {
-		call workflowB.subset_gds as nondef_step2_subset {
+		call test_run_ldpruning.subset_gds as nondef_step2_subset {
 			input:
 				gds_n_varinc = gds_n_varinc
 		}
@@ -124,7 +123,7 @@ workflow checker_ldprune {
 	####################################
 	#  Merge GDS and check merged GDS  #
 	####################################
-	call workflowB.merge_gds as nondef_step3_merge {
+	call test_run_ldpruning.merge_gds as nondef_step3_merge {
 		input:
 			gdss = nondef_step2_subset.subset_output,
 			out_prefix = option_nondefault_out_prefix,
@@ -132,7 +131,7 @@ workflow checker_ldprune {
 
 	}
 	scatter(subset_gds in nondef_step2_subset.subset_output) {
-		call workflowB.check_merged_gds as nondef_step4_checkmerge {
+		call test_run_ldpruning.check_merged_gds as nondef_step4_checkmerge {
 			input:
 				gds_file = subset_gds,
 				merged_gds_file = nondef_step3_merge.merged_gds_output
@@ -152,7 +151,6 @@ workflow checker_ldprune {
 	}
 
 	####################################
-	#            Workflow B            #
 	#      ld-pruning-wf, default      #
 	####################################
 
@@ -160,14 +158,14 @@ workflow checker_ldprune {
 	#   LD prune (RData) and subset    #
 	####################################
 	scatter(gds in gds_with_unique_var_ids) {
-		call workflowB.ld_pruning as default_step1_prune {
+		call test_run_ldpruning.ld_pruning as default_step1_prune {
 			input:
 				gds_file = gds,
 				enforce_chronological_order = nondef_md5_merge.enforce_chronological_order
 		}
 	}
 	scatter(gds_n_varinc in zip(gds_with_unique_var_ids, default_step1_prune.ld_pruning_output)) {
-		call workflowB.subset_gds as default_step2_subset {
+		call test_run_ldpruning.subset_gds as default_step2_subset {
 			input:
 				gds_n_varinc = gds_n_varinc
 		}
@@ -188,13 +186,13 @@ workflow checker_ldprune {
 	####################################
 	#  Merge GDS and check merged GDS  #
 	####################################
-	call workflowB.merge_gds as default_step3_merge {
+	call test_run_ldpruning.merge_gds as default_step3_merge {
 		input:
 			gdss = default_step2_subset.subset_output,
 			enforce_chronological_order = default_md5_subset.enforce_chronological_order[0]
 	}
 	scatter(subset_gds in default_step2_subset.subset_output) {
-		call workflowB.check_merged_gds as default_step4_checkmerge {
+		call test_run_ldpruning.check_merged_gds as default_step4_checkmerge {
 			input:
 				gds_file = subset_gds,
 				merged_gds_file = default_step3_merge.merged_gds_output

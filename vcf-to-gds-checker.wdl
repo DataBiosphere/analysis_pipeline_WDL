@@ -2,7 +2,7 @@ version 1.0
 
 # Caveat programmator: Please be sure to read the readme on Github
 
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/v1.0.1/vcf-to-gds-wf.wdl" as workflowA
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/v1.0.1/vcf-to-gds-wf.wdl" as test_run_vcftogds
 
 task md5sum {
 	input {
@@ -44,40 +44,39 @@ task md5sum {
 
 }
 
-workflow checker {
+workflow checker_vcftogds {
 	input {
 		# checker-specific
-		File wfA_truth_info
-		Array[File] wfA_truth_gds
+		File truth_info
+		Array[File] truth_gds
 		# standard workflow
-		Array[File] wfA_test_vcfs
-		Boolean wfA_option_check_gds = true   #careful now...
-		Array[String] wfA_option_format
+		Array[File] test_vcfs
+		Boolean option_check_gds = true   #careful now...
+		Array[String] option_format
 	}
 
 
 
 	####################################
-	#            Workflow A            #
 	#           vcf-to-gds-wf          #
 	####################################
-	scatter(wfA_test_vcf in wfA_test_vcfs) {
-		call workflowA.vcf2gds {
+	scatter(test_vcf in test_vcfs) {
+		call test_run_vcftogds.vcf2gds {
 			input:
-				vcf = wfA_test_vcf,
-				format = wfA_option_format
+				vcf = test_vcf,
+				format = option_format
 		}
 	}
-	call workflowA.unique_variant_id {
+	call test_run_vcftogds.unique_variant_id {
 		input:
 			gdss = vcf2gds.gds_output
 	}
-	if(wfA_option_check_gds) {
+	if(option_check_gds) {
 		scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
-			call workflowA.check_gds {
+			call test_run_vcftogds.check_gds {
 				input:
 					gds = gds,
-					vcfs = wfA_test_vcfs
+					vcfs = test_vcfs
 			}
 		}
 	}
@@ -85,12 +84,12 @@ workflow checker {
 	# # # # # # # # # # # # #
 	#        Checker        #
 	# # # # # # # # # # # # #
-	scatter(wfA_gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
+	scatter(gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
 		call md5sum as md5sum_wfA {
 			input:
-				gds_test = wfA_gds_test,
-				gds_truth = wfA_truth_gds,
-				truth_info = wfA_truth_info
+				gds_test = gds_test,
+				gds_truth = truth_gds,
+				truth_info = truth_info
 		}
 	}
 

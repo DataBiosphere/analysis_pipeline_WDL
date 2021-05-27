@@ -1,8 +1,8 @@
 {
-  "checker.wfA_option_check_gds": true,
-  "checker.wfA_truth_info": "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/info.txt",
-  "checker.wfA_option_format": ["GT"],
-  "checker.wfA_test_vcfs": [
+  "checker_vcftogds.option_check_gds": true,
+  "checker_vcftogds.truth_info": "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/info.txt",
+  "checker_vcftogds.option_format": ["GT"],
+  "checker_vcftogds.test_vcfs": [
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr1.vcf.gz",
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr2.vcf.gz",
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr3.vcf.gz",
@@ -26,7 +26,7 @@
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr21.vcf.gz",
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr22.vcf.gz"
  ],
-  "checker.wfA_truth_gds": [
+  "checker_vcftogds.truth_gds": [
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr1.gds",
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr2.gds",
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr3.gds",
