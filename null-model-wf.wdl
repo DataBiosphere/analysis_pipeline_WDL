@@ -39,7 +39,8 @@ task null_model_r {
 	# other files, etc
 	Int finalDiskSize = phenotype_size + addldisk
 
-	# Workaround
+	# defined workaround
+	#
 	# Strictly speaking this is only needed for Array variables
 	# But we'll do it for most of 'em for consistency's sake
 	Boolean isdefined_conditvar = defined(conditional_variant_file)
@@ -51,10 +52,19 @@ task null_model_r {
 	Boolean isdefined_pca = defined(pca_file)
 	Boolean isdefined_resid = defined(resid_covars)
 	Boolean isdefined_sample = defined(sample_include_file)
+
+	# basename workaround
+	String base_phenotype = basename(phenotype_file)
 	
 
 	command <<<
 		set -eux -o pipefail
+
+		# copy some inputs into working directory
+		# necessary because params files output must have basenames, not full paths,
+		# otherwise the next task cannot read from this task's params file
+
+		cp ~{phenotype_file} .
 
 		echo "Generating config file"
 		python << CODE
@@ -90,7 +100,7 @@ task null_model_r {
 			f.write('out_phenotype_file "phenotypes.RData"\n')
 
 		f.write('outcome ~{outcome}\n')
-		f.write('phenotype_file "~{phenotype_file}"\n')
+		f.write('phenotype_file "~{base_phenotype}"\n')
 		if "~{isdefined_gds}" == "true":
 			py_gds_array = ['~{sep="','" gds_files}']
 			gds = py_gds_array[0]
@@ -202,11 +212,11 @@ task null_model_r {
 		# null_model_phenotypes:
 		# * test_phenotypes.RData
 
-		File config_file = "null_model.config"  # globbed in CWL?
+		File config_file = "null_model.config"  # CWL globs this with the parameters file, ie, params shows up twice as an ouput
 		File null_model_phenotypes = glob("*phenotypes.RData")[0]  # should inherit metadata
 		Array[File] null_model_files = glob("${output_prefix}*null_model*RData")
 		File null_model_params = glob("*.params")[0]
-		# todo: null model output https://github.com/aofarrel/analysis_pipeline_cwl/blob/63e0ef1b4a8d1547cb2967ab8ebef4466292a07b/association/tools/null_model_r.cwl#L347
+		# the CWL also has null_model_output but this is already in null_model_files and not repeated here
 	}
 }
 
@@ -254,6 +264,13 @@ task null_model_report {
 	}
 	command <<<
 		set -eux -o pipefail
+
+		echo "Copying params file into the workdir"
+		# workaround for rmd file being unable to param file
+		cp ~{null_model_params} .
+		cp ~{phenotype_file} .
+		if [ ~{isdefined_pca} ]; then
+			cp ~{pca_file} .
 
 		echo "Generating config file"
 		python << CODE
