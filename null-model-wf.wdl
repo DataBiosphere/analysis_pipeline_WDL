@@ -54,8 +54,11 @@ task null_model_r {
 	Boolean isdefined_sample = defined(sample_include_file)
 
 	# basename workaround
-	String base_phenotype = basename(phenotype_file)
 	String base_conditvar = basename(conditional_variant_file)
+	String base_pca = basename(pca_file)
+	String base_phenotype = basename(phenotype_file)
+	String base_matrix = basename(relatedness_matrix_file)
+	String base_sample = basename(sample_include_file)
 	
 
 	command <<<
@@ -65,7 +68,7 @@ task null_model_r {
 		# necessary because params files output must have basenames, not full paths,
 		# otherwise the next task cannot read from this task's params file
 
-		cp ~{phenotype_file} .
+		#cp ~{phenotype_file} .
 
 		echo "Generating config file"
 		python << CODE
@@ -109,13 +112,13 @@ task null_model_r {
 			chr = split_n_space(gds)[1]
 			f.write('gds_file "' + py_splitup + chr + '"\n')
 		if "~{isdefined_pca}" == "true":
-			f.write('pca_file "~{pca_file}"\n')
+			f.write('pca_file "~{base_pca}"\n')
 		if "~{isdefined_matrix}" == "true":
-			f.write('relatedness_matrix_file "~{relatedness_matrix_file}"\n')
+			f.write('relatedness_matrix_file "~{base_matrix}"\n')
 		if "~{family}" != "":
 			f.write('family ~{family}\n')
 		if "~{isdefined_conditvar}" == "true":
-			f.write('conditional_variant_file "~{conditional_variant_file}"\n')
+			f.write('conditional_variant_file "~{base_conditvar}"\n')
 		if "~{isdefined_covars}" == "true":
 			f.write('covars ""~{sep=" " covars}""\n')
 		if "~{group_var}" != "":
@@ -130,7 +133,7 @@ task null_model_r {
 		if "~{isdefined_resid}" == "true":
 			f.write('reside_covars ~{resid_covars}\n')
 		if "~{isdefined_sample}" == "true":
-			f.write('sample_include_file "~{sample_include_file}"\n')
+			f.write('sample_include_file "~{base_sample}"\n')
 		if "~{isdefined_norm}" == "true":
 			f.write('norm_bygroup ~{norm_bygroup}\n')
 
