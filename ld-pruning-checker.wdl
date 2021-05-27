@@ -115,8 +115,7 @@ workflow checker_ldprune {
 			input:
 				test = gds_test,
 				truth = truth_nondefaults_subset,
-				truth_info = truth_nondefaults_info,
-				enforce_chronological_order = nondef_step2_subset.config_file[0]
+				truth_info = truth_nondefaults_info
 		}
 	}
 
@@ -126,8 +125,7 @@ workflow checker_ldprune {
 	call test_run_ldpruning.merge_gds as nondef_step3_merge {
 		input:
 			gdss = nondef_step2_subset.subset_output,
-			out_prefix = option_nondefault_out_prefix,
-			enforce_chronological_order = nondef_md5_subset.enforce_chronological_order[0]
+			out_prefix = option_nondefault_out_prefix
 
 	}
 	scatter(subset_gds in nondef_step2_subset.subset_output) {
@@ -146,7 +144,7 @@ workflow checker_ldprune {
 			test = nondef_step3_merge.merged_gds_output,
 			truth = [truth_nondefaults_merged],
 			truth_info = truth_nondefaults_info,
-			enforce_chronological_order = nondef_step4_checkmerge.config_file[0]
+			enforce_chronological_order = nondef_md5_subset.enforce_chronological_order
 
 	}
 
@@ -160,8 +158,7 @@ workflow checker_ldprune {
 	scatter(gds in gds_with_unique_var_ids) {
 		call test_run_ldpruning.ld_pruning as default_step1_prune {
 			input:
-				gds_file = gds,
-				enforce_chronological_order = nondef_md5_merge.enforce_chronological_order
+				gds_file = gds
 		}
 	}
 	scatter(gds_n_varinc in zip(gds_with_unique_var_ids, default_step1_prune.ld_pruning_output)) {
@@ -188,8 +185,7 @@ workflow checker_ldprune {
 	####################################
 	call test_run_ldpruning.merge_gds as default_step3_merge {
 		input:
-			gdss = default_step2_subset.subset_output,
-			enforce_chronological_order = default_md5_subset.enforce_chronological_order[0]
+			gdss = default_step2_subset.subset_output
 	}
 	scatter(subset_gds in default_step2_subset.subset_output) {
 		call test_run_ldpruning.check_merged_gds as default_step4_checkmerge {
@@ -207,7 +203,7 @@ workflow checker_ldprune {
 			test = default_step3_merge.merged_gds_output,
 			truth = [truth_defaults_merged],
 			truth_info = truth_defaults_info,
-			enforce_chronological_order = default_step4_checkmerge.config_file[0]
+			enforce_chronological_order = default_md5_subset.enforce_chronological_order
 	}
 
 	meta {

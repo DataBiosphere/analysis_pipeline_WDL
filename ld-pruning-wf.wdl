@@ -5,10 +5,6 @@ task ld_pruning {
 	input {
 		File gds_file
 
-		# having an input that depends upon a previous task's output reins in
-		# cromwell's tendencies to run tasks out of order
-		File? enforce_chronological_order
-
 		# optional
 		File? sample_include_file
 		File? variant_include_file
@@ -109,10 +105,6 @@ task subset_gds {
 	input {
 		Pair[File, File] gds_n_varinc  # [gds, variant_include_file]
 
-		# having an input that depends upon a previous task's output reins in
-		# cromwell's tendencies to run tasks out of order
-		File? enforce_chronological_order
-
 		# optional
 		String? out_prefix
 		File? sample_include_file
@@ -201,10 +193,6 @@ task subset_gds {
 task merge_gds {
 	input {
 		Array[File] gdss
-
-		# having an input that depends upon a previous task's output reins in
-		# cromwell's tendencies to run tasks out of order
-		File? enforce_chronological_order
 
 		# optional
 		String? out_prefix
@@ -310,10 +298,6 @@ task check_merged_gds {
 	input {
 		File gds_file
 		File merged_gds_file
-
-		# having an input that depends upon a previous task's output reins in
-		# cromwell's tendencies to run tasks out of order
-		File? enforce_chronological_order
 
 		#runtime attributes
 		Int addldisk = 5
