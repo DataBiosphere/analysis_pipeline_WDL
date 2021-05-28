@@ -17,15 +17,7 @@ This list is not intended as an exhaustive list of every difference. These are t
 * The CWL imports other CWLs. The WDL does not import other WDLs, except in the case of the checker workflow.  
 	* Reasoning: It is possible for WDLs to contain just tasks and be imported into another task, but in some contexts it can be slightly less secure.
 
-# Workflow A --- vcf-to-gds-wf.wdl     
-## "Not Strictly Necessary But In WDL This Makes More Sense"
-* The WDL will not start the check_gds task if check_gds is false. The CWL will start the check_gds task regardless and generate a config file, and the true/false only applies to calling the  script.
-	* Reasoning: The way GCS billing works, this has the potential of being cheaper. Otherwise we would spend for having a powerful non-preemptible compute designed for an intense task, then only using that compute for making a text file.
-
-## Error Handling
-* The WDL can correctly handle a mixture of file extensions, not so much by design, but due to the specifics of implementation. The CWL will handle such a mixture incorrectly in check_gds (but can correctly handle a homogenous group, such as all being bcf files).
-
-# Workflow B --- ld-pruning-wf.wdl
+# ld-pruning-wf.wdl
 ## Strictly Necessary Changes
 * Similiar to Workflow A's file relocalization trick in unique_variant_ids, this workflow's merge_gds task has to use the same workaround.
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().
@@ -37,3 +29,10 @@ Seven Bridges or its AWS backend appears to sort numbers alphabetically rather t
 ## Error Handling
 * The CWL appears to contain a bug where `exclude_PCA_cor` being set to false is not respected. See #14 for more info. The WDL avoids this using slightly different logic.
 
+# vcf-to-gds-wf.wdl     
+## "Not Strictly Necessary But In WDL This Makes More Sense"
+* The WDL will not start the check_gds task if check_gds is false. The CWL will start the check_gds task regardless and generate a config file, and the true/false only applies to calling the  script.
+	* Reasoning: The way GCS billing works, this has the potential of being cheaper. Otherwise we would spend for having a powerful non-preemptible compute designed for an intense task, then only using that compute for making a text file.
+
+## Error Handling
+* The WDL can correctly handle a mixture of file extensions, not so much by design, but due to the specifics of implementation. The CWL will handle such a mixture incorrectly in check_gds (but can correctly handle a homogenous group, such as all being bcf files).
