@@ -144,7 +144,7 @@ workflow checker_ldprune {
 			test = nondef_step3_merge.merged_gds_output,
 			truth = [truth_nondefaults_merged],
 			truth_info = truth_nondefaults_info,
-			enforce_chronological_order = nondef_md5_subset.enforce_chronological_order
+			enforce_chronological_order = nondef_md5_subset.enforce_chronological_order[0]
 
 	}
 
@@ -176,7 +176,8 @@ workflow checker_ldprune {
 			input:
 				test = gds_test,
 				truth = truth_defaults_subset,
-				truth_info = truth_defaults_info
+				truth_info = truth_defaults_info,
+				enforce_chronological_order = nondef_md5_merge.enforce_chronological_order
 		}
 	}
 
@@ -203,7 +204,7 @@ workflow checker_ldprune {
 			test = default_step3_merge.merged_gds_output,
 			truth = [truth_defaults_merged],
 			truth_info = truth_defaults_info,
-			enforce_chronological_order = default_md5_subset.enforce_chronological_order
+			enforce_chronological_order = default_md5_subset.enforce_chronological_order[0]
 	}
 
 	meta {
