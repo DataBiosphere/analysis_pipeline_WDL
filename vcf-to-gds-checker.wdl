@@ -85,7 +85,7 @@ workflow checker_vcftogds {
 	#        Checker        #
 	# # # # # # # # # # # # #
 	scatter(gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
-		call md5sum as md5sum_wfA {
+		call md5sum as md5sum {
 			input:
 				gds_test = gds_test,
 				gds_truth = truth_gds,
