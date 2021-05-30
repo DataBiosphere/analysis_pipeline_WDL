@@ -88,7 +88,7 @@ task ld_pruning {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master:2.10.0"
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		disks: "local-disk " + final_disk_dize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -178,7 +178,7 @@ task subset_gds {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master:2.10.0"
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		disks: "local-disk " + final_disk_dize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -281,7 +281,7 @@ task merge_gds {
 	runtime {
 		cpu: cpu
 		disks: "local-disk " + final_disk_dize + " HDD"
-		docker: "uwgac/topmed-master:2.10.0"
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -353,7 +353,7 @@ task check_merged_gds {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master:2.10.0"
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		disks: "local-disk " + final_disk_dize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
