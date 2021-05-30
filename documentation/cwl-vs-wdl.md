@@ -19,9 +19,9 @@ This list is not intended as an exhaustive list of every difference. These are t
 
 # ld-pruning-wf.wdl
 ## Strictly Necessary Changes
-* Similiar to Workflow A's file relocalization trick in unique_variant_ids, this workflow's merge_gds task has to use the same workaround.
+* Similiar to vcf-to-gds' file relocalization trick in unique_variant_ids, this workflow's merge_gds task has to use the same workaround.
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().
-* The workaround used by Workflow A's check_gds to get chromosome number (see above) is also used by check_merged_gds for the same reason.  
+* The workaround used by vcf-to-gds' check_gds to get chromosome number (see above) is also used by check_merged_gds for the same reason.  
 
 ## Different Outputs
 Seven Bridges or its AWS backend appears to sort numbers alphabetically rather than numerically in some contexts, resulting in merged GDS files having their variants ordered differently than when the same script is run in a WDL context on a local machine or Terra (GCS backend) on the same inputs. For the testdata inputs, all variants in the output files were checked and found to be equivalent across the CWL and the WDL by splitting the variant files into subsets with correct numeric ordering. In other words, they ought to be functionally equivalent in spite of not md5ing to the same value. See [#22](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/22) for more information.   
