@@ -1,8 +1,8 @@
 version 1.0
 
-# Please be sure to read the caveats on Github
+# Caveat programmator: Please be sure to read the readme on Github
 
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/main/vcf-to-gds-wf.wdl" as megastepA
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/v1.0.1/vcf-to-gds-wf.wdl" as test_run_vcftogds
 
 task md5sum {
 	input {
@@ -13,18 +13,23 @@ task md5sum {
 
 	command <<<
 
+	set -eux -o pipefail
+
 	echo "Information about these truth files:"
 	head -n 3 "~{truth_info}"
 	echo "The container version refers to the container used in applicable tasks in the WDL and is the important value here."
 	echo "If container versions are equivalent, there should be no difference in GDS output between a local run and a run on Terra."
 	
-	md5sum ~{gds_test} > sum.txt
+	md5sum ~{gds_test} > sum.txt 
+
 	test_basename="$(basename -- ~{gds_test})"
 	echo "test file: ${test_basename}"
+	echo "truth file(s): ~{sep=' ' gds_truth}"
 
 	for i in ~{sep=' ' gds_truth}
 	do
 		truth_basename="$(basename -- ${i})"
+		echo "$(basename -- ${i})"
 		if [ "${test_basename}" == "${truth_basename}" ]; then
 			echo "$(cut -f1 -d' ' sum.txt)" ${i} | md5sum --check
 		fi
@@ -39,49 +44,56 @@ task md5sum {
 
 }
 
-workflow checker {
+workflow checker_vcftogds {
 	input {
 		# checker-specific
 		File truth_info
-		Array[File] gds_truths
-
+		Array[File] truth_gds
 		# standard workflow
-		Array[File] vcf_files
-		Array[String] format = ["GT"]
-		Boolean check_gds = true   #careful now...
+		Array[File] test_vcfs
+		Boolean option_check_gds = true   #careful now...
+		Array[String] option_format
 	}
 
-	scatter(vcf_file in vcf_files) {
-		call megastepA.vcf2gds {
+
+
+	####################################
+	#           vcf-to-gds-wf          #
+	####################################
+	scatter(test_vcf in test_vcfs) {
+		call test_run_vcftogds.vcf2gds {
 			input:
-				vcf = vcf_file,
-				format = format
+				vcf = test_vcf,
+				format = option_format
 		}
 	}
-	
-	call megastepA.unique_variant_id {
+	call test_run_vcftogds.unique_variant_id {
 		input:
 			gdss = vcf2gds.gds_output
 	}
-	
-	if(check_gds) {
+	if(option_check_gds) {
 		scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
-			call megastepA.check_gds {
+			call test_run_vcftogds.check_gds {
 				input:
 					gds = gds,
-					vcfs = vcf_files
+					vcfs = test_vcfs
 			}
 		}
 	}
 
+	# # # # # # # # # # # # #
+	#        Checker        #
+	# # # # # # # # # # # # #
 	scatter(gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
-		call md5sum {
+		call md5sum as md5sum {
 			input:
 				gds_test = gds_test,
-				gds_truth = gds_truths,
+				gds_truth = truth_gds,
 				truth_info = truth_info
 		}
 	}
+
+
 
 
 	meta {
