@@ -1,5 +1,5 @@
 # Significant differences between CWL and WDL versions
-This list is not intended as an exhaustive list of every difference. These are two different workflow languages using two different inline languages to generate configuration files after all! Instead, the purpose of this document is to keep track of changes which may have implications for maintainers of this code. This is unlikely to be of interest to the average user, except for [the one instance of known differing outputs](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/implement-merge-gds/documentation/cwl-vs-wdl.md#different-outputs).  
+This list is not intended as an exhaustive list of every difference. These are two different workflow languages using two different inline languages to generate configuration files after all! Instead, the purpose of this document is to keep track of changes which may have implications for maintainers of this code. This is unlikely to be of interest to the average user, except for [the one instance of known differing outputs](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/documentation/cwl-vs-wdl.md#different-outputs).  
 
 # All Workflows 
 ## Strictly Necessary Changes  
