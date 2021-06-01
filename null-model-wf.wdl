@@ -44,30 +44,7 @@ task null_model_r {
 		Int memory = 4
 		Int preempt = 3
 	}
-
-	# Estimate disk size required
-	Int phenotype_size = ceil(size(phenotype_file, "GB"))
-	# other files, etc
-	Int finalDiskSize = phenotype_size + addldisk
-
-	# defined workaround
-	#
-	# Strictly speaking this is only needed for Array variables
-	# But we'll do it for most of 'em for consistency's sake
-	Boolean isdefined_conditvar = defined(conditional_variant_file)
-	Boolean isdefined_covars = defined(covars)
-	Boolean isdefined_gds = defined(gds_files)
-	Boolean isdefined_inverse = defined(inverse_normal)
-	Boolean isdefined_matrix = defined(relatedness_matrix_file)
-	Boolean isdefined_norm = defined(norm_bygroup)
-	Boolean isdefined_pca = defined(pca_file)
-	Boolean isdefined_resid = defined(resid_covars)
-	Boolean isdefined_sample = defined(sample_include_file)
-
-	# basename workaround
-	String base_phenotype = basename(phenotype_file)
 	
-
 	command <<<
 		set -eux -o pipefail
 
@@ -238,6 +215,28 @@ task null_model_r {
 		echo "Calling R script null_model.R"
 		Rscript /usr/local/analysis_pipeline/R/null_model.R null_model.config
 	>>>
+
+	# Estimate disk size required -- recall most inputs are duplicated
+	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
+	# todo: other files, etc
+	Int finalDiskSize = phenotype_size + addldisk
+
+	# defined workaround
+	#
+	# Strictly speaking this is only needed for Array variables
+	# But we'll do it for most of 'em for consistency's sake
+	Boolean isdefined_conditvar = defined(conditional_variant_file)
+	Boolean isdefined_covars = defined(covars)
+	Boolean isdefined_gds = defined(gds_files)
+	Boolean isdefined_inverse = defined(inverse_normal)
+	Boolean isdefined_matrix = defined(relatedness_matrix_file)
+	Boolean isdefined_norm = defined(norm_bygroup)
+	Boolean isdefined_pca = defined(pca_file)
+	Boolean isdefined_resid = defined(resid_covars)
+	Boolean isdefined_sample = defined(sample_include_file)
+
+	# basename workaround
+	String base_phenotype = basename(phenotype_file)
 	
 	runtime {
 		cpu: cpu
@@ -367,9 +366,11 @@ task null_model_report {
 		echo "Calling null_model_report.R"
 		Rscript /usr/local/analysis_pipeline/R/null_model_report.R null_model_report.config
 	>>>
-	# Estimate disk size required
-	Int phenotype_size = ceil(size(phenotype_file, "GB"))
-	Int finalDiskSize = 2*phenotype_size + addldisk
+	
+	# Estimate disk size required -- recall most inputs are duplicated
+	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
+	# todo: other files
+	Int finalDiskSize = phenotype_size + addldisk
 
 	# Workaround
 	# Strictly speaking this is only needed for Array variables
