@@ -3,14 +3,14 @@ These scripts run pipelines on a known set of inputs, and validates them against
 
 These workflows are not simply a copy of the check_gds/check_merged_gds steps found in vcf-to-gds and ld-pruning respectively. Instead, they perform a separate validation check using md5 sums.
 
-Due to Cromwell limitations, workflows do not always execute in the order that tasks are written in a WDL file. Efforts were made to reduce in ld-pruning-checker. Similarly, scattered tasks tend to execute their components in a somewhat random order; something like shard-6 --> shard-10 --> shard-20 --> shard-1 is possible even if you have your job concurrency set to 1. For this reason, your pipeline may error out later than you would expect. **Be prepared for the pipeline to run its full course even if you are expecting an error in one of the first md5sum checks!**
+Due to Cromwell limitations, workflows do not always execute in the order that tasks are written in a WDL file. Similarly, scattered tasks tend to execute their components in a somewhat random order; something like shard-6 --> shard-10 --> shard-20 --> shard-1 is possible even if you have your job concurrency set to 1. For this reason, your pipeline may error out later than you would expect. **Be prepared for the pipeline to run its full course even if you are expecting an error in one of the first md5sum checks!**
 
 ## vcf-to-gds-checker.wdl
 Because the test inputs are known to not take very long in check_gds, this step is enabled *by default.* If you are replacing these files with your own sets of inputs and outputs, and that set is non-downsampled, modern TOPMed data, you may wish to consider skipping this step.
 
 If relying on the truth files located in topmed_workflow_testing, make sure to run this on the full array of input VCF (vcf-to-gds-checker). If you do not run this on the full array of provided files, the resulting outputs will have unexpected variant IDs (vcf-to-gds), resulting in an md5sum mismatch. That does not mean the files are invalid, it just means their IDs are not exactly the same as they would be if you had generated them all together.
 
-ChrX is not in the pipeline's JSON to prevent people who intend on piping the output of this pipeline directly into ld-pruning-checker. However, an input file and truth file are found in the same buckets as the other input and truth buckets for chrX, so you may run this checker on chrX too if you'd like.
+ChrX is not in the pipeline's JSON to prevent errors should the output of this pipeline be piped directly into ld-pruning-checker. However, an input file and truth file are found in the same buckets as the other input and truth buckets for chrX, so running on chrX is still possible.
 
 ## ld-pruning-checker.wdl
 **Estimated cost on Terra: $1.39**  
