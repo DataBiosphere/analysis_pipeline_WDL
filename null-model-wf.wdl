@@ -1,5 +1,16 @@
 version 1.0
 
+# Most pipelines so far use a .config file to point requiste inputs to the Rscript.
+# null_model_r works like this, generating a .config file which is used by null_model.R
+# But null_model_report bucks this trend completely. It essentially needs two configs.
+# First of all it generates a .config file which only contains the distribution family,
+# the outprefix, and n_cataogires_boxplot. You would expect it to contain the other
+# stuff, such as phenotype_file, in that same configuration file, but it does not.
+# Instead, it uses the previous tasks' params file for that stuff. This params file was
+# generated in the first task and acts like a copy of the first task's config file. 
+# It is this param file from the first task that is used to generated an Rmd (R markdown) file
+# in the second task.
+
 # [1] null_model_r
 task null_model_r {
 	input {
@@ -175,7 +186,8 @@ task null_model_r {
 			
 		############
 		'''
-		CWL now has output inherit inputs metadata
+		CWL now has output inherit inputs metadata. But it is not clear to me
+		what is being transferred. Is metadata a field in an RData file?
 
 		class: InlineJavascriptRequirement
 		expressionLib:
