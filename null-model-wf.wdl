@@ -54,21 +54,38 @@ task null_model_r {
 	Boolean isdefined_sample = defined(sample_include_file)
 
 	# basename workaround
-	String base_conditvar = basename(conditional_variant_file)
-	String base_pca = basename(pca_file)
 	String base_phenotype = basename(phenotype_file)
-	String base_matrix = basename(relatedness_matrix_file)
-	String base_sample = basename(sample_include_file)
 	
 
 	command <<<
 		set -eux -o pipefail
 
-		# copy some inputs into working directory
-		# necessary because params files output must have basenames, not full paths,
+		# params files output must have basenames, not full paths,
 		# otherwise the next task cannot read from this task's params file
+		# this also requires copying some things to the workdir
 
-		#cp ~{phenotype_file} .
+		cp ~{phenotype_file} .
+
+		if ~{isdefined_conditvar}; then
+			cp ~{conditional_variant_file} .
+		fi
+		if ~{isdefined_gds}; then
+			GDS_FILESS=(~{sep=" " gds_files})
+			for GDS_FILE in ${GDS_FILESS[@]};
+			do
+				cp ${GDS_FILE} .
+			done
+		fi
+		if ~{isdefined_matrix}; then
+			cp ~{relatedness_matrix_file} .
+		fi
+		if ~{isdefined_pca}; then
+			cp ~{pca_file} .
+		fi
+		if ~{isdefined_sample}; then
+			cp ~{sample_include_file} .
+		fi
+
 
 		echo "Generating config file"
 		python << CODE
@@ -105,35 +122,52 @@ task null_model_r {
 
 		f.write('outcome ~{outcome}\n')
 		f.write('phenotype_file "~{base_phenotype}"\n')
+		
 		if "~{isdefined_gds}" == "true":
 			py_gds_array = ['~{sep="','" gds_files}']
 			gds = py_gds_array[0]
 			py_splitup = split_n_space(gds)[0]
 			chr = split_n_space(gds)[1]
 			f.write('gds_file "' + py_splitup + chr + '"\n')
+		
 		if "~{isdefined_pca}" == "true":
-			f.write('pca_file "~{base_pca}"\n')
+			base_pca = os.path.basename("~{pca_file}")
+			f.write('pca_file "%s"\n' % base_pca)
+		
 		if "~{isdefined_matrix}" == "true":
-			f.write('relatedness_matrix_file "~{base_matrix}"\n')
+			base_matrix = os.path.basename("~{relatedness_matrix_file}")
+			f.write('relatedness_matrix_file "%s"\n' % base_matrix)
+		
 		if "~{family}" != "":
 			f.write('family ~{family}\n')
+		
 		if "~{isdefined_conditvar}" == "true":
-			f.write('conditional_variant_file "~{base_conditvar}"\n')
+			base_conditvar = os.path.basename("~{conditional_variant_file}")
+			f.write('conditional_variant_file "%s"\n' % base_conditvar)
+		
 		if "~{isdefined_covars}" == "true":
 			f.write('covars ""~{sep=" " covars}""\n')
+		
 		if "~{group_var}" != "":
 			f.write('group_var "~{group_var}"\n')
+		
 		if "~{isdefined_inverse}" == "true":
 			f.write('inverse_normal ~{inverse_normal}\n')
+		
 		if "~{n_pcs}" != "":
 			if ~{n_pcs} > 0:
 				f.write('n_pcs ~{n_pcs}\n')
+		
 		if "~{rescale_variance}" != "":
 			f.write('rescale_variance "~{rescale_variance}"\n')
+		
 		if "~{isdefined_resid}" == "true":
 			f.write('reside_covars ~{resid_covars}\n')
+		
 		if "~{isdefined_sample}" == "true":
-			f.write('sample_include_file "~{base_sample}"\n')
+			base_sample = os.path.basename("~{sample_include_file}")
+			f.write('sample_include_file "%s"\n' % base_sample)
+		
 		if "~{isdefined_norm}" == "true":
 			f.write('norm_bygroup ~{norm_bygroup}\n')
 
@@ -273,21 +307,33 @@ task null_model_report {
 		# workaround for rmd file being unable to param file
 		cp ~{null_model_params} .
 		cp ~{phenotype_file} .
-		if [ ~{isdefined_pca} ]; then
-			cp ~{pca_file} .
+
+		if ~{isdefined_null}; then
+			NULL_MODEL_FILESS=(~{sep=" " null_model_files})
+			for NULL_MODE_FILE in ${NULL_MODEL_FILESS[@]};
+			do
+				cp ${NULL_MODE_FILE} .
+			done
 		fi
-		if [ ~{isdefined_matrix} ]; then
-			cp ~{relatedness_matrix_file} .
-		fi
-		if [ ~{isdefined_conditvar} ]; then
+
+		if ~{isdefined_conditvar}; then
 			cp ~{conditional_variant_file} .
 		fi
-		if [ ~{isdefined_gds} ]; then
+		if ~{isdefined_gds}; then
 			GDS_FILESS=(~{sep=" " gds_files})
 			for GDS_FILE in ${GDS_FILESS[@]};
 			do
 				cp ${GDS_FILE} .
 			done
+		fi
+		if ~{isdefined_matrix}; then
+			cp ~{relatedness_matrix_file} .
+		fi
+		if ~{isdefined_pca}; then
+			cp ~{pca_file} .
+		fi
+		if ~{isdefined_sample}; then
+			cp ~{sample_include_file} .
 		fi
 
 		echo "Generating config file"
@@ -322,6 +368,7 @@ task null_model_report {
 	Boolean isdefined_inverse = defined(inverse_normal)
 	Boolean isdefined_matrix = defined(relatedness_matrix_file)
 	Boolean isdefined_norm = defined(norm_bygroup)
+	Boolean isdefined_null = defined(null_model_files)
 	Boolean isdefined_pca = defined(pca_file)
 	Boolean isdefined_resid = defined(resid_covars)
 	Boolean isdefined_sample = defined(sample_include_file)
