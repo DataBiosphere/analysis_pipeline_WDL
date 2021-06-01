@@ -1,4 +1,4 @@
 {
-  "vcftogds.vcf_files": ["test-data-and-truths/vcfs/1KG_phase3_subset_chr1.vcf.gz", "test-data-and-truths/vcfs/1KG_phase3_subset_chr2.vcf.gz", "test-data-and-truths/vcfs/1KG_phase3_subset_chr3.vcf.gz", "test-data-and-truths/vcfs/1KG_phase3_subset_chr20.vcf.gz", "test-data-and-truths/vcfs/1KG_phase3_subset_chrX.vcf.gz"],
+  "vcftogds.vcf_files": ["_test-data-and-truths_/vcfs/1KG_phase3_subset_chr1.vcf.gz", "_test-data-and-truths_/vcfs/1KG_phase3_subset_chr2.vcf.gz", "_test-data-and-truths_/vcfs/1KG_phase3_subset_chr3.vcf.gz", "_test-data-and-truths_/vcfs/1KG_phase3_subset_chr20.vcf.gz", "_test-data-and-truths_/vcfs/1KG_phase3_subset_chrX.vcf.gz"],
   "vcftogds.check_gds": true
 }
