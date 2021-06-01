@@ -2,7 +2,7 @@ version 1.0
 
 # Caveat programmator: Please be sure to read the readme on Github
 
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-merge-gds/ld-pruning-wf.wdl" as test_run_ldpruning
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/blob/main/ld-pruning/ld-pruning-wf.wdl" as test_run_ldpruning
 
 task md5sum {
 	input {
