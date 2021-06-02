@@ -18,7 +18,7 @@ For Terra users, it is recommended to import via Dockstore. Importing the correc
 Running these workflows locally is technically possible, but this is not officially supported due to how the local version of Cromwell handles local resources. Please see [this document](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/documentation/running-locally.md) for specifics on running locally.
 
 ## Further reading
-* [checker workflow](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/documentation/checker.md)
+* [checker workflow](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/_documentation_/checker.md)
 * [ld-pruning-wf](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/ld-pruning/README.md)
 * [vcf-to-gds-wf](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/vcf-to-gds/README.md)
 
