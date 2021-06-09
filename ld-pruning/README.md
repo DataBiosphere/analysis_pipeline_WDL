@@ -1,4 +1,5 @@
 # Relatedness and Population Structure Filtering (ld-pruning-wf.wdl)
+**Cost estimate when running on Terra, default inputs: $0.67**  
 This workflow prunes on the basis of linkage disequilibrium. It then subsets GDS files based on those pruned variants, then performs merging and optional checks the merged files. This represents [the second "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#relatedness-and-population-structure).
 
 Original CWL description:

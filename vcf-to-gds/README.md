@@ -1,5 +1,5 @@
 # Conversion to GDS (vcf-to-gds-wf.wdl)
-This script converts vcf.gz/vcf/vcf.bgz/bcf, one per chromosome, to GDS files. It then provides each variant across the files with unique variant IDs for later compatiability with PLINK, and optionally checks the resulting GDS files against their original inputs for consistency. This represents [the first "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#conversion-to-gds) minus the currently-not-recommend optional merge. Merging is still planned to be supported, but only after linkage disequilbrium (also in-progress) is calculated.
+This workflow converts vcf.gz/vcf/vcf.bgz/bcf, one per chromosome, to GDS files. It then provides each variant across the files with unique variant IDs for later compatiability with PLINK, and optionally checks the resulting GDS files against their original inputs for consistency. This represents [the first "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#conversion-to-gds) minus the currently-not-recommend optional merge. Merging is still planned to be supported, but only after linkage disequilbrium (also in-progress) is calculated.
 
 Please be aware that the third step, check_gds is skipped by default, as it is incredibly slow on non-downsampled data. Running this step on modern TOPMed data can take literal days.  
 

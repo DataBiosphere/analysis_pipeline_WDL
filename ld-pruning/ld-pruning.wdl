@@ -1,11 +1,5 @@
 version 1.0
 
-# General notes:
-#
-# variables and functions exclusive to the WDL version tend to have "py_" in front
-# and use camelCase between words - this is to make it clear they don't quite 
-# correlate to the CWL
-
 # [1] ld_pruning -- calculates linkage diseq on a GDS file
 task ld_pruning {
 	input {
@@ -92,10 +86,9 @@ task ld_pruning {
 		Rscript /usr/local/analysis_pipeline/R/ld_pruning.R ld_pruning.config
 	}
 
-	
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master:2.10.0"
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		disks: "local-disk " + final_disk_dize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -142,6 +135,11 @@ task subset_gds {
 			The CWL uses nameroot for this, but I think the WDL needs the full path
 			Ex: "inputs/test_data_chrX.vcf.gz" returns ["inputs/test_data_", "X"]
 			'''
+			if "chr" not in py_filename:
+				print("Unable to determine chromosome number from inputs.")
+				print("Please ensure your files contain ''chr'' followed by")
+				print("the number of letter of the chromosome (chr1, chr2, etc)")
+				exit(1)
 			py_split = py_filename.split("chr")
 			if unicode(str(py_split[1][1])).isnumeric():
 				# chr10 and above
@@ -180,7 +178,7 @@ task subset_gds {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master:2.10.0"
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		disks: "local-disk " + final_disk_dize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -239,11 +237,8 @@ task merge_gds {
 			return "".join(chr_array)
 
 		def split_on_chromosome(file):
-			if "chr" in file:
-				chrom_num = file.split("chr")[1]
-				return chrom_num
-			else:
-				return "error-invalid-inputs"
+			chrom_num = file.split("chr")[1]
+			return chrom_num
 
 		def write_config(chrs, path):
 			f = open("merge_gds.config", "a")
@@ -272,13 +267,7 @@ task merge_gds {
 		chr_array = []
 		for gds_file in gds_array_basenames:
 			chrom_num = find_chromosome(gds_file)
-			if chrom_num == "error-invalid-inputs":
-				print("Unable to determine chromosome number from inputs.")
-				print("Please ensure your files contain ''chr'' followed by")
-				print("the number of letter of the chromosome (chr1, chr2, etc)")
-				exit(1)
-			else:
-				chr_array.append(chrom_num)
+			chr_array.append(chrom_num)
 		chrs = ' '.join(chr_array)
 
 		write_config(chrs, path)
@@ -292,7 +281,7 @@ task merge_gds {
 	runtime {
 		cpu: cpu
 		disks: "local-disk " + final_disk_dize + " HDD"
-		docker: "uwgac/topmed-master:2.10.0"
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -350,7 +339,7 @@ task check_merged_gds {
 		gds_name = gds_first_part + 'chr ' + gds_second_part
 		f = open("check_merged_gds.config", "a")
 		f.write('gds_file "' + gds_name + '"\n')
-		f.write('merged_gds_file "~{merged_gds_file}"\n')
+		f.write('merged_gds_file "~{merged_gds_file}"')
 		f.close
 		exit()
 		CODE
@@ -364,7 +353,7 @@ task check_merged_gds {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master:2.10.0"
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		disks: "local-disk " + final_disk_dize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"

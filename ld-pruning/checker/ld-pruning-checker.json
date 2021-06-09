@@ -1,32 +1,5 @@
 {
-  "checker.wfA_option_check_gds": true,
-  "checker.wfA_truth_info": "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/info.txt",
-  "checker.wfA_option_format": ["GT"],
-  "checker.wfA_test_vcfs": [
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr1.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr2.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr3.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr4.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr5.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr6.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr7.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr8.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr9.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr10.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr11.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr12.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr13.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr14.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr15.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr16.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr17.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr18.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr19.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr20.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr21.vcf.gz",
- "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chr22.vcf.gz"
- ],
-  "checker.wfA_truth_gds": [
+  "checker_ldprune.gds_with_unique_var_ids": [
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr1.gds",
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr2.gds",
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr3.gds",
@@ -50,11 +23,11 @@
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr21.gds",
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr22.gds"
   ],
-  "checker.wfB_truth_defaults_info": "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/info.txt",
-  "checker.wfB_truth_nondefaults_info": "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/nondefault/info.txt",
-  "checker.wfB_truth_defaults_merged": "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/merged.gds",
-  "checker.wfB_truth_nondefaults_merged": "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/nondefault/includePCA_hg19_10.1win_0.3r_0.05MAF_0.02missing.gds",
-  "checker.wfB_truth_defaults_subset": [
+  "checker_ldprune.truth_defaults_info": "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/info.txt",
+  "checker_ldprune.truth_nondefaults_info": "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/nondefault/info.txt",
+  "checker_ldprune.truth_defaults_merged": "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/merged.gds",
+  "checker_ldprune.truth_nondefaults_merged": "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/nondefault/includePCA_hg19_10.1win_0.3r_0.05MAF_0.02missing.gds",
+  "checker_ldprune.truth_defaults_subset": [
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/1KG_phase3_subset_subset_chr1.gds",
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/1KG_phase3_subset_subset_chr2.gds",
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/1KG_phase3_subset_subset_chr3.gds",
@@ -78,7 +51,7 @@
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/1KG_phase3_subset_subset_chr21.gds",
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/1KG_phase3_subset_subset_chr22.gds"
  ],
-   "checker.wfB_truth_nondefaults_subset": [
+   "checker_ldprune.truth_nondefaults_subset": [
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/nondefault/1KG_phase3_subset_subset_chr1.gds",
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/nondefault/1KG_phase3_subset_subset_chr2.gds",
  "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/nondefault/1KG_phase3_subset_subset_chr3.gds",
