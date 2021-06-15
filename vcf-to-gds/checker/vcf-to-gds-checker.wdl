@@ -6,8 +6,8 @@ import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/v2
 
 task md5sum {
 	input {
-		File gds_test
-		Array[File] gds_truth
+		File test
+		Array[File] truth
 		File truth_info
 	}
 
@@ -19,21 +19,24 @@ task md5sum {
 	head -n 3 "~{truth_info}"
 	echo "The container version refers to the container used in applicable tasks in the WDL and is the important value here."
 	echo "If container versions are equivalent, there should be no difference in GDS output between a local run and a run on Terra."
-	
-	md5sum ~{gds_test} > sum.txt 
 
-	test_basename="$(basename -- ~{gds_test})"
+	md5sum ~{test} > sum.txt
+
+	test_basename="$(basename -- ~{test})"
 	echo "test file: ${test_basename}"
-	echo "truth file(s): ~{sep=' ' gds_truth}"
 
-	for i in ~{sep=' ' gds_truth}
+	for i in ~{sep=' ' truth}
 	do
 		truth_basename="$(basename -- ${i})"
-		echo "$(basename -- ${i})"
 		if [ "${test_basename}" == "${truth_basename}" ]; then
-			echo "$(cut -f1 -d' ' sum.txt)" ${i} | md5sum --check
+			actual_truth="$i"
+			break
 		fi
 	done
+
+	# must be done outside while and if or else `set -eux -o pipefail` is ignored
+	echo "$(cut -f1 -d' ' sum.txt)" $actual_truth | md5sum --check
+
 	>>>
 
 	runtime {
@@ -84,11 +87,11 @@ workflow checker_vcftogds {
 	# # # # # # # # # # # # #
 	#        Checker        #
 	# # # # # # # # # # # # #
-	scatter(gds_test in unique_variant_id.unique_variant_id_gds_per_chr) {
+	scatter(test in unique_variant_id.unique_variant_id_gds_per_chr) {
 		call md5sum as md5sum {
 			input:
-				gds_test = gds_test,
-				gds_truth = truth_gds,
+				test = test,
+				truth = truth_gds,
 				truth_info = truth_info
 		}
 	}
