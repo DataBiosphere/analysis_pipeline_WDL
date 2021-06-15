@@ -280,6 +280,10 @@ workflow vcftogds {
 		}
 	}
 
+	output {
+		Array[File] pruned_output = unique_variant_id.unique_variant_id_gds_per_chr
+	}
+
 	meta {
 		author: "Ash O'Farrell"
 		email: "aofarrel@ucsc.edu"

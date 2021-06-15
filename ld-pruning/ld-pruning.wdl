@@ -407,6 +407,10 @@ workflow ldpruning {
 		}
 	}
 
+	output {
+		Array[File] pruned_merged_output = merge_gds.merged_gds_output
+	}
+
 
 	meta {
 		author: "Ash O'Farrell"
