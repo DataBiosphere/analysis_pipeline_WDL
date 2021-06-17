@@ -9,7 +9,7 @@ task gds2bed {
 		File gds_file
 
 		# optional
-		String? bed_file
+		String? bed_file # provides the file name for the processed bed file, if not provided, the file name of the input gds file is used
 		File? sample_include_file
 		File? variant_include_file
 		
@@ -42,9 +42,10 @@ task gds2bed {
 		if "~{defVariantInclude}" == "true":
 			f.write('variant_include_file "~{variant_include_file}"\n')
 
-		if "~{bed_file}" == "true":
+		# check for empty string
+		if "~{bed_file}" != "":
 				f.write('bed_file "~{bed_file}"\n')
-			else:
+		else:
 				f.write('bed_file "~{basename(gds_file, ".gds")}"\n')
 
 		if "~{defSampleInclude}" == "true":
@@ -65,7 +66,7 @@ task gds2bed {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File processed_bed = glob("*.bed")[0]
+		File processed_bed = glob("*.bed")[0] # Note: check if secondary files need to be outputted
 		File config_file = "gds2bed.config"
 	}
 
