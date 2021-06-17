@@ -57,6 +57,7 @@ task null_model_r {
 		if ~{isdefined_conditvar}; then
 			cp ~{conditional_variant_file} .
 		fi
+
 		if ~{isdefined_gds}; then
 			GDS_FILESS=(~{sep=" " gds_files})
 			for GDS_FILE in ${GDS_FILESS[@]};
@@ -64,6 +65,7 @@ task null_model_r {
 				cp ${GDS_FILE} .
 			done
 		fi
+		
 		if ~{isdefined_matrix}; then
 			cp ~{relatedness_matrix_file} .
 		fi
@@ -113,10 +115,9 @@ task null_model_r {
 		
 		if "~{isdefined_gds}" == "true":
 			py_gds_array = ['~{sep="','" gds_files}']
-			gds = py_gds_array[0]
-			py_splitup = split_n_space(gds)[0]
-			chr = split_n_space(gds)[1]
-			f.write('gds_file "' + py_splitup + chr + '"\n')
+			py_gds_split = py_gds_array[0].split("chr")
+			py_processed_gds = split_n_space(py_gds_split)[0]
+			f.write('gds_file "' + os.path.basename(py_processed_gds) + '"\n')
 		
 		if "~{isdefined_pca}" == "true":
 			base_pca = os.path.basename("~{pca_file}")
