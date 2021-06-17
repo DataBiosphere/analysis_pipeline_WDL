@@ -21,7 +21,7 @@ task null_model_r {
 		# required files
 		String outcome
 		File phenotype_file
-		String family  # required on SB
+		String family  # required on SB but not in original pipeline
 
 		# optional stuff
 		File? conditional_variant_file
