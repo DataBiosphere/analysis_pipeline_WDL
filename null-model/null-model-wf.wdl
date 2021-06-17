@@ -11,6 +11,8 @@ version 1.0
 # It is this param file from the first task that is used to generated an Rmd (R markdown) file
 # in the second task.
 
+# null_model_fast_scoreSE.config is not for this workflow
+
 # [1] null_model_r
 task null_model_r {
 	input {
