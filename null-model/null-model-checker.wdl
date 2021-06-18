@@ -85,6 +85,12 @@ workflow checker_ldprune {
 	##############################
 	#           binary           #
 	##############################
+	
+	# Error in scan(file = file, what = what, sep = sep, quote = quote, dec = dec,  : 
+  	# line 7 did not have 2 elements
+	# Calls: readConfig -> read.table -> scan
+	# Execution halted
+
 	call nullmodel.null_model_r as binary__nullmodelr {
 		input:
 			#conditional_variant_file = 
