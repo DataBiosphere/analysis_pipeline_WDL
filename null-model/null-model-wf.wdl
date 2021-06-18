@@ -4,14 +4,14 @@ version 1.0
 # null_model_r works like this, generating a .config file which is used by null_model.R
 # But null_model_report bucks this trend completely. It essentially needs two configs.
 # First of all it generates a .config file which only contains the distribution family,
-# the outprefix, and n_cataogires_boxplot. You would expect it to contain the other
+# the outprefix, and n_catagories_boxplot. You would expect it to contain the other
 # stuff, such as phenotype_file, in that same configuration file, but it does not.
 # Instead, it uses the previous tasks' params file for that stuff. This params file was
 # generated in the first task and acts like a copy of the first task's config file. 
 # It is this param file from the first task that is used to generated an Rmd (R markdown) file
 # in the second task.
 
-# null_model_fast_scoreSE.config is not for this workflow
+# null_model_fast_scoreSE.config is in original repo's testdata, but is not for this workflow
 
 # [1] null_model_r
 task null_model_r {
