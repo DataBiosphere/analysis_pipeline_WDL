@@ -20,7 +20,7 @@ task null_model_r {
 		# for sanity's sake, but the inline Python
 		# follows the original order of the CWL
 
-		# required files
+		# required 
 		String outcome
 		File phenotype_file
 		String family  # required on SB but not in original pipeline
@@ -139,17 +139,17 @@ task null_model_r {
 		if "~{isdefined_covars}" == "true":
 			f.write('covars ""~{sep=" " covars}""\n')
 		
-		if "~{group_var}" != "":
+		if "~{isdefined_group}" == "true":
 			f.write('group_var "~{group_var}"\n')
 		
 		if "~{isdefined_inverse}" == "true":
 			f.write('inverse_normal ~{inverse_normal}\n')
 		
-		if "~{n_pcs}" != "":
+		if "~{isdefined_npcs}" == "true":
 			if ~{n_pcs} > 0:
 				f.write('n_pcs ~{n_pcs}\n')
-		
-		if "~{rescale_variance}" != "":
+	
+		if "~{rescale_variance}" != "": # this check doesn't work for n_pcs but works here
 			f.write('rescale_variance "~{rescale_variance}"\n')
 		
 		if "~{isdefined_resid}" == "true":
@@ -231,8 +231,10 @@ task null_model_r {
 	Boolean isdefined_conditvar = defined(conditional_variant_file)
 	Boolean isdefined_covars = defined(covars)
 	Boolean isdefined_gds = defined(gds_files)
+	Boolean isdefined_group = defined(group_var)
 	Boolean isdefined_inverse = defined(inverse_normal)
 	Boolean isdefined_matrix = defined(relatedness_matrix_file)
+	Boolean isdefined_npcs = defined(n_pcs)
 	Boolean isdefined_norm = defined(norm_bygroup)
 	Boolean isdefined_pca = defined(pca_file)
 	Boolean isdefined_resid = defined(resid_covars)
