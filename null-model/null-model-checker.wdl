@@ -24,8 +24,9 @@ workflow checker_ldprune {
 		String? output_prefix
 		File? pca_file
 		File phenotype_file
-		File? phenotype_file_alternative
+		File phenotype_file_alternative
 		File? relatedness_matrix_file
+		File? relatedness_matrix_file_alternative
 		String? rescale_variance
 		Boolean? resid_covars
 		File? sample_include_file_typical
@@ -42,39 +43,39 @@ workflow checker_ldprune {
 			family = "gaussian",
 			#gds_files =
 			group_var = "study",
-			inverse_normal = "False",
-			n_pcs = 4,
+			inverse_normal = false,
+			#n_pcs = 4,
 			#norm_bygroup
 			outcome = "height",
 			output_prefix = "Null_model_mixed",
 			#pca_file = 
 			phenotype_file = phenotype_file_alternative,
-			relatedness_matrix_file = ,
+			relatedness_matrix_file = relatedness_matrix_file_alternative,
 			#rescale_variance = 
 			#resid_covars = 
 			#sample_include_file = 
 	}
 	call nullmodel.null_model_report as aaa__nullmodelreport {
 		input:
-			null_model_files = basecase__nullmodelr.null_model_files,
-			null_model_params = basecase__nullmodelr.null_model_params,
+			null_model_files = aaa__nullmodelr.null_model_files,
+			null_model_params = aaa__nullmodelr.null_model_params,
 
 			#conditional_variant_file = 
-			covars = ["sex", "Population"],
+			covars = ["sex", "age", "study", "PC1", "PC2", "PC3", "PC4", "PC5"],
 			family = "gaussian",
 			#gds_files =
-			#group_var = 
-			#inverse_normal = 
-			n_pcs = 4,
+			group_var = "study",
+			inverse_normal = false,
+			#n_pcs = 4,
 			#norm_bygroup
-			outcome = "outcome",
-			output_prefix = output_prefix,
-			pca_file = pca_file,
-			phenotype_file = phenotype_file,
-			relatedness_matrix_file = relatedness_matrix_file,
+			#outcome = "height",
+			output_prefix = "Null_model_mixed",
+			#pca_file = 
+			phenotype_file = phenotype_file_alternative,
+			relatedness_matrix_file = relatedness_matrix_file_alternative,
 			#rescale_variance = 
 			#resid_covars = 
-			sample_include_file = sample_include_file_unrelated
+			#sample_include_file = 
 	}
 
 #	##############################
@@ -158,8 +159,8 @@ workflow checker_ldprune {
 #	}
 #	call nullmodel.null_model_report as binary__nullmodelreport {
 #		input:
-#			null_model_files = basecase__nullmodelr.null_model_files,
-#			null_model_params = basecase__nullmodelr.null_model_params,
+#			null_model_files = binary__nullmodelr.null_model_files,
+#			null_model_params = binary__nullmodelr.null_model_params,
 
 #			#conditional_variant_file = 
 #			covars = ["sex", "Population"],
@@ -202,8 +203,8 @@ workflow checker_ldprune {
 #	}
 #	call nullmodel.null_model_report as conditional__nullmodelreport {
 #		input:
-#			null_model_files = basecase__nullmodelr.null_model_files,
-#			null_model_params = basecase__nullmodelr.null_model_params,
+#			null_model_files = conditional__nullmodelr.null_model_files,
+#			null_model_params = conditional__nullmodelr.null_model_params,
 
 #			conditional_variant_file = conditional_variant_file,
 #			covars = ["sex", "Population"],
