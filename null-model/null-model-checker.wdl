@@ -24,6 +24,7 @@ workflow checker_ldprune {
 		String? output_prefix
 		File? pca_file
 		File phenotype_file
+		File? phenotype_file_alternative
 		File? relatedness_matrix_file
 		String? rescale_variance
 		Boolean? resid_covars
@@ -32,34 +33,28 @@ workflow checker_ldprune {
 	}
 
 	##############################
-	#          base case         #
+	#        SB WS Example       #
 	##############################
-	
-	# Error in scan(file = file, what = what, sep = sep, quote = quote, dec = dec,  : 
-	# line 7 did not have 2 elements
-	# Calls: readConfig -> read.table -> scan
-	# Execution halted
-
-	call nullmodel.null_model_r as basecase__nullmodelr {
+	call nullmodel.null_model_r as aaa__nullmodelr {
 		input:
 			#conditional_variant_file = 
-			covars = ["sex", "Population"],
+			covars = ["sex", "age", "study", "PC1", "PC2", "PC3", "PC4", "PC5"],
 			family = "gaussian",
 			#gds_files =
-			#group_var = 
-			#inverse_normal = 
+			group_var = "study",
+			inverse_normal = "False",
 			n_pcs = 4,
 			#norm_bygroup
-			outcome = "outcome",
-			output_prefix = output_prefix,
-			pca_file = pca_file,
-			phenotype_file = phenotype_file,
-			relatedness_matrix_file = relatedness_matrix_file,
+			outcome = "height",
+			output_prefix = "Null_model_mixed",
+			#pca_file = 
+			phenotype_file = phenotype_file_alternative,
+			relatedness_matrix_file = ,
 			#rescale_variance = 
 			#resid_covars = 
-			sample_include_file = sample_include_file_unrelated
+			#sample_include_file = 
 	}
-	call nullmodel.null_model_report as basecase__nullmodelreport {
+	call nullmodel.null_model_report as aaa__nullmodelreport {
 		input:
 			null_model_files = basecase__nullmodelr.null_model_files,
 			null_model_params = basecase__nullmodelr.null_model_params,
@@ -82,100 +77,151 @@ workflow checker_ldprune {
 			sample_include_file = sample_include_file_unrelated
 	}
 
-	##############################
-	#           binary           #
-	##############################
-	
-	# Error in scan(file = file, what = what, sep = sep, quote = quote, dec = dec,  : 
-  	# line 7 did not have 2 elements
-	# Calls: readConfig -> read.table -> scan
-	# Execution halted
+#	##############################
+#	#          base case         #
+#	##############################
+#	
+#	# Error in scan(file = file, what = what, sep = sep, quote = quote, dec = dec,  : 
+#	# line 7 did not have 2 elements
+#	# Calls: readConfig -> read.table -> scan
+#	# Execution halted
 
-	call nullmodel.null_model_r as binary__nullmodelr {
-		input:
-			#conditional_variant_file = 
-			covars = ["sex", "Population"],
-			family = "gaussian",
-			#gds_files =
-			#group_var = 
-			#inverse_normal = 
-			n_pcs = 4,
-			#norm_bygroup
-			outcome = "outcome",
-			output_prefix = output_prefix,
-			pca_file = pca_file,
-			phenotype_file = phenotype_file,
-			relatedness_matrix_file = relatedness_matrix_file,
-			#rescale_variance = 
-			#resid_covars = 
-			#sample_include_file = 
-	}
-	call nullmodel.null_model_report as binary__nullmodelreport {
-		input:
-			null_model_files = basecase__nullmodelr.null_model_files,
-			null_model_params = basecase__nullmodelr.null_model_params,
+#	call nullmodel.null_model_r as basecase__nullmodelr {
+#		input:
+#			#conditional_variant_file = 
+#			covars = ["sex", "Population"],
+#			family = "gaussian",
+#			#gds_files =
+#			#group_var = 
+#			#inverse_normal = 
+#			n_pcs = 4,
+#			#norm_bygroup
+#			outcome = "outcome",
+#			output_prefix = output_prefix,
+#			pca_file = pca_file,
+#			phenotype_file = phenotype_file,
+#			relatedness_matrix_file = relatedness_matrix_file,
+#			#rescale_variance = 
+#			#resid_covars = 
+#			sample_include_file = sample_include_file_unrelated
+#	}
+#	call nullmodel.null_model_report as basecase__nullmodelreport {
+#		input:
+#			null_model_files = basecase__nullmodelr.null_model_files,
+#			null_model_params = basecase__nullmodelr.null_model_params,
 
-			#conditional_variant_file = 
-			covars = ["sex", "Population"],
-			family = "gaussian",
-			#gds_files =
-			#group_var = 
-			#inverse_normal = 
-			n_pcs = 4,
-			#norm_bygroup
-			outcome = "outcome",
-			output_prefix = output_prefix,
-			pca_file = pca_file,
-			phenotype_file = phenotype_file,
-			relatedness_matrix_file = relatedness_matrix_file,
-			#rescale_variance = 
-			#resid_covars = 
-			#sample_include_file = 
-	}
-	##############################
-	#        conditional         #
-	##############################
-	call nullmodel.null_model_r as conditional__nullmodelr {
-		input:
-			conditional_variant_file = conditional_variant_file,
-			covars = ["sex", "Population"],
-			family = "gaussian",
-			gds_files = gds_files,
-			#group_var = 
-			#inverse_normal = 
-			n_pcs = 4,
-			#norm_bygroup = 
-			#outcome = 
-			output_prefix = output_prefix,
-			pca_file = pca_file,
-			phenotype_file = phenotype_file,
-			relatedness_matrix_file = relatedness_matrix_file,
-			#rescale_variance = 
-			#resid_covars = 
-			sample_include_file = sample_include_file_typical
-	}
-	call nullmodel.null_model_report as conditional__nullmodelreport {
-		input:
-			null_model_files = basecase__nullmodelr.null_model_files,
-			null_model_params = basecase__nullmodelr.null_model_params,
+#			#conditional_variant_file = 
+#			covars = ["sex", "Population"],
+#			family = "gaussian",
+#			#gds_files =
+#			#group_var = 
+#			#inverse_normal = 
+#			n_pcs = 4,
+#			#norm_bygroup
+#			outcome = "outcome",
+#			output_prefix = output_prefix,
+#			pca_file = pca_file,
+#			phenotype_file = phenotype_file,
+#			relatedness_matrix_file = relatedness_matrix_file,
+#			#rescale_variance = 
+#			#resid_covars = 
+#			sample_include_file = sample_include_file_unrelated
+#	}
 
-			conditional_variant_file = conditional_variant_file,
-			covars = ["sex", "Population"],
-			family = "gaussian",
-			gds_files = gds_files,
-			#group_var = 
-			#inverse_normal = 
-			n_pcs = 4,
-			#norm_bygroup = 
-			#outcome = 
-			output_prefix = output_prefix,
-			pca_file = pca_file,
-			phenotype_file = phenotype_file,
-			relatedness_matrix_file = relatedness_matrix_file,
-			#rescale_variance = 
-			#resid_covars = 
-			sample_include_file = sample_include_file_typical
-	}
+#	##############################
+#	#           binary           #
+#	##############################
+
+#	# Error in scan(file = file, what = what, sep = sep, quote = quote, dec = dec,  : 
+#  	# line 7 did not have 2 elements
+#	# Calls: readConfig -> read.table -> scan
+#	# Execution halted
+
+#	call nullmodel.null_model_r as binary__nullmodelr {
+#		input:
+#			#conditional_variant_file = 
+#			covars = ["sex", "Population"],
+#			family = "gaussian",
+#			#gds_files =
+#			#group_var = 
+#			#inverse_normal = 
+#			n_pcs = 4,
+#			#norm_bygroup
+#			outcome = "outcome",
+#			output_prefix = output_prefix,
+#			pca_file = pca_file,
+#			phenotype_file = phenotype_file,
+#			relatedness_matrix_file = relatedness_matrix_file,
+#			#rescale_variance = 
+#			#resid_covars = 
+#			#sample_include_file = 
+#	}
+#	call nullmodel.null_model_report as binary__nullmodelreport {
+#		input:
+#			null_model_files = basecase__nullmodelr.null_model_files,
+#			null_model_params = basecase__nullmodelr.null_model_params,
+
+#			#conditional_variant_file = 
+#			covars = ["sex", "Population"],
+#			family = "gaussian",
+#			#gds_files =
+#			#group_var = 
+#			#inverse_normal = 
+#			n_pcs = 4,
+#			#norm_bygroup
+#			outcome = "outcome",
+#			output_prefix = output_prefix,
+#			pca_file = pca_file,
+#			phenotype_file = phenotype_file,
+#			relatedness_matrix_file = relatedness_matrix_file,
+#			#rescale_variance = 
+#			#resid_covars = 
+#			#sample_include_file = 
+#	}
+#	##############################
+#	#        conditional         #
+#	##############################
+#	call nullmodel.null_model_r as conditional__nullmodelr {
+#		input:
+#			conditional_variant_file = conditional_variant_file,
+#			covars = ["sex", "Population"],
+#			family = "gaussian",
+#			gds_files = gds_files,
+#			#group_var = 
+#			#inverse_normal = 
+#			n_pcs = 4,
+#			#norm_bygroup = 
+#			#outcome = 
+#			output_prefix = output_prefix,
+#			pca_file = pca_file,
+#			phenotype_file = phenotype_file,
+#			relatedness_matrix_file = relatedness_matrix_file,
+#			#rescale_variance = 
+#			#resid_covars = 
+#			sample_include_file = sample_include_file_typical
+#	}
+#	call nullmodel.null_model_report as conditional__nullmodelreport {
+#		input:
+#			null_model_files = basecase__nullmodelr.null_model_files,
+#			null_model_params = basecase__nullmodelr.null_model_params,
+
+#			conditional_variant_file = conditional_variant_file,
+#			covars = ["sex", "Population"],
+#			family = "gaussian",
+#			gds_files = gds_files,
+#			#group_var = 
+#			#inverse_normal = 
+#			n_pcs = 4,
+#			#norm_bygroup = 
+#			#outcome = 
+#			output_prefix = output_prefix,
+#			pca_file = pca_file,
+#			phenotype_file = phenotype_file,
+#			relatedness_matrix_file = relatedness_matrix_file,
+#			#rescale_variance = 
+#			#resid_covars = 
+#			sample_include_file = sample_include_file_typical
+#	}
 	##############################
 	#            grm             #
 	##############################

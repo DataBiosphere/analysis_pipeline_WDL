@@ -25,7 +25,9 @@
   "nullmodel.output_prefix": "test",
   "nullmodel.pca_file": "_test-data-and-truths_/null_model/pcair.RData",
   "nullmodel.phenotype_file": "_test-data-and-truths_/null_model/1KG_phase3_subset_annot.RData",
+  "nullmodel.phenotype_file_alternative": "test-data-and-truths/null_model/aaa_sample_phenotype_pcs.RData",
   "nullmodel.relatedness_matrix_file": "_test-data-and-truths_/null_model/pcrelate_Matrix.RData",
-  "nullmodel.sample_include_file_unrelated": "_test-data-and-truths_/null_model/sample_include.RData",
+  "nullmodel.relatedness_matrix_file_alternative": "_test-data-and-truths_/null_model/aaa_kinship.RData",
+  "nullmodel.sample_include_file_typical": "_test-data-and-truths_/null_model/sample_include.RData",
   "nullmodel.sample_include_file_unrelated": "_test-data-and-truths_/null_model/unrelated.RData"
 }
