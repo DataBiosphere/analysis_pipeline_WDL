@@ -82,18 +82,6 @@ task null_model_r {
 		echo "Generating config file"
 		python << CODE
 		import os
-		print("~{isdefined_conditvar}")
-		print("~{isdefined_covars}")
-		print("~{isdefined_gds}")
-		print("~{isdefined_group}")
-		print("~{isdefined_inverse}")
-		print("~{isdefined_matrix}")
-		print("~{isdefined_npcs}")
-		print("~{isdefined_norm}")
-		print("~{isdefined_pca}")
-		print("~{isdefined_resid}")
-		print("~{isdefined_sample}")
-
 		def split_n_space(py_splitstring):
 		# Return [file name with chr name replaced by space, chr name]
 		# Ex: test_data_chrX.gdsreturns ["test_data_chr .gds", "X"]
@@ -158,11 +146,10 @@ task null_model_r {
 			f.write('inverse_normal ~{inverse_normal}\n')
 		
 		if "~{isdefined_npcs}" == "true":
-			print("AAAAAAA")
-			if ~{n_pcs} > 0:
+			if int("~{n_pcs}") > 0:  # must be done this way or else syntax err when n_pcs not defined
 				f.write('n_pcs ~{n_pcs}\n')
 	
-		if "~{rescale_variance}" != "": # this check doesn't work for n_pcs but works here
+		if "~{rescale_variance}" != "":
 			f.write('rescale_variance "~{rescale_variance}"\n')
 		
 		if "~{isdefined_resid}" == "true":
