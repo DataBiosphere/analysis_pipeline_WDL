@@ -44,7 +44,7 @@ workflow checker_ldprune {
 			#gds_files =
 			group_var = "study",
 			inverse_normal = false,
-			#n_pcs = 4,
+			#n_pcs = 
 			#norm_bygroup
 			outcome = "height",
 			output_prefix = "Null_model_mixed",
@@ -66,7 +66,7 @@ workflow checker_ldprune {
 			#gds_files =
 			group_var = "study",
 			inverse_normal = false,
-			#n_pcs = 4,
+			#n_pcs = 
 			#norm_bygroup
 			#outcome = "height",
 			output_prefix = "Null_model_mixed",
