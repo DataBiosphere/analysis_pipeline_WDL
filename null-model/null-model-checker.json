@@ -28,6 +28,7 @@
   "checker_ldprune.phenotype_file_alternative": "_test-data-and-truths_/null_model/aaa_sample_phenotype_pcs.RData",
   "checker_ldprune.relatedness_matrix_file": "_test-data-and-truths_/null_model/pcrelate_Matrix.RData",
   "checker_ldprune.relatedness_matrix_file_alternative": "_test-data-and-truths_/null_model/aaa_kinship.RData",
+  "checker_ldprune.relatedness_matrix_file_grm": "_test-data-and-truths_/null_model/grm.gds",
   "checker_ldprune.sample_include_file_typical": "_test-data-and-truths_/null_model/sample_include.RData",
   "checker_ldprune.sample_include_file_unrelated": "_test-data-and-truths_/null_model/unrelated.RData"
 }

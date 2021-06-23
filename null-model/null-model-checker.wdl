@@ -27,6 +27,7 @@ workflow checker_ldprune {
 		File phenotype_file_alternative
 		File? relatedness_matrix_file
 		File? relatedness_matrix_file_alternative
+		File? relatedness_matrix_file_grm
 		String? rescale_variance
 		Boolean? resid_covars
 		File? sample_include_file_typical
@@ -222,8 +223,6 @@ workflow checker_ldprune {
 	##############################
 	#            grm             #
 	##############################
-#
-#	# Doesn't work
 
 	call nullmodel.null_model_r as grm__nullmodelr {
 		input:
@@ -239,12 +238,7 @@ workflow checker_ldprune {
 			output_prefix = output_prefix,
 			#pca_file = 
 			phenotype_file = phenotype_file,
-
-
-			# grm.gds
-
-
-			relatedness_matrix_file = relatedness_matrix_file,
+			relatedness_matrix_file = relatedness_matrix_file_grm,
 			rescale_variance = "marginal",
 			#resid_covars = 
 			sample_include_file = sample_include_file_typical
@@ -265,7 +259,7 @@ workflow checker_ldprune {
 			output_prefix = output_prefix,
 			pca_file = pca_file,
 			phenotype_file = phenotype_file,
-			relatedness_matrix_file = relatedness_matrix_file,
+			relatedness_matrix_file = relatedness_matrix_file_grm,
 			rescale_variance = "marginal",
 			#resid_covars = 
 			sample_include_file = sample_include_file_typical
