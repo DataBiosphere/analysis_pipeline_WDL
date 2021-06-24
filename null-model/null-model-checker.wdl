@@ -86,6 +86,10 @@ workflow checker_ldprune {
 		File? truth__grm_pheno
 		File? truth__grm_report
 		File? truth__grm_report_invnorm
+		File truth__group_nullmodel
+		File truth__group_pheno
+		File truth__group_report
+		File truth__group_report_invnorm
 	}
 
 	##############################
@@ -178,7 +182,7 @@ workflow checker_ldprune {
 
 	call md5sum as aaa_md5 {
 		input:
-			test = [basecase__nullmodelr.null_model_files[0], basecase__nullmodelr.null_model_phenotypes],
+			test = [basecase__nullmodelr.null_model_files[0], basecase__nullmodelr.null_model_phenotypes, basecase__nullmodelreport.rmd_files[0], basecase__nullmodelreport.rmd_files[1]],
 			truth = [truth__basecase_nullmodel, truth__basecase_pheno, truth__basecase_report, truth__basecase_report_invnorm]
 	}
 
