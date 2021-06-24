@@ -34,12 +34,9 @@ workflow checker_ldprune {
 		File? sample_include_file_unrelated
 	}
 
-	##############################
-	#        SB WS Example       #
-	##############################
-#
-#	# Doesn't work
-#
+#	##############################
+#	#        SB WS Example       #
+#	##############################
 #	call nullmodel.null_model_r as aaa__nullmodelr {
 #		input:
 #			#conditional_variant_file = 
@@ -63,7 +60,7 @@ workflow checker_ldprune {
 #		input:
 #			null_model_files = aaa__nullmodelr.null_model_files,
 #			null_model_params = aaa__nullmodelr.null_model_params,#
-
+#			
 #			#conditional_variant_file = 
 #			covars = ["sex", "age", "study", "PC1", "PC2", "PC3", "PC4", "PC5"],
 #			family = "gaussian",
@@ -72,7 +69,6 @@ workflow checker_ldprune {
 #			inverse_normal = false,
 #			#n_pcs = 
 #			#norm_bygroup
-#			#outcome = "height",
 #			output_prefix = "Null_model_mixed",
 #			#pca_file = 
 #			phenotype_file = phenotype_file_alternative,
@@ -80,14 +76,11 @@ workflow checker_ldprune {
 #			#rescale_variance = 
 #			#resid_covars = 
 #			#sample_include_file = 
-#	}
-
-	##############################
-	#          base case         #
-	##############################
-#	
-#	# Doesn't work
+#	}#
 #
+#	##############################
+#	#          base case         #
+#	##############################
 #	call nullmodel.null_model_r as basecase__nullmodelr {
 #		input:
 #			#conditional_variant_file = 
@@ -111,7 +104,7 @@ workflow checker_ldprune {
 #		input:
 #			null_model_files = basecase__nullmodelr.null_model_files,
 #			null_model_params = basecase__nullmodelr.null_model_params,
-
+#			
 #			#conditional_variant_file = 
 #			covars = ["sex", "Population"],
 #			family = "gaussian",
@@ -120,7 +113,6 @@ workflow checker_ldprune {
 #			#inverse_normal = 
 #			n_pcs = 4,
 #			#norm_bygroup
-#			outcome = "outcome",
 #			output_prefix = output_prefix,
 #			pca_file = pca_file,
 #			phenotype_file = phenotype_file,
@@ -129,12 +121,10 @@ workflow checker_ldprune {
 #			#resid_covars = 
 #			sample_include_file = sample_include_file_unrelated
 #	}
-
-	##############################
-	#           binary           #
-	##############################
 #
-#	# Doesn't work
+#	##############################
+#	#           binary           #
+#	##############################
 #
 #	call nullmodel.null_model_r as binary__nullmodelr {
 #		input:
@@ -159,7 +149,7 @@ workflow checker_ldprune {
 #		input:
 #			null_model_files = binary__nullmodelr.null_model_files,
 #			null_model_params = binary__nullmodelr.null_model_params,
-
+#
 #			#conditional_variant_file = 
 #			covars = ["sex", "Population"],
 #			family = "gaussian",
@@ -168,7 +158,6 @@ workflow checker_ldprune {
 #			#inverse_normal = 
 #			n_pcs = 4,
 #			#norm_bygroup
-#			outcome = "outcome",
 #			output_prefix = output_prefix,
 #			pca_file = pca_file,
 #			phenotype_file = phenotype_file,
@@ -177,9 +166,9 @@ workflow checker_ldprune {
 #			#resid_covars = 
 #			#sample_include_file = 
 #	}
-	##############################
-	#        conditional         #
-	##############################
+#	##############################
+#	#        conditional         #
+#	##############################
 #	call nullmodel.null_model_r as conditional__nullmodelr {
 #		input:
 #			conditional_variant_file = conditional_variant_file,
@@ -220,53 +209,53 @@ workflow checker_ldprune {
 #			#resid_covars = 
 #			sample_include_file = sample_include_file_typical
 #	}
-	##############################
-	#            grm             #
-	##############################
-
-	call nullmodel.null_model_r as grm__nullmodelr {
-		input:
-			#conditional_variant_file = 
-			covars = ["sex", "Population"],
-			family = "gaussian",
-			#gds_files = 
-			#group_var = 
-			#inverse_normal = 
-			n_pcs = 0,
-			#norm_bygroup = 
-			outcome = "outcome",
-			output_prefix = output_prefix,
-			#pca_file = 
-			phenotype_file = phenotype_file,
-			relatedness_matrix_file = relatedness_matrix_file_grm,
-			rescale_variance = "marginal",
-			#resid_covars = 
-			sample_include_file = sample_include_file_typical
-	}
-	call nullmodel.null_model_report as grm__nullmodelreport {
-		input:
-			null_model_files = grm__nullmodelr.null_model_files,
-			null_model_params = grm__nullmodelr.null_model_params,
-			
-			#conditional_variant_file = 
-			covars = ["sex", "Population"],
-			family = "gaussian",
-			#gds_files = 
-			#group_var = 
-			#inverse_normal = 
-			n_pcs = 0,
-			#norm_bygroup = 
-			output_prefix = output_prefix,
-			pca_file = pca_file,
-			phenotype_file = phenotype_file,
-			relatedness_matrix_file = relatedness_matrix_file_grm,
-			rescale_variance = "marginal",
-			#resid_covars = 
-			sample_include_file = sample_include_file_typical
-	}
-	##############################
-	#           group            #
-	##############################
+#	##############################
+#	#            grm             #
+#	##############################
+#
+#	call nullmodel.null_model_r as grm__nullmodelr {
+#		input:
+#			#conditional_variant_file = 
+#			covars = ["sex", "Population"],
+#			family = "gaussian",
+#			#gds_files = 
+#			#group_var = 
+#			#inverse_normal = 
+#			n_pcs = 0,
+#			#norm_bygroup = 
+#			outcome = "outcome",
+#			output_prefix = output_prefix,
+#			#pca_file = 
+#			phenotype_file = phenotype_file,
+#			relatedness_matrix_file = relatedness_matrix_file_grm,
+#			rescale_variance = "marginal",
+#			#resid_covars = 
+#			sample_include_file = sample_include_file_typical
+#	}
+#	call nullmodel.null_model_report as grm__nullmodelreport {
+#		input:
+#			null_model_files = grm__nullmodelr.null_model_files,
+#			null_model_params = grm__nullmodelr.null_model_params,
+#			
+#			#conditional_variant_file = 
+#			covars = ["sex", "Population"],
+#			family = "gaussian",
+#			#gds_files = 
+#			#group_var = 
+#			#inverse_normal = 
+#			n_pcs = 0,
+#			#norm_bygroup = 
+#			output_prefix = output_prefix,
+#			pca_file = pca_file,
+#			phenotype_file = phenotype_file,
+#			relatedness_matrix_file = relatedness_matrix_file_grm,
+#			rescale_variance = "marginal",
+#			#resid_covars = 
+#			sample_include_file = sample_include_file_typical
+#	}
+#	##############################
+#	#           group            #
+#	##############################
 #	call nullmodel.null_model_r as group__nullmodelr {
 #		input:
 #			#conditional_variant_file = 
@@ -307,9 +296,9 @@ workflow checker_ldprune {
 #			#resid_covars = 
 #			#sample_include_file = 
 #	}
-	##############################
-	#        norm bygroup        #
-	##############################
+#	##############################
+#	#        norm bygroup        #
+#	##############################
 #	call nullmodel.null_model_r as norm__nullmodelr {
 #		input:
 #			#conditional_variant_file = 
@@ -350,9 +339,9 @@ workflow checker_ldprune {
 #			#resid_covars = 
 #			#sample_include_file = 
 #	}
-	##############################
-	#        no transform        #
-	##############################
+#	##############################
+#	#        no transform        #
+#	##############################
 #	call nullmodel.null_model_r as notransform__nullmodelr {
 #		input:
 #			#conditional_variant_file = 
@@ -393,9 +382,9 @@ workflow checker_ldprune {
 #			#resid_covars = 
 #			sample_include_file = sample_include_file_typical
 #	}
-	##############################
-	#        unrel binary        #
-	##############################
+#	##############################
+#	#        unrel binary        #
+#	##############################
 #	call nullmodel.null_model_r as unrelbin__nullmodelr {
 #		input:
 #			#conditional_variant_file = 
@@ -436,10 +425,10 @@ workflow checker_ldprune {
 #			#resid_covars = 
 #			sample_include_file = sample_include_file_unrelated
 #	}
-	##############################
-	#          unrelated         #
-	##############################
-#	call nullmodel.null_model_r as unrelbin__nullmodelr {
+#	##############################
+#	#          unrelated         #
+#	##############################
+#	call nullmodel.null_model_r as unrelated__nullmodelr {
 #		input:
 #			#conditional_variant_file = 
 #			covars = ["sex", "Population"],
@@ -458,10 +447,10 @@ workflow checker_ldprune {
 #			#resid_covars = 
 #			sample_include_file = sample_include_file_unrelated
 #	}
-#	call nullmodel.null_model_report as unrelbin__nullmodelreport {
+#	call nullmodel.null_model_report as unrelated__nullmodelreport {
 #		input:
-#			null_model_files = unrelbin__nullmodelr.null_model_files,
-#			null_model_params = unrelbin__nullmodelr.null_model_params,
+#			null_model_files = unrelated__nullmodelr.null_model_files,
+#			null_model_params = unrelated__nullmodelr.null_model_params,
 #			
 #			#conditional_variant_file = 
 #			covars = ["sex"],
