@@ -137,7 +137,7 @@ task null_model_r {
 			f.write('conditional_variant_file "%s"\n' % base_conditvar)
 		
 		if "~{isdefined_covars}" == "true":
-			f.write('covars ""~{sep=" " covars}""\n')
+			f.write('covars "~{sep=" " covars}"\n')
 		
 		if "~{isdefined_group}" == "true":
 			f.write('group_var "~{group_var}"\n')
