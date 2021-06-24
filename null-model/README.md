@@ -69,7 +69,7 @@ Note that `addldisk` is adding gigabytes **on top of** the WDL's best-guess esti
 | null_model_r.norm_bygroup 				| Boolean† | false  | Applies only if Two stage model is TRUE and Group variate is provided. If TRUE,the inverse-normal transformation (and rescaling) is done on each group separately. If FALSE, this is done on all samples jointly.		|
 | null_model_r.output_prefix				| String   | "null_model"   | Base for all output file names.    	|
 | null_model_r.pca_file 					| File     | n/a    | RData file with PCA results created by PC-AiR.    	|
-| null_model_r.relatedness_matrix_file 		| File     | n/a    | RData or GDS file with a kinship matrix or GRM.    	|
+| null_model_r.relatedness_matrix_file 		| File     | n/a    | RData or GDS file with a kinship matrix or GRM. Can be .RData or .gds    	|
 | null_model_r.rescale_variance 			| String†  | "marginal"    | Applies only if Inverse normal is TRUE and Group variate is provided. Controls whether to rescale the variance for each group after inverse-normal transform, restoring it to the original variance before the transform. Options are marginal, varcomp, or none.    	|
 | null_model_r.resid_covars 				| Boolean| true   | Applies only if Inverse normal is TRUE. Logical for whether covariates should be included in the second null model using the residuals as the outcome variable.    	|
 | null_model_r.sample_include_file 			| File | n/a |  RData file with vector of sample.id to include.		|  
@@ -101,7 +101,8 @@ null_model_file:
 ## Common Issues
 * If **PCA File** is not provided, the **Number of PCs to include as covariates** parameter **must** be set to 0.
 * **PCA File** must be an RData object output from the *pcair* function in the GENESIS package.
-* The null model job can be very computationally demanding in large samples (e.g. > 20K). GENESIS supports using sparse representations of matrices in the **Relatedness matrix file** via the R Matrix package, and this can substantially reduce memory usage and CPU time.
+* The null model job can be very computationally demanding in large samples (e.g. > 20K). GENESIS supports using sparse representations of matrices in the **relatedness matrix file** via the R Matrix package, and this can substantially reduce memory usage and CPU time.
+* Keep in mind that **relatedness matrix file** can be a gds in the GRM case, but is usually an RData matrix.
 
 
 ## More Information

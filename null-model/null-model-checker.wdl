@@ -1,10 +1,55 @@
 version 1.0
 
-# Caveat programmator: This runs the null model workflow NINE times.
-# It is currently configured to only run locally at the moment, and
-# does not have any truth files for the time being.
+# Caveat programmator: This runs the null model workflow TEN times.
 
 import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-null-model/null-model/null-model-wf.wdl" as nullmodel
+
+task md5sum {
+	input {
+		Array[File] test
+		Array[File] truth
+		File truth_info
+		# having an input that depends upon a previous task's output reigns in
+		# cromwell's tendencies to run tasks out of order
+		File? enforce_chronological_order
+	}
+
+	command <<<
+
+	set -eux -o pipefail
+
+	for j in ~{sep=' ' test}
+	do
+		md5sum ~{test} > sum.txt
+
+		test_basename="$(basename -- ~{test})"
+		echo "test file: ${test_basename}"
+
+		for i in ~{sep=' ' truth}
+		do
+			truth_basename="$(basename -- ${i})"
+			if [ "${test_basename}" == "${truth_basename}" ]; then
+				actual_truth="$i"
+				break
+			fi
+		done
+		# must be done outside while and if or else `set -eux -o pipefail` is ignored
+		echo "$(cut -f1 -d' ' sum.txt)" $actual_truth | md5sum --check
+	done
+
+	touch previous_task_dummy_output
+	>>>
+
+	runtime {
+		docker: "python:3.8-slim"
+		memory: "2 GB"
+		preemptible: 2
+	}
+
+	output {
+		File enforce_chronological_order = "previous_task_dummy_output"
+	}
+}
 
 workflow checker_ldprune {
 	input {
@@ -59,7 +104,7 @@ workflow checker_ldprune {
 	call nullmodel.null_model_report as aaa__nullmodelreport {
 		input:
 			null_model_files = aaa__nullmodelr.null_model_files,
-			null_model_params = aaa__nullmodelr.null_model_params,#
+			null_model_params = aaa__nullmodelr.null_model_params,
 			
 			#conditional_variant_file = 
 			covars = ["sex", "age", "study", "PC1", "PC2", "PC3", "PC4", "PC5"],
@@ -76,7 +121,13 @@ workflow checker_ldprune {
 			#rescale_variance = 
 			#resid_covars = 
 			#sample_include_file = 
-	}#
+	}
+	call md5sum as aaa_md5 {
+		input:
+			# CURRENTLY INCOMPLETE
+			test = [aaa__nullmodelr.null_model_phenotypes]
+			truth = [truth__aaa_nullmodel, truth__aaa_pheno, truth__aaa_report]
+	}
 
 	##############################
 	#          base case         #
@@ -98,7 +149,7 @@ workflow checker_ldprune {
 			relatedness_matrix_file = relatedness_matrix_file,
 			#rescale_variance = 
 			#resid_covars = 
-			sample_include_file = sample_include_file_unrelated
+			sample_include_file = sample_include_file
 	}
 	call nullmodel.null_model_report as basecase__nullmodelreport {
 		input:

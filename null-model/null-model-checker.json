@@ -30,5 +30,14 @@
   "checker_ldprune.relatedness_matrix_file_alternative": "_test-data-and-truths_/null_model/aaa_kinship.RData",
   "checker_ldprune.relatedness_matrix_file_grm": "_test-data-and-truths_/null_model/grm.gds",
   "checker_ldprune.sample_include_file_typical": "_test-data-and-truths_/null_model/sample_include.RData",
-  "checker_ldprune.sample_include_file_unrelated": "_test-data-and-truths_/null_model/unrelated.RData"
+  "checker_ldprune.sample_include_file_unrelated": "_test-data-and-truths_/null_model/unrelated.RData",
+  "checker_ldprune.truth__basecase_nullmodel": "_test-data-and-truths_/null_model/truth_outputs/basecase_null_model_invnorm.RData",
+  "checker_ldprune.truth__basecase_pheno": "_test-data-and-truths_/null_model/truth_outputs/basecase_phenotypes.RData",
+  "checker_ldprune.truth__basecase_report": "_test-data-and-truths_/null_model/truth_outputs/basecase_report.Rmd",
+  "checker_ldprune.truth__grm_nullmodel": "_test-data-and-truths_/null_model/truth_outputs/grm_null_model_invnorm.RData",
+  "checker_ldprune.truth__grm_pheno": "_test-data-and-truths_/null_model/truth_outputs/grm_phenotypes.RData",
+  "checker_ldprune.truth__grm_report": "_test-data-and-truths_/null_model/truth_outputs/grm_report.Rmd",
+  "checker_ldprune.truth__aaa_nullmodel": "_test-data-and-truths_/null_model/truth_outputs/Null_model_mixed_null_model_invnorm.RData",
+  "checker_ldprune.truth__aaa_pheno": "_test-data-and-truths_/null_model/truth_outputs/Null_model_mixed_phenotypes.RData",
+  "checker_ldprune.truth__aaa_report": "_test-data-and-truths_/null_model/truth_outputs/Null_model_mixed_report.Rmd"
 }
