@@ -112,7 +112,7 @@ task null_model_r {
 			f.write('out_prefix "null_model"\n')
 			f.write('out_phenotype_file "phenotypes.RData"\n')
 
-		f.write('outcome ~{outcome}\n')
+		f.write('outcome "~{outcome}"\n')
 		f.write('phenotype_file "~{base_phenotype}"\n')
 		
 		if "~{isdefined_gds}" == "true":
