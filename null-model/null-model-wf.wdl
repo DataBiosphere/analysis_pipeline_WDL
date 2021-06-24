@@ -402,7 +402,7 @@ task null_model_report {
 	output {
 		File null_model_report_config = "null_model_report.config"  # glob in CWL?
 		Array[File] html_reports = glob("*.html")
-		Array[File] rmd_files = glob("*.rmd")
+		Array[File] rmd_files = glob("*.Rmd")
 	}
 }
 

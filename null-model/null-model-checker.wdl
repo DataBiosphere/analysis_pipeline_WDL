@@ -6,8 +6,8 @@ import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/im
 
 task md5sum {
 	input {
-		Array[File?] test
-		Array[File?] truth
+		Array[File] test
+		Array[File] truth
 		# having an input that depends upon a previous task's output reigns in
 		# cromwell's tendencies to run tasks out of order
 		File? enforce_chronological_order
@@ -15,13 +15,13 @@ task md5sum {
 
 	command <<<
 
-	set -eux -o pipefail
+	#set -eux -o pipefail
 
 	for j in ~{sep=' ' test}
 	do
-		md5sum ~{test} > sum.txt
+		md5sum ${j} > sum.txt
 
-		test_basename="$(basename -- ~{test})"
+		test_basename="$(basename -- ${j})"
 		echo "test file: ${test_basename}"
 
 		for i in ~{sep=' ' truth}
@@ -78,10 +78,10 @@ workflow checker_ldprune {
 		File? sample_include_file_unrelated
 
 		# truth files
-		File? truth__basecase_nullmodel
-		File? truth__basecase_pheno
-		File? truth__basecase_report
-		File? truth__basecase_report_invnorm
+		File truth__basecase_nullmodel
+		File truth__basecase_pheno
+		File truth__basecase_report
+		File truth__basecase_report_invnorm
 		File? truth__grm_nullmodel
 		File? truth__grm_pheno
 		File? truth__grm_report
@@ -146,7 +146,7 @@ workflow checker_ldprune {
 			n_pcs = 4,
 			#norm_bygroup
 			outcome = "outcome",
-			output_prefix = output_prefix,
+			output_prefix = "basecase",
 			pca_file = pca_file,
 			phenotype_file = phenotype_file,
 			relatedness_matrix_file = relatedness_matrix_file,
@@ -167,7 +167,7 @@ workflow checker_ldprune {
 			#inverse_normal = 
 			n_pcs = 4,
 			#norm_bygroup
-			output_prefix = output_prefix,
+			output_prefix = "basecase",
 			pca_file = pca_file,
 			phenotype_file = phenotype_file,
 			relatedness_matrix_file = relatedness_matrix_file,
@@ -178,7 +178,7 @@ workflow checker_ldprune {
 
 	call md5sum as aaa_md5 {
 		input:
-			test = [basecase__nullmodelr.null_model_files[0], basecase__nullmodelr.null_model_phenotypes, basecase__nullmodelreport.rmd_files[0], basecase__nullmodelreport.rmd_files[1]],
+			test = [basecase__nullmodelr.null_model_files[0], basecase__nullmodelr.null_model_phenotypes],
 			truth = [truth__basecase_nullmodel, truth__basecase_pheno, truth__basecase_report, truth__basecase_report_invnorm]
 	}
 
@@ -189,14 +189,14 @@ workflow checker_ldprune {
 #	call nullmodel.null_model_r as binary__nullmodelr {
 #		input:
 #			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
+#			covars = ["sex"],
+#			family = "binomial",
 #			#gds_files =
 #			#group_var = 
 #			#inverse_normal = 
 #			n_pcs = 4,
-#			#norm_bygroup
-#			outcome = "outcome",
+#			#norm_bygroup = 
+#			outcome = "status",
 #			output_prefix = output_prefix,
 #			pca_file = pca_file,
 #			phenotype_file = phenotype_file,
@@ -211,13 +211,13 @@ workflow checker_ldprune {
 #			null_model_params = binary__nullmodelr.null_model_params,
 #
 #			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
+#			covars = ["sex"],
+#			family = "binomial",
 #			#gds_files =
 #			#group_var = 
 #			#inverse_normal = 
 #			n_pcs = 4,
-#			#norm_bygroup
+#			#norm_bygroup = 
 #			output_prefix = output_prefix,
 #			pca_file = pca_file,
 #			phenotype_file = phenotype_file,
