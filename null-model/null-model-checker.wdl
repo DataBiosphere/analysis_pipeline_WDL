@@ -125,7 +125,7 @@ workflow checker_ldprune {
 	call md5sum as aaa_md5 {
 		input:
 			# CURRENTLY INCOMPLETE
-			test = [aaa__nullmodelr.null_model_phenotypes]
+			test = [aaa__nullmodelreport.null_model_files[0], aaa__nullmodelr.null_model_phenotypes, aaa__nullmodelr.rmd_files[0], aaa__nullmodelr.rmd_files[1]]
 			truth = [truth__aaa_nullmodel, truth__aaa_pheno, truth__aaa_report]
 	}
 
