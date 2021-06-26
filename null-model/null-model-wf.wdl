@@ -166,16 +166,26 @@ task null_model_r {
 			
 		############
 		'''
-		CWL now has output inherit inputs metadata. But it is not clear to me
-		what is being transferred. Is metadata a field in an RData file?
+		The follow section is included in the CWL but not the WDL as it appears
+		to either be specific to seven bridges or have no purpose, as the WDL lacks
+		it yet still MD5s to the output of the SB CWLs. It is included here with 
+		additional comments to document what is missing from the WDL.
+
+		In the CWL, inheritMetadata is called on (self, inputs.phenotype_file) as
+		an output evaluation for the null model phenotype output. So, o1 is the
+		phenotype output, and o2 is the phenotype input file.
 
 		class: InlineJavascriptRequirement
 		expressionLib:
 		- |2-
 
 			var setMetadata = function(file, metadata) {
+
+				# if there is no metadata in the file then set it to the entirity of metadata
 				if (!('metadata' in file))
 					file['metadata'] = metadata;
+				
+				# else, dont do a wholesale overwrite, instead just add new keys/overwrite confliciting keys  
 				else {
 					for (var key in metadata) {
 						file['metadata'][key] = metadata[key];
@@ -186,14 +196,23 @@ task null_model_r {
 
 			var inheritMetadata = function(o1, o2) {
 				var commonMetadata = {};
+
+				# if not an array, make it an array
 				if (!Array.isArray(o2)) {
 					o2 = [o2]
 				}
 				for (var i = 0; i < o2.length; i++) {
 					var example = o2[i]['metadata'];
 					for (var key in example) {
+
+						# on the zeroeth iteration of the outer loop,
+						# give the empty set keys-value pairs matching
+						# that of o2s zeroeth metadata 
 						if (i == 0)
 							commonMetadata[key] = example[key];
+						
+						# on all other iterations of the outer loop,
+						# delete stuff that... does not exist???
 						else {
 							if (!(commonMetadata[key] == example[key])) {
 								delete commonMetadata[key]
@@ -202,8 +221,11 @@ task null_model_r {
 					}
 				}
 				if (!Array.isArray(o1)) {
+					# if not an array, set metadata based on commonMetadata
+					# (which itself is based on o2s metadata, kind of)
 					o1 = setMetadata(o1, commonMetadata)
 				} else {
+					# if it is an array, add common metadata to what it already has
 					for (var i = 0; i < o1.length; i++) {
 						o1[i] = setMetadata(o1[i], commonMetadata)
 					}

@@ -7,7 +7,7 @@
   "nullmodel.outcome": "outcome",
   "nullmodel.covars": ["sex", "Population"],
   "nullmodel.group_var": "Population",
-  "nullmodel.inverse_normal": "FALSE",
+  "nullmodel.inverse_normal": "false",
   "nullmodel.rescale_variance": "none",
   "nullmodel.n_pcs": 4,
   "nullmodel.family": "gaussian"

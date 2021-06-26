@@ -8,6 +8,9 @@ These are differences that have implications for cost or outputs.
 * The CWL appears to contain a bug where `exclude_PCA_cor` being set to false is not respected ([#14](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/14)). The WDL avoids this. 
 * The output of merge_gds across the CWL and WDL do not md5 to the same value, but should be functionally equivalent. See [#22](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/22) for more information.   
 
+### null-model-wf.wdl
+The CWL includes a function which appears designed to have an output phenotype file inherit metadata from the required input phenotype file. It appears to either be non-functional or SB specific and therefore has not been included. We have tested the workflow extensively and have not found a situation where the phenotype output file from the WDL varies from what the phenotype output from the CWL is; ie, in spite of this deletion the two outputs md5 across workflows.
+
 # Algorithmic CWL/WDL Differences
 These differences are likely only of interest to maintainers of this repo or those seeking to fully understand the CWL-->WDL conversion process.  
 
