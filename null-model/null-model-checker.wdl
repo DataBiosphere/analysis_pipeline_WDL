@@ -422,7 +422,7 @@ workflow checker_ldprune {
 			n_pcs = 4,
 			norm_bygroup = true,
 			outcome = "outcome",
-			output_prefix = output_prefix,
+			output_prefix = "norm",
 			pca_file = pca_file,
 			phenotype_file = phenotype_file,
 			relatedness_matrix_file = relatedness_matrix_file,
@@ -437,13 +437,13 @@ workflow checker_ldprune {
 			
 			#conditional_variant_file = 
 			covars = ["sex", "Population"],
-			family = "gaussian",
+			family = "gaussian"s,
 			#gds_files =
 			group_var = "Population",
 			#inverse_normal = 
 			n_pcs = 4,
 			norm_bygroup = true,
-			output_prefix = output_prefix,
+			output_prefix = "norm",
 			pca_file = pca_file,
 			phenotype_file = phenotype_file,
 			relatedness_matrix_file = relatedness_matrix_file,
