@@ -437,7 +437,7 @@ workflow checker_ldprune {
 			
 			#conditional_variant_file = 
 			covars = ["sex", "Population"],
-			family = "gaussian"s,
+			family = "gaussian",
 			#gds_files =
 			group_var = "Population",
 			#inverse_normal = 

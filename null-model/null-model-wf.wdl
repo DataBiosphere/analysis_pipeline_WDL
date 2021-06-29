@@ -172,8 +172,7 @@ task null_model_r {
 		additional comments to document what is missing from the WDL.
 
 		In the CWL, inheritMetadata is called on (self, inputs.phenotype_file) as
-		an output evaluation for the null model phenotype output via:
-		outputEval: $(inheritMetadata(self, inputs.phenotype_file))
+		an output evaluation for the null model phenotype output.
 		So, o1 is the phenotype output, and o2 is the phenotype input file.
 
 		class: InlineJavascriptRequirement
