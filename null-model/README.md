@@ -1,6 +1,10 @@
 # Null Model (null-model-wf.wdl)  
 *Authorship note: Much of this file paraphrases documentation written by Stephanie Gogarten*
 
+
+Be aware that the null_model_file does not match its output on Seven Bridges.
+
+
 ## Table Of Contents
 <!---toc start-->
 * [Quick Introduction](#quick-introduction)
@@ -35,7 +39,7 @@ The type of regression used is based on the values given for the variables `rela
 ## Inputs
 phenotype_file:
 * Type: *File*
-* todo  
+* RData file with an AnnotatedDataFrame of phenotypes and covariates. Sample identifiers must be in column named “sample.id”.  
 
 outcome:
 * Type: *String*
@@ -95,8 +99,8 @@ null_model_phenotypes:
 * Phenotype file containing all covariates used in the model (often used in GENESIS association workflows)
 
 null_model_file:
-* Type: *Array[File]*
-* todo
+* Type: *Array[File]* (in practice, only one *File* is generated)
+* Null model output file
 
 ## Common Issues
 * If **PCA File** is not provided, the **Number of PCs to include as covariates** parameter **must** be set to 0.

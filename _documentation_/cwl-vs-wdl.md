@@ -11,6 +11,8 @@ These are differences that have implications for cost or outputs.
 ### null-model-wf.wdl
 The CWL includes a function which appears designed to have an output phenotype file inherit metadata from the required input phenotype file. It appears to either be non-functional or SB specific and therefore has not been included. We have tested the workflow extensively and have not found a situation where the phenotype output file from the WDL varies from what the phenotype output from the CWL is; ie, in spite of this deletion the two outputs md5 across workflows.
 
+One place where outputs do differ is in null_model_file.
+
 # Algorithmic CWL/WDL Differences
 These differences are likely only of interest to maintainers of this repo or those seeking to fully understand the CWL-->WDL conversion process.  
 
@@ -25,6 +27,10 @@ These differences are likely only of interest to maintainers of this repo or tho
 #### Miscellanous Differences
 * The CWL imports other CWLs. The WDL does not import other WDLs, except in the case of the checker workflow.  
 	* Reasoning: It is possible for WDLs to contain just tasks and be imported into another task, but in some contexts it can be slightly less secure.
+
+### null-model-wf.wdl
+#### Strictly Necessary Changes
+* The file relocalization trick is used to support the odd method of passing parameters into the second task.  
 
 ### ld-pruning-wf.wdl
 #### Strictly Necessary Changes
