@@ -1,30 +1,22 @@
-library(argparser)
-library(TopmedPipeline)
 sessionInfo()
 
-argp <- arg_parser("Check if null model outputs vary")
-argp <- add_argument(argp, "config", help="path to config file")
-argv <- parse_args(argp)
-config <- readConfig(argv$config)
+loadRData <- function(fileName){
+    load(fileName)
+    get(ls()[ls() != "fileName"])
+}
 
-required <- c("test_file",
-              "truth_file")
-optional <- c("tolerance"=1.5e-8)
-config <- setConfigDefaults(config, required, optional)
-print(config)
+options <- commandArgs(trailingOnly = TRUE)
+print(options)
 
-# get the number of threads available
-# this should speed up matrix calculations if we are running parallel MKL
-countThreads()
+test <- loadRData(options[1])
+truth <- loadRData(options[2])
+toler <- 1.5e-8
 
-test <- config["test_file"]
-truth <- config["truth_file"]
-toler <- config["tolerance"]
+# check to make sure we didn't accidentally load the same file twice
+# files should not be equivalent, as they failed an MD5
+stopifnot(isFALSE(identical(test, truth))
 
-print(test)
-print(truth)
-
-str(test)
-str(truth)
-
+# actual check for them being "close enough"
 stopifnot(isTRUE(all.equal(test, truth, tolerance=toler)))
+
+print("Outputs are not identical, but are mostly equivalent.")

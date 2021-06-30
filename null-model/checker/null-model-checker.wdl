@@ -26,7 +26,6 @@ task md5sum {
 		# R
 		cp ${j} .
 		mv ${test_basename} "testcopy_${test_basename}"
-		echo "test_file testcopy_$test_basename" > config
 
 		for i in ~{sep=' ' truth}
 		do
@@ -38,7 +37,6 @@ task md5sum {
 				# R
 				cp ${i} .
 				mv ${truth_basename} "truthcopy_${truth_basename}"
-				echo "truth_file truthcopy_$truth_basename" >> config
 				
 				break
 			fi
@@ -46,9 +44,18 @@ task md5sum {
 
 		# md5
 		if ! echo "$(cut -f1 -d' ' sum.txt)" $actual_truth | md5sum --check
-		then 
+		then
 			# R
-			Rscript ~{rscript} config
+			echo "Calling Rscript for approximate comparison"
+			if Rscript ~{rscript} testcopy_$test_basename truthcopy_$truth_basename
+			then
+				echo "Outputs are not identical, but are mostly equivalent."
+				exit 0
+			else
+				echo "Outputs vary beyond accepted tolerance (default:1.5e-8)."
+				echo "This is considered a failure and should be reported on Github."
+				exit 1
+			fi
 		fi
 	done
 
@@ -58,10 +65,6 @@ task md5sum {
 		docker: "uwgac/topmed-master:2.10.0"
 		memory: "2 GB"
 		preemptible: 2
-	}
-
-	output {
-		File config = "config"
 	}
 
 }
@@ -184,443 +187,439 @@ workflow checker_nullmodel {
 			test = [Null_model_mixed__nullmodelr.null_model_files[0], Null_model_mixed__nullmodelr.null_model_phenotypes, Null_model_mixed__nullmodelreport.rmd_files[0]],
 			truth = [truth__Null_model_mixed_nullmodel, truth__Null_model_mixed_pheno, truth__Null_model_mixed_report]
 	}
-#	##############################
-#	#          base case         #
-#	##############################
-#	call nullmodel.null_model_r as basecase__nullmodelr {
-#		input:
-#			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			#gds_files =
-#			#group_var = 
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			#norm_bygroup
-#			outcome = "outcome",
-#			output_prefix = "basecase",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file,
-#			#rescale_variance = 
-#			#resid_covars = 
-#			sample_include_file = sample_include_file_typical
-#	}
-#	call nullmodel.null_model_report as basecase__nullmodelreport {
-#		input:
-#			null_model_files = basecase__nullmodelr.null_model_files,
-#			null_model_params = basecase__nullmodelr.null_model_params,
-#			
-#			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			#gds_files =
-#			#group_var = 
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			#norm_bygroup
-#			output_prefix = "basecase",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file,
-#			#rescale_variance = 
-#			#resid_covars = 
-#			sample_include_file = sample_include_file_typical
-#	}#
-
-#	call md5sum as basecase_md5 {
-#		input:
-#			test = [basecase__nullmodelr.null_model_files[0], basecase__nullmodelr.null_model_phenotypes, basecase__nullmodelreport.rmd_files[0], basecase__nullmodelreport.rmd_files[1]],
-#			truth = [truth__basecase_nullmodel, truth__basecase_pheno, truth__basecase_report, truth__basecase_report_invnorm]
-#	}
-#	##############################
-#	#           binary           #
-#	###############################
-
-#	call nullmodel.null_model_r as binary__nullmodelr {
-#		input:
-#			#conditional_variant_file = 
-#			covars = ["sex"],
-#			family = "binomial",
-#			#gds_files =
-#			#group_var = 
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			#norm_bygroup = 
-#			outcome = "status",
-#			output_prefix = "binary",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file,
-#			#rescale_variance = 
-#			#resid_covars = 
-#			#sample_include_file = 
-#	}
-#	call nullmodel.null_model_report as binary__nullmodelreport {
-#		input:
-#			null_model_files = binary__nullmodelr.null_model_files,
-#			null_model_params = binary__nullmodelr.null_model_params,#
-
-#			#conditional_variant_file = 
-#			covars = ["sex"],
-#			family = "binomial",
-#			#gds_files =
-#			#group_var = 
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			#norm_bygroup = 
-#			output_prefix = "binary",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file,
-#			#rescale_variance = 
-#			#resid_covars = 
-#			#sample_include_file = 
-#	}
-#	call md5sum as binary_md5 {
-#		input:
-#			test = [binary__nullmodelr.null_model_files[0], binary__nullmodelr.null_model_phenotypes, binary__nullmodelreport.rmd_files[0]],
-#			truth = [truth__binary_nullmodel, truth__binary_pheno, truth__binary_report]
-#	}
-#	##############################
-#	#        conditional         #
-#	##############################
-#	call nullmodel.null_model_r as conditional__nullmodelr {
-#		input:
-#			conditional_variant_file = conditional_variant_file,
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			gds_files = gds_files,
-#			#group_var = 
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			#norm_bygroup = 
-#			outcome = "outcome",
-#			output_prefix = "conditional",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file,
-#			#rescale_variance = 
-#			#resid_covars = 
-#			sample_include_file = sample_include_file_typical
-#	}
-#	call nullmodel.null_model_report as conditional__nullmodelreport {
-#		input:
-#			null_model_files = conditional__nullmodelr.null_model_files,
-#			null_model_params = conditional__nullmodelr.null_model_params,
-#			
-#			conditional_variant_file = conditional_variant_file,
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			gds_files = gds_files,
-#			#group_var = 
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			#norm_bygroup = 
-#			output_prefix = "conditional",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file,
-#			#rescale_variance = 
-#			#resid_covars = 
-#			sample_include_file = sample_include_file_typical
-#	}
-#	call md5sum as conditional_md5 {
-#		input:
-#			test = [conditional__nullmodelr.null_model_files[0], conditional__nullmodelr.null_model_phenotypes, conditional__nullmodelreport.rmd_files[0], conditional__nullmodelreport.rmd_files[1]],
-#			truth = [truth__conditional_nullmodel, truth__conditional_pheno, truth__conditional_report, truth__conditional_report_invnorm]
-#	}
-#	##############################
-#	#            grm             #
-#	###############################
-
-#	call nullmodel.null_model_r as grm__nullmodelr {
-#		input:
-#			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			#gds_files = 
-#			#group_var = 
-#			#inverse_normal = 
-#			n_pcs = 0,
-#			#norm_bygroup = 
-#			outcome = "outcome",
-#			output_prefix = "grm",
-#			#pca_file = 
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file_grm,
-#			rescale_variance = "marginal",
-#			#resid_covars = 
-#			sample_include_file = sample_include_file_typical
-#	}
-#	call nullmodel.null_model_report as grm__nullmodelreport {
-#		input:
-#			null_model_files = grm__nullmodelr.null_model_files,
-#			null_model_params = grm__nullmodelr.null_model_params,
-#			
-#			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			#gds_files = 
-#			#group_var = 
-#			#inverse_normal = 
-#			n_pcs = 0,
-#			#norm_bygroup = 
-#			output_prefix = "grm",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file_grm,
-#			rescale_variance = "marginal",
-#			#resid_covars = 
-#			sample_include_file = sample_include_file_typical
-#	}
-#	call md5sum as grm_md5 {
-#		input:
-#			test = [grm__nullmodelr.null_model_files[0], grm__nullmodelr.null_model_phenotypes, grm__nullmodelreport.rmd_files[0], grm__nullmodelreport.rmd_files[1]],
-#			truth = [truth__grm_nullmodel, truth__grm_pheno, truth__grm_report, truth__grm_report_invnorm]
-#	}
-#	##############################
-#	#           group            #
-#	##############################
-#	call nullmodel.null_model_r as group__nullmodelr {
-#		input:
-#			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			#gds_files =
-#			group_var = "Population",
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			norm_bygroup = true,
-#			outcome = "outcome",
-#			output_prefix = "group",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file,
-#			#rescale_variance = 
-#			#resid_covars = 
-#			#sample_include_file = 
-#	}
-#	call nullmodel.null_model_report as group__nullmodelreport {
-#		input:
-#			null_model_files = group__nullmodelr.null_model_files,
-#			null_model_params = group__nullmodelr.null_model_params,
-#			
-#			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			#gds_files =
-#			group_var = "Population",
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			norm_bygroup = true,
-#			output_prefix = "group",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file,
-#			#rescale_variance = 
-#			#resid_covars = 
-#			#sample_include_file = 
-#	}
-#	call md5sum as group_md5 {
-#		input:
-#			test = [group__nullmodelr.null_model_files[0], group__nullmodelr.null_model_phenotypes, group__nullmodelreport.rmd_files[0], group__nullmodelreport.rmd_files[1]],
-#			truth = [truth__group_nullmodel, truth__group_pheno, truth__group_report, truth__group_report_invnorm]
-#	}
-#	##############################
-#	#        norm bygroup        #
-#	##############################
-#	call nullmodel.null_model_r as norm__nullmodelr {
-#		input:
-#			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			#gds_files =
-#			group_var = "Population",
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			norm_bygroup = true,
-#			outcome = "outcome",
-#			output_prefix = "norm",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file,
-#			#rescale_variance = 
-#			#resid_covars = 
-#			#sample_include_file = 
-#	}
-#	call nullmodel.null_model_report as norm__nullmodelreport {
-#		input:
-#			null_model_files = norm__nullmodelr.null_model_files,
-#			null_model_params = norm__nullmodelr.null_model_params,
-#			
-#			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			#gds_files =
-#			group_var = "Population",
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			norm_bygroup = true,
-#			output_prefix = "norm",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file,
-#			#rescale_variance = 
-#			#resid_covars = 
-#			#sample_include_file = 
-#	}
-#	call md5sum as norm_md5 {
-#		input:
-#			test = [norm__nullmodelr.null_model_files[0], norm__nullmodelr.null_model_phenotypes, norm__nullmodelreport.rmd_files[0], norm__nullmodelreport.rmd_files[1]],
-#			truth = [truth__norm_nullmodel, truth__norm_pheno, truth__norm_report, truth__norm_report_invnorm]
-#	}
-#	##############################
-#	#        no transform        #
-#	##############################
-#	call nullmodel.null_model_r as notransform__nullmodelr {
-#		input:
-#			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			#gds_files =
-#			group_var = "Population",
-#			inverse_normal = false,
-#			n_pcs = 4,
-#			#norm_bygroup = 
-#			outcome = "outcome",
-#			output_prefix = "notransform",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file,
-#			rescale_variance = "none",
-#			#resid_covars = 
-#			sample_include_file = sample_include_file_typical
-#	}
-#	call nullmodel.null_model_report as notransform__nullmodelreport {
-#		input:
-#			null_model_files = notransform__nullmodelr.null_model_files,
-#			null_model_params = notransform__nullmodelr.null_model_params,
-#			
-#			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			#gds_files =
-#			group_var = "Population",
-#			inverse_normal = false,
-#			n_pcs = 4,
-#			#norm_bygroup = 
-#			output_prefix = "notransform",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			relatedness_matrix_file = relatedness_matrix_file,
-#			rescale_variance = "none",
-#			#resid_covars = 
-#			sample_include_file = sample_include_file_typical
-#	}
-#	call md5sum as notransform_md5 {
-#		input:
-#			# notransform only have one report
-#			test = [notransform__nullmodelr.null_model_files[0], notransform__nullmodelr.null_model_phenotypes, notransform__nullmodelreport.rmd_files[0]],
-#			truth = [truth__notransform_nullmodel, truth__notransform_pheno, truth__notransform_report]
-#	}
-#	##############################
-#	#        unrel binary        #
-#	##############################
-#	call nullmodel.null_model_r as unrelbin__nullmodelr {
-#		input:
-#			#conditional_variant_file = 
-#			covars = ["sex"],
-#			family = "binomial",
-#			#gds_files =
-#			#group_var = 
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			#norm_bygroup = 
-#			outcome = "status",
-#			output_prefix = "unrelbin",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			#relatedness_matrix_file = 
-#			#rescale_variance = 
-#			#resid_covars = 
-#			sample_include_file = sample_include_file_unrelated
-#	}
-#	call nullmodel.null_model_report as unrelbin__nullmodelreport {
-#		input:
-#			null_model_files = unrelbin__nullmodelr.null_model_files,
-#			null_model_params = unrelbin__nullmodelr.null_model_params,
-#			
-#			#conditional_variant_file = 
-#			covars = ["sex"],
-#			family = "binomial",
-#			#gds_files =
-#			#group_var = 
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			#norm_bygroup = 
-#			output_prefix = "unrelbin",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			#relatedness_matrix_file = 
-#			#rescale_variance = 
-#			#resid_covars = 
-#			sample_include_file = sample_include_file_unrelated
-#	}
-#	call md5sum as unrelbin_md5 {
-#		input:
-#			# binary models only have one report
-#			test = [unrelbin__nullmodelr.null_model_files[0], unrelbin__nullmodelr.null_model_phenotypes, unrelbin__nullmodelreport.rmd_files[0]],
-#			truth = [truth__unrelbin_nullmodel, truth__unrelbin_pheno, truth__unrelbin_report]
-#	}
-#	##############################
-#	#          unrelated         #
-#	##############################
-#	call nullmodel.null_model_r as unrelated__nullmodelr {
-#		input:
-#			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			#gds_files =
-#			#group_var = 
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			#norm_bygroup = 
-#			outcome = "outcome",
-#			output_prefix = "unrelated",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			#relatedness_matrix_file = 
-#			#rescale_variance = 
-#			#resid_covars = 
-#			sample_include_file = sample_include_file_unrelated
-#	}
-#	call nullmodel.null_model_report as unrelated__nullmodelreport {
-#		input:
-#			null_model_files = unrelated__nullmodelr.null_model_files,
-#			null_model_params = unrelated__nullmodelr.null_model_params,
-#			
-#			#conditional_variant_file = 
-#			covars = ["sex", "Population"],
-#			family = "gaussian",
-#			#gds_files =
-#			#group_var = 
-#			#inverse_normal = 
-#			n_pcs = 4,
-#			#norm_bygroup = 
-#			output_prefix = "unrelated",
-#			pca_file = pca_file,
-#			phenotype_file = phenotype_file,
-#			#relatedness_matrix_file = 
-#			#rescale_variance = 
-#			#resid_covars = 
-#			sample_include_file = sample_include_file_unrelated
-#	}
-#	call md5sum as unrelated_md5 {
-#		input:
-#			test = [unrelated__nullmodelr.null_model_files[0], unrelated__nullmodelr.null_model_phenotypes, unrelated__nullmodelreport.rmd_files[0], unrelated__nullmodelreport.rmd_files[1]],
-#			truth = [truth__unrelated_nullmodel, truth__unrelated_pheno, truth__unrelated_report, truth__unrelated_report_invnorm]
-#	}
+	##############################
+	#          base case         #
+	##############################
+	call nullmodel.null_model_r as basecase__nullmodelr {
+		input:
+			#conditional_variant_file = 
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			#gds_files =
+			#group_var = 
+			#inverse_normal = 
+			n_pcs = 4,
+			#norm_bygroup
+			outcome = "outcome",
+			output_prefix = "basecase",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			#rescale_variance = 
+			#resid_covars = 
+			sample_include_file = sample_include_file_typical
+	}
+	call nullmodel.null_model_report as basecase__nullmodelreport {
+		input:
+			null_model_files = basecase__nullmodelr.null_model_files,
+			null_model_params = basecase__nullmodelr.null_model_params,
+			
+			#conditional_variant_file = 
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			#gds_files =
+			#group_var = 
+			#inverse_normal = 
+			n_pcs = 4,
+			#norm_bygroup
+			output_prefix = "basecase",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			#rescale_variance = 
+			#resid_covars = 
+			sample_include_file = sample_include_file_typical
+	}#
+	call md5sum as basecase_md5 {
+		input:
+			test = [basecase__nullmodelr.null_model_files[0], basecase__nullmodelr.null_model_phenotypes, basecase__nullmodelreport.rmd_files[0], basecase__nullmodelreport.rmd_files[1]],
+			truth = [truth__basecase_nullmodel, truth__basecase_pheno, truth__basecase_report, truth__basecase_report_invnorm]
+	}
+	##############################
+	#           binary           #
+	###############################
+	call nullmodel.null_model_r as binary__nullmodelr {
+		input:
+			#conditional_variant_file = 
+			covars = ["sex"],
+			family = "binomial",
+			#gds_files =
+			#group_var = 
+			#inverse_normal = 
+			n_pcs = 4,
+			#norm_bygroup = 
+			outcome = "status",
+			output_prefix = "binary",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			#rescale_variance = 
+			#resid_covars = 
+			#sample_include_file = 
+	}
+	call nullmodel.null_model_report as binary__nullmodelreport {
+		input:
+			null_model_files = binary__nullmodelr.null_model_files,
+			null_model_params = binary__nullmodelr.null_model_params,#
+			#conditional_variant_file = 
+			covars = ["sex"],
+			family = "binomial",
+			#gds_files =
+			#group_var = 
+			#inverse_normal = 
+			n_pcs = 4,
+			#norm_bygroup = 
+			output_prefix = "binary",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			#rescale_variance = 
+			#resid_covars = 
+			#sample_include_file = 
+	}
+	call md5sum as binary_md5 {
+		input:
+			test = [binary__nullmodelr.null_model_files[0], binary__nullmodelr.null_model_phenotypes, binary__nullmodelreport.rmd_files[0]],
+			truth = [truth__binary_nullmodel, truth__binary_pheno, truth__binary_report]
+	}
+	##############################
+	#        conditional         #
+	##############################
+	call nullmodel.null_model_r as conditional__nullmodelr {
+		input:
+			conditional_variant_file = conditional_variant_file,
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			gds_files = gds_files,
+			#group_var = 
+			#inverse_normal = 
+			n_pcs = 4,
+			#norm_bygroup = 
+			outcome = "outcome",
+			output_prefix = "conditional",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			#rescale_variance = 
+			#resid_covars = 
+			sample_include_file = sample_include_file_typical
+	}
+	call nullmodel.null_model_report as conditional__nullmodelreport {
+		input:
+			null_model_files = conditional__nullmodelr.null_model_files,
+			null_model_params = conditional__nullmodelr.null_model_params,
+			
+			conditional_variant_file = conditional_variant_file,
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			gds_files = gds_files,
+			#group_var = 
+			#inverse_normal = 
+			n_pcs = 4,
+			#norm_bygroup = 
+			output_prefix = "conditional",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			#rescale_variance = 
+			#resid_covars = 
+			sample_include_file = sample_include_file_typical
+	}
+	call md5sum as conditional_md5 {
+		input:
+			test = [conditional__nullmodelr.null_model_files[0], conditional__nullmodelr.null_model_phenotypes, conditional__nullmodelreport.rmd_files[0], conditional__nullmodelreport.rmd_files[1]],
+			truth = [truth__conditional_nullmodel, truth__conditional_pheno, truth__conditional_report, truth__conditional_report_invnorm]
+	}
+	##############################
+	#            grm             #
+	###############################
+	call nullmodel.null_model_r as grm__nullmodelr {
+		input:
+			#conditional_variant_file = 
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			#gds_files = 
+			#group_var = 
+			#inverse_normal = 
+			n_pcs = 0,
+			#norm_bygroup = 
+			outcome = "outcome",
+			output_prefix = "grm",
+			#pca_file = 
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file_grm,
+			rescale_variance = "marginal",
+			#resid_covars = 
+			sample_include_file = sample_include_file_typical
+	}
+	call nullmodel.null_model_report as grm__nullmodelreport {
+		input:
+			null_model_files = grm__nullmodelr.null_model_files,
+			null_model_params = grm__nullmodelr.null_model_params,
+			
+			#conditional_variant_file = 
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			#gds_files = 
+			#group_var = 
+			#inverse_normal = 
+			n_pcs = 0,
+			#norm_bygroup = 
+			output_prefix = "grm",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file_grm,
+			rescale_variance = "marginal",
+			#resid_covars = 
+			sample_include_file = sample_include_file_typical
+	}
+	call md5sum as grm_md5 {
+		input:
+			test = [grm__nullmodelr.null_model_files[0], grm__nullmodelr.null_model_phenotypes, grm__nullmodelreport.rmd_files[0], grm__nullmodelreport.rmd_files[1]],
+			truth = [truth__grm_nullmodel, truth__grm_pheno, truth__grm_report, truth__grm_report_invnorm]
+	}
+	##############################
+	#           group            #
+	##############################
+	call nullmodel.null_model_r as group__nullmodelr {
+		input:
+			#conditional_variant_file = 
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			#gds_files =
+			group_var = "Population",
+			#inverse_normal = 
+			n_pcs = 4,
+			norm_bygroup = true,
+			outcome = "outcome",
+			output_prefix = "group",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			#rescale_variance = 
+			#resid_covars = 
+			#sample_include_file = 
+	}
+	call nullmodel.null_model_report as group__nullmodelreport {
+		input:
+			null_model_files = group__nullmodelr.null_model_files,
+			null_model_params = group__nullmodelr.null_model_params,
+			
+			#conditional_variant_file = 
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			#gds_files =
+			group_var = "Population",
+			#inverse_normal = 
+			n_pcs = 4,
+			norm_bygroup = true,
+			output_prefix = "group",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			#rescale_variance = 
+			#resid_covars = 
+			#sample_include_file = 
+	}
+	call md5sum as group_md5 {
+		input:
+			test = [group__nullmodelr.null_model_files[0], group__nullmodelr.null_model_phenotypes, group__nullmodelreport.rmd_files[0], group__nullmodelreport.rmd_files[1]],
+			truth = [truth__group_nullmodel, truth__group_pheno, truth__group_report, truth__group_report_invnorm]
+	}
+	##############################
+	#        norm bygroup        #
+	##############################
+	call nullmodel.null_model_r as norm__nullmodelr {
+		input:
+			#conditional_variant_file = 
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			#gds_files =
+			group_var = "Population",
+			#inverse_normal = 
+			n_pcs = 4,
+			norm_bygroup = true,
+			outcome = "outcome",
+			output_prefix = "norm",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			#rescale_variance = 
+			#resid_covars = 
+			#sample_include_file = 
+	}
+	call nullmodel.null_model_report as norm__nullmodelreport {
+		input:
+			null_model_files = norm__nullmodelr.null_model_files,
+			null_model_params = norm__nullmodelr.null_model_params,
+			
+			#conditional_variant_file = 
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			#gds_files =
+			group_var = "Population",
+			#inverse_normal = 
+			n_pcs = 4,
+			norm_bygroup = true,
+			output_prefix = "norm",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			#rescale_variance = 
+			#resid_covars = 
+			#sample_include_file = 
+	}
+	call md5sum as norm_md5 {
+		input:
+			test = [norm__nullmodelr.null_model_files[0], norm__nullmodelr.null_model_phenotypes, norm__nullmodelreport.rmd_files[0], norm__nullmodelreport.rmd_files[1]],
+			truth = [truth__norm_nullmodel, truth__norm_pheno, truth__norm_report, truth__norm_report_invnorm]
+	}
+	##############################
+	#        no transform        #
+	##############################
+	call nullmodel.null_model_r as notransform__nullmodelr {
+		input:
+			#conditional_variant_file = 
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			#gds_files =
+			group_var = "Population",
+			inverse_normal = false,
+			n_pcs = 4,
+			#norm_bygroup = 
+			outcome = "outcome",
+			output_prefix = "notransform",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			rescale_variance = "none",
+			#resid_covars = 
+			sample_include_file = sample_include_file_typical
+	}
+	call nullmodel.null_model_report as notransform__nullmodelreport {
+		input:
+			null_model_files = notransform__nullmodelr.null_model_files,
+			null_model_params = notransform__nullmodelr.null_model_params,
+			
+			#conditional_variant_file = 
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			#gds_files =
+			group_var = "Population",
+			inverse_normal = false,
+			n_pcs = 4,
+			#norm_bygroup = 
+			output_prefix = "notransform",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			relatedness_matrix_file = relatedness_matrix_file,
+			rescale_variance = "none",
+			#resid_covars = 
+			sample_include_file = sample_include_file_typical
+	}
+	call md5sum as notransform_md5 {
+		input:
+			# notransform only have one report
+			test = [notransform__nullmodelr.null_model_files[0], notransform__nullmodelr.null_model_phenotypes, notransform__nullmodelreport.rmd_files[0]],
+			truth = [truth__notransform_nullmodel, truth__notransform_pheno, truth__notransform_report]
+	}
+	##############################
+	#        unrel binary        #
+	##############################
+	call nullmodel.null_model_r as unrelbin__nullmodelr {
+		input:
+			#conditional_variant_file = 
+			covars = ["sex"],
+			family = "binomial",
+			#gds_files =
+			#group_var = 
+			#inverse_normal = 
+			n_pcs = 4,
+			#norm_bygroup = 
+			outcome = "status",
+			output_prefix = "unrelbin",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			#relatedness_matrix_file = 
+			#rescale_variance = 
+			#resid_covars = 
+			sample_include_file = sample_include_file_unrelated
+	}
+	call nullmodel.null_model_report as unrelbin__nullmodelreport {
+		input:
+			null_model_files = unrelbin__nullmodelr.null_model_files,
+			null_model_params = unrelbin__nullmodelr.null_model_params,
+			
+			#conditional_variant_file = 
+			covars = ["sex"],
+			family = "binomial",
+			#gds_files =
+			#group_var = 
+			#inverse_normal = 
+			n_pcs = 4,
+			#norm_bygroup = 
+			output_prefix = "unrelbin",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			#relatedness_matrix_file = 
+			#rescale_variance = 
+			#resid_covars = 
+			sample_include_file = sample_include_file_unrelated
+	}
+	call md5sum as unrelbin_md5 {
+		input:
+			# binary models only have one report
+			test = [unrelbin__nullmodelr.null_model_files[0], unrelbin__nullmodelr.null_model_phenotypes, unrelbin__nullmodelreport.rmd_files[0]],
+			truth = [truth__unrelbin_nullmodel, truth__unrelbin_pheno, truth__unrelbin_report]
+	}
+	##############################
+	#          unrelated         #
+	##############################
+	call nullmodel.null_model_r as unrelated__nullmodelr {
+		input:
+			#conditional_variant_file = 
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			#gds_files =
+			#group_var = 
+			#inverse_normal = 
+			n_pcs = 4,
+			#norm_bygroup = 
+			outcome = "outcome",
+			output_prefix = "unrelated",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			#relatedness_matrix_file = 
+			#rescale_variance = 
+			#resid_covars = 
+			sample_include_file = sample_include_file_unrelated
+	}
+	call nullmodel.null_model_report as unrelated__nullmodelreport {
+		input:
+			null_model_files = unrelated__nullmodelr.null_model_files,
+			null_model_params = unrelated__nullmodelr.null_model_params,
+			
+			#conditional_variant_file = 
+			covars = ["sex", "Population"],
+			family = "gaussian",
+			#gds_files =
+			#group_var = 
+			#inverse_normal = 
+			n_pcs = 4,
+			#norm_bygroup = 
+			output_prefix = "unrelated",
+			pca_file = pca_file,
+			phenotype_file = phenotype_file,
+			#relatedness_matrix_file = 
+			#rescale_variance = 
+			#resid_covars = 
+			sample_include_file = sample_include_file_unrelated
+	}
+	call md5sum as unrelated_md5 {
+		input:
+			test = [unrelated__nullmodelr.null_model_files[0], unrelated__nullmodelr.null_model_phenotypes, unrelated__nullmodelreport.rmd_files[0], unrelated__nullmodelreport.rmd_files[1]],
+			truth = [truth__unrelated_nullmodel, truth__unrelated_pheno, truth__unrelated_report, truth__unrelated_report_invnorm]
+	}
 
 
 	meta {
