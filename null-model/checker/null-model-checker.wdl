@@ -8,9 +8,7 @@ task md5sum {
 	input {
 		Array[File] test
 		Array[File] truth
-		# having an input that depends upon a previous task's output reigns in
-		# cromwell's tendencies to run tasks out of order
-		File? enforce_chronological_order
+		File rscript
 	}
 
 	command <<<
@@ -20,6 +18,7 @@ task md5sum {
 	for j in ~{sep=' ' test}
 	do
 		md5sum ${j} > sum.txt
+		"test_file $j" > config
 
 		test_basename="$(basename -- ${j})"
 		echo "test file: ${test_basename}"
@@ -29,11 +28,14 @@ task md5sum {
 			truth_basename="$(basename -- ${i})"
 			if [ "${test_basename}" == "${truth_basename}" ]; then
 				actual_truth="$i"
+				"truth_file $i" >> config
 				break
 			fi
 		done
 		# must be done outside while and if or else `set -eux -o pipefail` is ignored
 		echo "$(cut -f1 -d' ' sum.txt)" $actual_truth | md5sum --check
+		Rscript ~{rscript} config
+		rm config
 	done
 
 	touch previous_task_dummy_output
@@ -55,6 +57,8 @@ workflow checker_nullmodel {
 
 		# commented out variables, included here for clarity,
 		# change depending on specific run and are set manually elsewhere
+
+		File rscript
 		
 		File? conditional_variant_file
 		#Array[String]? covars
@@ -162,6 +166,7 @@ workflow checker_nullmodel {
 	}
 	call md5sum as Null_model_mixed_md5 {
 		input:
+			rscript = rscript,
 			test = [Null_model_mixed__nullmodelr.null_model_files[0], Null_model_mixed__nullmodelr.null_model_phenotypes, Null_model_mixed__nullmodelreport.rmd_files[0]],
 			truth = [truth__Null_model_mixed_nullmodel, truth__Null_model_mixed_pheno, truth__Null_model_mixed_report]
 	}
