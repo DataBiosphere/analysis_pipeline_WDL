@@ -14,7 +14,7 @@ toler <- 1.5e-8
 
 # check to make sure we didn't accidentally load the same file twice
 # files should not be equivalent, as they failed an MD5
-stopifnot(isFALSE(identical(test, truth))
+stopifnot(isFALSE(identical(test, truth)))
 
 # actual check for them being "close enough"
 stopifnot(isTRUE(all.equal(test, truth, tolerance=toler)))

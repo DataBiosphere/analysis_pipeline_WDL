@@ -1,0 +1,5 @@
+FROM r-base:4.1.0
+COPY are_outputs_kinda_equal.R /opt/are_outputs_kinda_equal.R
+RUN chmod +x /opt/are_outputs_kinda_equal.R
+ENV PATH="${PATH}:/opt/"
+CMD "/bin/bash"

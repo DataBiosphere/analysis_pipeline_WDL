@@ -8,14 +8,12 @@ task md5sum {
 	input {
 		Array[File] test
 		Array[File] truth
-		File rscript
 	}
 
 	command <<<
 
 	# the md5 stuff pulls from the files in /inputs/
 	# the Rscript pulls from the copied files
-
 	for j in ~{sep=' ' test}
 	do
 		
@@ -47,7 +45,7 @@ task md5sum {
 		then
 			# R
 			echo "Calling Rscript for approximate comparison"
-			if Rscript ~{rscript} testcopy_$test_basename truthcopy_$truth_basename
+			if Rscript /opt/are_outputs_kinda_equal.R testcopy_$test_basename truthcopy_$truth_basename
 			then
 				echo "Outputs are not identical, but are mostly equivalent."
 				exit 0
@@ -62,7 +60,7 @@ task md5sum {
 	>>>
 
 	runtime {
-		docker: "uwgac/topmed-master:2.10.0"
+		docker: "quay.io/aofarrel/rchecker:1.0.5"
 		memory: "2 GB"
 		preemptible: 2
 	}
@@ -74,8 +72,6 @@ workflow checker_nullmodel {
 
 		# commented out variables, included here for clarity,
 		# change depending on specific run and are set manually elsewhere
-
-		File rscript
 		
 		File? conditional_variant_file
 		#Array[String]? covars
@@ -183,7 +179,6 @@ workflow checker_nullmodel {
 	}
 	call md5sum as Null_model_mixed_md5 {
 		input:
-			rscript = rscript,
 			test = [Null_model_mixed__nullmodelr.null_model_files[0], Null_model_mixed__nullmodelr.null_model_phenotypes, Null_model_mixed__nullmodelreport.rmd_files[0]],
 			truth = [truth__Null_model_mixed_nullmodel, truth__Null_model_mixed_pheno, truth__Null_model_mixed_report]
 	}

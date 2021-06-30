@@ -289,7 +289,7 @@ task null_model_r {
 		# * test_phenotypes.RData
 
 		File config_file = "null_model.config"  # CWL globs this with the parameters file, ie, params shows up twice as an ouput
-		File null_model_phenotypes = glob("*phenotypes.RData")[0]  # should inherit metadata
+		File null_model_phenotypes = glob("*phenotypes.RData")[0]
 		Array[File] null_model_files = glob("${output_prefix}*null_model*RData")
 		File null_model_params = glob("*.params")[0]
 		# the CWL also has null_model_output but this is already in null_model_files and not repeated here
