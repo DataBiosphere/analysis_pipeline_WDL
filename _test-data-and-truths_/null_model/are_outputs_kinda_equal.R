@@ -1,4 +1,5 @@
 library(argparser)
+library(TopmedPipeline)
 sessionInfo()
 
 argp <- arg_parser("Check if null model outputs vary")
@@ -19,5 +20,11 @@ countThreads()
 test <- config["test_file"]
 truth <- config["truth_file"]
 toler <- config["tolerance"]
+
+print(test)
+print(truth)
+
+str(test)
+str(truth)
 
 stopifnot(isTRUE(all.equal(test, truth, tolerance=toler)))
