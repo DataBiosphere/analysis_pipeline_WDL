@@ -50,7 +50,7 @@ task md5sum {
 	}
 }
 
-workflow checker_ldprune {
+workflow checker_nullmodel {
 	input {
 
 		# commented out variables, included here for clarity,
