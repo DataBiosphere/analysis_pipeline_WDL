@@ -1,9 +1,7 @@
 # Null Model (null-model-wf.wdl)  
 *Authorship note: Much of this file paraphrases documentation written by Stephanie Gogarten*
 
-
-Be aware that the null_model_file does not match its output on Seven Bridges. As such, the checker workflow is set up to *not* fail upon an MD5 mismatch. Be aware that unlike the other checker workflows, a pass does not mean all MD5 checks passed. Check stdout for more information.
-
+Be aware that the optional checker workflow for Null Model varies considerably from other checker workflows in this repo. If you intend on using it, please be sure to read the [checker workflow documentation](https://github.com/DataBiosphere/analysis_pipeline_WDL/null-model/checker/README.md).
 
 ## Table Of Contents
 <!---toc start-->
