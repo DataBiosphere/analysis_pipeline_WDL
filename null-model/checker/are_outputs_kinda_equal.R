@@ -10,7 +10,7 @@ print(options)
 
 test <- loadRData(options[1])
 truth <- loadRData(options[2])
-toler <- 1.5e-8
+toler <- as.numeric(options[3])
 
 # check to make sure we didn't accidentally load the same file twice
 # files should not be equivalent, as they failed an MD5

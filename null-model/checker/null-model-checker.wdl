@@ -8,6 +8,7 @@ task md5sum {
 	input {
 		Array[File] test
 		Array[File] truth
+		Float? tolerance = 0.000000010  # 1.0e-8, passing in sci notation via WDL is tricky
 	}
 
 	command <<<
@@ -45,12 +46,12 @@ task md5sum {
 		then
 			# R
 			echo "Calling Rscript for approximate comparison"
-			if Rscript /opt/are_outputs_kinda_equal.R testcopy_$test_basename truthcopy_$truth_basename
+			if Rscript /opt/are_outputs_kinda_equal.R testcopy_$test_basename truthcopy_$truth_basename ~{tolerance}
 			then
 				echo "Outputs are not identical, but are mostly equivalent."
 				exit 0
 			else
-				echo "Outputs vary beyond accepted tolerance (default:1.5e-8)."
+				echo "Outputs vary beyond accepted tolerance (default:1.0e-8)."
 				echo "This is considered a failure and should be reported on Github."
 				exit 1
 			fi
@@ -60,7 +61,7 @@ task md5sum {
 	>>>
 
 	runtime {
-		docker: "quay.io/aofarrel/rchecker:1.0.5"
+		docker: "quay.io/aofarrel/rchecker:1.0.9"
 		memory: "2 GB"
 		preemptible: 2
 	}
