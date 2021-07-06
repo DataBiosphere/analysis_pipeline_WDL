@@ -173,6 +173,7 @@ task subset_gds {
 		f.close()
 		CODE
 
+		echo "Calling R script subset_gds.R"
 		R -q --vanilla < /usr/local/analysis_pipeline/R/subset_gds.R --args subset_gds.config
 	}
 
@@ -275,6 +276,7 @@ task merge_gds {
 		exit()
 		CODE
 
+		echo "Calling R script merge_gds.R"
 		Rscript /usr/local/analysis_pipeline/R/merge_gds.R merge_gds.config
 	>>>
 
@@ -348,6 +350,7 @@ task check_merged_gds {
 		BASH_CHR=$(<chr_number)
 		echo "Chromosme number is ${BASH_CHR}"
 
+		echo "Calling R script check_merged_gds.R"
 		R -q --vanilla < /usr/local/analysis_pipeline/R/check_merged_gds.R --args check_merged_gds.config --chromosome ${BASH_CHR}
 	>>>
 

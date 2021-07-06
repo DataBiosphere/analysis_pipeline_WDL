@@ -78,46 +78,23 @@ task unique_variant_id {
 		def find_chromosome(file):
 			chr_array = []
 			chrom_num = split_on_chromosome(file)
-			if(unicode(str(chrom_num[1][1])).isnumeric()):
+			if(unicode(str(chrom_num[1])).isnumeric()):
 				# two digit number
-				chr_array.append(chrom_num[1][0])
-				chr_array.append(chrom_num[1][1])
+				chr_array.append(chrom_num[0])
+				chr_array.append(chrom_num[1])
 			else:
 				# one digit number or Y/X/M
-				chr_array.append(chrom_num[1][0])
+				chr_array.append(chrom_num[0])
 			return "".join(chr_array)
 
 		def split_on_chromosome(file):
-			# if input is "amishchr1.gds"
-			# output is ["amish", ".gds", "chr"]
-			chrom_num = file
-			if "chr" in chrom_num:
-				chrom_num = chrom_num.split("chr")
-				chrom_num.append("chr")
-			else:
-				return "error-invalid-inputs"
+			chrom_num = file.split("chr")[1]
 			return chrom_num
 
-		def write_config(chr_array, precisely_one_gds_split):
+		def write_config(chr_array, path):
 			f = open("unique_variant_ids.config", "a")
-			f.write("chromosomes ")
-			f.write("'")
-			for chr in chr_array:
-				f.write(chr)
-				f.write(" ")
-			f.write("'")
-			f.write("\ngds_file ")
-			f.write("'")
-			f.write(precisely_one_gds_split[0])  # first part
-			f.write(precisely_one_gds_split[2])  # string "chr"
-			f.write(" ")  # space where R script inserts chr number
-			if(unicode(str(precisely_one_gds_split[1][1])).isnumeric()):
-				# two digit number
-				f.write(precisely_one_gds_split[1][2:])
-			else:
-				# one digit number or Y/X/M
-				f.write(precisely_one_gds_split[1][1:])
-			f.write("'")
+			f.write('chromosomes "' + chrs + '"\n')
+			f.write('gds_file "' + path[0] + 'chr ' + path[1] + '"\n')
 			f.close()
 
 		gds_array_fullpath = ['~{sep="','" gdss}']
@@ -125,21 +102,20 @@ task unique_variant_id {
 		for fullpath in gds_array_fullpath:
 			gds_array_basenames.append(os.path.basename(fullpath))
 
+		a_file = gds_array_basenames[0]
+		chr = find_chromosome(a_file)
+		path = a_file.split('chr'+chr)
+
 		# make list of all chromosomes found in input files
 		chr_array = []
 		for gds_file in gds_array_basenames:
-			this_chr = find_chromosome(gds_file)
-			if this_chr == "error-invalid-inputs":
-				print("Unable to determine chromosome number from inputs.")
-				print("Please ensure your files contain ''chr'' followed by")
-				print("the number of letter of the chromosome (chr1, chr2, etc)")
-				exit(1)
-			else:
-				chr_array.append(this_chr)
+			chrom_num = find_chromosome(gds_file)
+			chr_array.append(chrom_num)
+		chrs = ' '.join(chr_array)
+
+		write_config(chrs, path)
 		
-		# assuming all gds files have same pattern in filename, any one will do
-		one_valid_gds_split = split_on_chromosome(gds_array_basenames[0])
-		write_config(chr_array, one_valid_gds_split)
+		exit()
 		CODE
 		
 		echo "Calling uniqueVariantIDs.R"
