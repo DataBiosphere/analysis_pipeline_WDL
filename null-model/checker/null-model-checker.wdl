@@ -8,7 +8,7 @@ task md5sum {
 	input {
 		Array[File] test
 		Array[File] truth
-		Float? tolerance = 0.0001  # 0.0001 is 1.0e-5; passing in sci notation via WDL can be difficult
+		Float? tolerance = 0.00000001  # 1.0e-8
 	}
 
 	command <<<
@@ -51,9 +51,10 @@ task md5sum {
 				echo "Outputs are not identical, but are mostly equivalent."
 				# do not exit, check the others
 			else
-				echo "Outputs vary beyond accepted tolerance (default:1.0e-5)."
-				echo "This is considered a failure and should be reported on Github."
-				exit(1)
+				echo "Outputs vary beyond accepted tolerance (default:1.0e-8)."
+				echo "This is considered a failure and should be reported on Github, unless"
+				echo "this workflow is running the conditionalinv case."
+				exit 1
 			fi
 		fi
 	done
@@ -71,9 +72,13 @@ task md5sum {
 workflow checker_nullmodel {
 	input {
 
+		# run the one known configuration which is likely to error out
+		# only useful to brave debuggers; we don't know what causes this
+		Boolean run_conditionalinv = true 
+
+
 		# commented out variables, included here for clarity,
 		# change depending on specific run and are set manually elsewhere
-		
 		File? conditional_variant_file
 		#Array[String]? covars
 		#String family
@@ -110,7 +115,8 @@ workflow checker_nullmodel {
 		File truth__conditional_nullmodel
 		File truth__conditional_pheno
 		File truth__conditional_report
-		File truth__conditional_report_invnorm
+		File truth__conditional_nullmodel_invnorm  # conditionalinv
+		File truth__conditional_report_invnorm  # conditionalinv
 		File truth__grm_nullmodel
 		File truth__grm_pheno
 		File truth__grm_report
@@ -279,7 +285,11 @@ workflow checker_nullmodel {
 #			truth = [truth__binary_nullmodel, truth__binary_pheno, truth__binary_report]
 #	}
 	##############################
-	#        conditional         #
+	#   conditional one-step     #
+	#                            #
+	# This one does NOT perform  #
+	# the inverse norm step, and #
+	# should NOT error out.      #
 	##############################
 	call nullmodel.null_model_r as conditional__nullmodelr {
 		input:
@@ -288,7 +298,7 @@ workflow checker_nullmodel {
 			family = "gaussian",
 			gds_files = gds_files,
 			#group_var = 
-			#inverse_normal = 
+			inverse_normal = false,
 			n_pcs = 4,
 			#norm_bygroup = 
 			outcome = "outcome",
@@ -310,7 +320,7 @@ workflow checker_nullmodel {
 			family = "gaussian",
 			gds_files = gds_files,
 			#group_var = 
-			#inverse_normal = 
+			inverse_normal = false,
 			n_pcs = 4,
 			#norm_bygroup = 
 			output_prefix = "conditional",
@@ -323,8 +333,63 @@ workflow checker_nullmodel {
 	}
 	call md5sum as conditional_md5 {
 		input:
-			test = [conditional__nullmodelr.null_model_files[0], conditional__nullmodelr.null_model_phenotypes, conditional__nullmodelreport.rmd_files[0], conditional__nullmodelreport.rmd_files[1]],
-			truth = [truth__conditional_nullmodel, truth__conditional_pheno, truth__conditional_report, truth__conditional_report_invnorm]
+			test = [conditional__nullmodelr.null_model_files[0], conditional__nullmodelr.null_model_phenotypes, conditional__nullmodelreport.rmd_files[0]],
+			truth = [truth__conditional_nullmodel, truth__conditional_pheno, truth__conditional_report]
+	}
+
+	if(run_conditionalinv) {
+		##############################
+		#   conditional inv norm     #
+		#                            #
+		# This one DOES perform the  #
+		# the inverse norm step, and #
+		# MIGHT error out.           #
+		##############################
+		call nullmodel.null_model_r as conditionalinv__nullmodelr {
+			input:
+				conditional_variant_file = conditional_variant_file,
+				covars = ["sex", "Population"],
+				family = "gaussian",
+				gds_files = gds_files,
+				#group_var = 
+				inverse_normal = true,
+				n_pcs = 4,
+				#norm_bygroup = 
+				outcome = "outcome",
+				output_prefix = "conditionalinv",
+				pca_file = pca_file,
+				phenotype_file = phenotype_file,
+				relatedness_matrix_file = relatedness_matrix_file,
+				#rescale_variance = 
+				#resid_covars = 
+				sample_include_file = sample_include_file_typical
+		}
+		call nullmodel.null_model_report as conditionalinv__nullmodelreport {
+			input:
+				null_model_files = conditionalinv__nullmodelr.null_model_files,
+				null_model_params = conditionalinv__nullmodelr.null_model_params,
+				
+				conditional_variant_file = conditional_variant_file,
+				covars = ["sex", "Population"],
+				family = "gaussian",
+				gds_files = gds_files,
+				#group_var = 
+				inverse_normal = true,
+				n_pcs = 4,
+				#norm_bygroup = 
+				output_prefix = "conditionalinv",
+				pca_file = pca_file,
+				phenotype_file = phenotype_file,
+				relatedness_matrix_file = relatedness_matrix_file,
+				#rescale_variance = 
+				#resid_covars = 
+				sample_include_file = sample_include_file_typical
+		}
+		call md5sum as conditionalinv_md5 {
+			input:
+				test = [conditionalinv__nullmodelr.null_model_files[0], conditionalinv__nullmodelr.null_model_phenotypes, conditionalinv__nullmodelreport.rmd_files[0], conditionalinv__nullmodelreport.rmd_files[1]],
+				truth = [truth__conditional_nullmodel_invnorm, truth__conditional_pheno, truth__conditional_report, truth__conditional_report_invnorm]
+		}
 	}
 #	##############################
 #	#            grm             #
