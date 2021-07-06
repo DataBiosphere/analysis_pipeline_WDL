@@ -1,6 +1,8 @@
 # Null Model (null-model-wf.wdl)  
 *Authorship note: Much of this file paraphrases documentation written by Stephanie Gogarten*
 
+Note that running this on Google Cloud Compute will give different outputs compared to it being run on AWS. More information here: https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/31 
+
 Be aware that the optional checker workflow for Null Model varies considerably from other checker workflows in this repo. If you intend on using it, please be sure to read the [checker workflow documentation](https://github.com/DataBiosphere/analysis_pipeline_WDL/null-model/checker/README.md).
 
 ## Table Of Contents
