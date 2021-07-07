@@ -41,7 +41,7 @@
   "checker_nullmodel.truth__binary_pheno": "gs://topmed_workflow_testing/UWGAC_WDL/checker/e_nullmodel/binary_phenotypes.RData",
   "checker_nullmodel.truth__binary_report": "gs://topmed_workflow_testing/UWGAC_WDL/checker/e_nullmodel/binary_report.Rmd",
   "checker_nullmodel.truth__binary_nullmodel": "gs://topmed_workflow_testing/UWGAC_WDL/checker/e_nullmodel/binary_null_model.RData",
-  "checker_nullmodel.truth__conditional_nullmodel": "gs://topmed_workflow_testing/UWGAC_WDL/checker/e_nullmodel/conditional_null_model_invnorm.RData",
+  "checker_nullmodel.truth__conditional_nullmodel": "gs://topmed_workflow_testing/UWGAC_WDL/checker/e_nullmodel/conditional_null_model.RData",
   "checker_nullmodel.truth__conditional_pheno": "gs://topmed_workflow_testing/UWGAC_WDL/checker/e_nullmodel/conditional_phenotypes.RData",
   "checker_nullmodel.truth__conditional_report": "gs://topmed_workflow_testing/UWGAC_WDL/checker/e_nullmodel/conditional_report.Rmd",
   "checker_nullmodel.truth__conditionalinv_nullmodel_invnorm": "gs://topmed_workflow_testing/UWGAC_WDL/checker/e_nullmodel/conditionalinv/google_truths/conditionalinv_null_model_invnorm.RData",
