@@ -115,8 +115,12 @@ workflow checker_nullmodel {
 		File truth__conditional_nullmodel
 		File truth__conditional_pheno
 		File truth__conditional_report
-		File truth__conditional_nullmodel_invnorm  # conditionalinv
-		File truth__conditional_report_invnorm  # conditionalinv
+
+		File truth__conditionalinv_nullmodel_invnorm
+		File truth__conditionalinv_report_invnorm
+		File truth__conditionalinv_pheno
+		File truth__conditionalinv_report
+		
 		File truth__grm_nullmodel
 		File truth__grm_pheno
 		File truth__grm_report
@@ -388,7 +392,7 @@ workflow checker_nullmodel {
 		call md5sum as conditionalinv_md5 {
 			input:
 				test = [conditionalinv__nullmodelr.null_model_files[0], conditionalinv__nullmodelr.null_model_phenotypes, conditionalinv__nullmodelreport.rmd_files[0], conditionalinv__nullmodelreport.rmd_files[1]],
-				truth = [truth__conditional_nullmodel_invnorm, truth__conditional_pheno, truth__conditional_report, truth__conditional_report_invnorm]
+				truth = [truth__conditionalinv_nullmodel_invnorm, truth__conditionalinv_report_invnorm, truth__conditionalinv_pheno, truth__conditionalinv_report]
 		}
 	}
 	##############################
