@@ -68,6 +68,8 @@ task gds2bed {
 	}
 	output {
 		File processed_bed = glob("*.bed")[0] # Note: check if secondary files need to be outputted
+		File processed_bim = glob("*.bim")[0]
+		File processed_fam = glob("*.fam")[0]
 		File config_file = "gds2bed.config"
 	}
 
@@ -75,9 +77,13 @@ task gds2bed {
 
 # [2] plink_make_bed -- process bed file through plink
 
+# Add java script?
+
 task plink_make_bed {
 	input {
 		File bedfile
+		File bimfile
+		File famfile
 		
 		# runtime attributes
 		Int addldisk = 5
@@ -98,13 +104,18 @@ task plink_make_bed {
 		python << CODE
 		import os
 
-		f = open("plink_make_bed_cmd.sh", "a")
+		f = open("plink_cmd.sh", "a")
 
 		f.write('#!/bin/bash\n')
-		f.write('plink --make-bed --bfile ' + '.'.join(~{bedfile}.split('.')[:-1]) + ' --out ' + basename(~{bedfile}) + '_recode\n')
+		# plink --bfile toy --bed bob --freq
+		f.write('plink --make-bed --bfile ' + '.'.join("~{bimfile}".split('.')[:-1]) + ' --bed ' + "~{bedfile}" + ' --fam ' + "~{famfile}" + ' --out ' + os.path.basename('.'.join(("~{bedfile}").split('.')[:-1])) + '_recode\n')
+		#f.write('plink --make-just-bed --bfile ' + "~{bedfile}" + ' --out ' + os.path.basename('.'.join(("~{bedfile}").split('.')[:-1])) + '_recode\n')
 
 		CODE
-		chmod u+x plink_make_bed_cmd.sh
+
+		echo "Calling command through executable bash file for plink"
+		chmod u+x plink_cmd.sh
+		./plink_cmd.sh
 
 	}
 
@@ -117,6 +128,8 @@ task plink_make_bed {
 	}
 	output {
 		File bed_file = glob("*_recode.bed")[0]
+		File bim_file = glob("*.bim")[0]
+		File fam_file = glob("*.fam")[0]
 	}
 
 }
@@ -126,6 +139,8 @@ task plink_make_bed {
 task king_ibdseg {
 	input {
 		File bed_file
+		File bim_file
+		File fam_file
 		String? out_prefix
 		
 		# runtime attributes
@@ -142,7 +157,26 @@ task king_ibdseg {
 	
 	command {
 		set -eux -o pipefail
-		king --ibdseg -b ~{bed_file}
+
+		echo "Generating bash executable file"
+		python << CODE
+		import os
+
+		# king --ibdseg -b "~{bed_file}" --cpus "~{cpu}" --prefix "~{out_prefix}"
+		g = open("king_ibdseg_cmd.sh", "a")
+
+		g.write('#!/bin/bash\n')
+
+		if "~{out_prefix}" != "":
+			g.write('king --ibdseg -b ' + "~{bed_file}" + ' --bim ' + "~{bim_file}" + ' --fam ' + "~{fam_file}"  + ' --cpus ' + "~{cpu}" + ' --prefix ' + "~{out_prefix}" + '\n')
+		else:
+			g.write('king --ibdseg -b ' + "~{bed_file}" + ' --bim ' + "~{bim_file}" + ' --fam ' + "~{fam_file}"  + ' --cpus ' + "~{cpu}" + ' --prefix king_ibdseg\n')
+
+		CODE
+		echo "Calling command through executable bash file for king"
+		chmod u+x king_ibdseg_cmd.sh
+		./king_ibdseg_cmd.sh
+
 	}
 
 	runtime {
@@ -153,20 +187,22 @@ task king_ibdseg {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File king_ibdseg_output = glob("*.seg")[0] # Note: check if secondary files need to be outputted
+		File king_ibdseg_output = glob("*.seg")[0]
 	}
 
 }
 
 # [4] king_to_matrix -- 
 
+# Add java script?
+
 task king_to_matrix {
 	input {
 		File king_file
-		File sample_include_file
+		File? sample_include_file
 
 		# optional
-		Int? sparse_threshold = 0.02209709
+		Float? sparse_threshold = 0.02209709
 		String? out_prefix
 		String? kinship_method
 		
@@ -178,8 +214,8 @@ task king_to_matrix {
 	}
 
 	# Estimate disk size required
-	Int gds_size = ceil(size(gds_file, "GB"))
-	Int final_disk_dize = gds_size + addldisk
+	Int king_size = ceil(size(king_file, "GB"))
+	Int final_disk_dize = king_size + addldisk
 	
 	command {
 		set -eux -o pipefail
@@ -207,6 +243,12 @@ task king_to_matrix {
 		if "~{kinship_method}" != "":
 			f.write('kinship_method "~{kinship_method}"\n')
 
+		if "~{kinship_method}" not in ['king_ibdseg', 'king_robust']:
+			f.write('kinship_method king_ibdseg\n')
+		else:
+			f.write('kinship_method "~{kinship_method}"\n')
+
+
 		f.close()
 		CODE
 
@@ -222,7 +264,7 @@ task king_to_matrix {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File king_matrix = glob("*.RData")[0] # Note: check if secondary files need to be outputted
+		File king_matrix = glob("*.RData")[0]
 		File config_file = "king_to_matrix.config"
 	}
 
@@ -233,10 +275,10 @@ task king_to_matrix {
 task kinship_plots {
 	input {
 		File kinship_file
-		Enum kinship_method
+		String? kinship_method
 
 		# optional
-		Int? kinship_plot_threshold
+		Float? kinship_plot_threshold = 0.04419417382
 		File? phenotype_file
 		String? group
 		File? sample_include_file
@@ -250,8 +292,8 @@ task kinship_plots {
 	}
 
 	# Estimate disk size required
-	Int gds_size = ceil(size(gds_file, "GB"))
-	Int final_disk_dize = gds_size + addldisk
+	Int kinship_size = ceil(size(kinship_file, "GB"))
+	Int final_disk_dize = kinship_size + addldisk
 
 	# Workaround for optional files
 	Boolean defPhenotypeFile = defined(phenotype_file)
@@ -274,13 +316,15 @@ task kinship_plots {
 				f.write('kinship_method king\n')
 			else:
 				f.write('kinship_method "~{kinship_method}"\n')
+		else:
+			f.write('kinship_method king\n')
 
 		# check for empty string
-		if "~{kinship_threshold}" != "":
-				f.write('kinship_threshold "~{kinship_threshold}"\n')
+		if "~{kinship_plot_threshold}" != "":
+				f.write('kinship_plot_threshold "~{kinship_plot_threshold}"\n')
 
-		if "~{kinship_threshold}" != "":
-				f.write('kinship_threshold "~{kinship_threshold}"\n')		
+		if "~{kinship_plot_threshold}" != "":
+				f.write('kinship_plot_threshold "~{kinship_plot_threshold}"\n')		
 
 		if "~{out_prefix}" != "":
 			f.write('out_file_all "~{kinship_method}"_all.pdf\n')
@@ -328,7 +372,7 @@ workflow king {
 		Float? kinship_plot_threshold
 		String? group
 		Float? sparse_threshold
-		String? kinship_method
+		String? kinship_method # not included in king-ibdseg-wf.cwl but is an input in king_to_matrix task
 	}
 	call gds2bed{
 		input:
@@ -338,11 +382,15 @@ workflow king {
 	}
 	call plink_make_bed{
 		input:
-			bedfile = gds2bed.processed_bed
+			bedfile = gds2bed.processed_bed,
+			bimfile = gds2bed.processed_bim,
+			famfile = gds2bed.processed_fam
 	}
 	call king_ibdseg{
 		input:
 			bed_file = plink_make_bed.bed_file,
+			bim_file = plink_make_bed.bim_file,
+			fam_file = plink_make_bed.fam_file,
 			out_prefix = out_prefix
 	}
 	call king_to_matrix{
@@ -355,9 +403,9 @@ workflow king {
 	}	
 	call kinship_plots{
 		input:
-			king_file = king_ibdseg.king_ibdseg_output,
+			kinship_file = king_ibdseg.king_ibdseg_output,
 			phenotype_file = phenotype_file,
-			sample_include_file = sample_include_file
+			sample_include_file = sample_include_file,
 			kinship_method = kinship_method
 	}
 
@@ -365,7 +413,5 @@ workflow king {
 		File king_ibdseg_matrix = king_to_matrix.king_matrix
 		File king_ibdseg_plots = kinship_plots.kinship_plots
 		File king_ibdseg_output = king_ibdseg.king_ibdseg_output
-
-
 	}
 }
