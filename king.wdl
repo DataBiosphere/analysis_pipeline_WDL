@@ -45,9 +45,9 @@ task gds2bed {
 
 		# check for empty string
 		if "~{bed_file}" != "":
-				f.write('bed_file "~{bed_file}"\n')
+			f.write('bed_file "~{bed_file}"\n')
 		else:
-				f.write('bed_file "~{basename(gds_file, ".gds")}"\n')
+			f.write('bed_file "~{basename(gds_file, ".gds")}"\n')
 
 		if "~{defSampleInclude}" == "true":
 			f.write('sample_include_file "~{sample_include_file}"\n')
@@ -243,9 +243,9 @@ task king_to_matrix {
 
 		# check for empty string
 		if "~{out_prefix}" != "":
-				f.write('out_prefix "' + "~{out_prefix}" + '"\n')
+			f.write('out_prefix "' + "~{out_prefix}" + '"\n')
 		else:
-				f.write('out_prefix "' + "~{basename(king_file, ".seg")}" + '_king_ibdseg_Matrix"\n')
+			f.write('out_prefix "' + "~{basename(king_file, ".seg")}" + '_king_ibdseg_Matrix"\n')
 
 		if "~{kinship_method}" != "":
 			f.write('kinship_method "~{kinship_method}"\n')
@@ -339,7 +339,7 @@ task kinship_plots {
 			f.write('phenotype_file ""~{phenotype_file}""\n')
 
 		if "~{group}" != "":
-				f.write('study ""~{group}""\n')		
+			f.write('study ""~{group}""\n')		
 
 		if "~{defSampleInclude}" == "true":
 			f.write('sample_include_file ""~{sample_include_file}""\n')
