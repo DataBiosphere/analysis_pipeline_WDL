@@ -216,6 +216,9 @@ task king_to_matrix {
 	# Estimate disk size required
 	Int king_size = ceil(size(king_file, "GB"))
 	Int final_disk_dize = king_size + addldisk
+
+	# Workaround for optional files
+	Boolean defSampleInclude = defined(sample_include_file)
 	
 	command {
 		set -eux -o pipefail
@@ -227,7 +230,11 @@ task king_to_matrix {
 
 		f = open("king_to_matrix.config", "a")
 		f.write('king_file "~{king_file}"\n')
-		f.write('sample_include_file "~{sample_include_file}"\n')
+
+		if "~{defSampleInclude}" == "true":
+			f.write('sample_include_file ""~{sample_include_file}""\n')
+
+		#f.write('sample_include_file "~{sample_include_file}"\n')
 
 		if "~{sparse_threshold}" != "":
 			f.write('sparse_threshold "~{sparse_threshold}"\n')
@@ -236,15 +243,15 @@ task king_to_matrix {
 
 		# check for empty string
 		if "~{out_prefix}" != "":
-				f.write('out_prefix "~{out_prefix}"\n')
+				f.write('out_prefix "' + "~{out_prefix}" + '"\n')
 		else:
-				f.write('out_prefix "~{basename(king_file, ".seg")}"_king_ibdseg_Matrix\n')
+				f.write('out_prefix "' + "~{basename(king_file, ".seg")}" + '_king_ibdseg_Matrix"\n')
 
 		if "~{kinship_method}" != "":
 			f.write('kinship_method "~{kinship_method}"\n')
 
 		if "~{kinship_method}" not in ['king_ibdseg', 'king_robust']:
-			f.write('kinship_method king_ibdseg\n')
+			f.write('kinship_method "king_ibdseg"\n')
 		else:
 			f.write('kinship_method "~{kinship_method}"\n')
 
@@ -282,7 +289,7 @@ task kinship_plots {
 		File? phenotype_file
 		String? group
 		File? sample_include_file
-		String? out_prefix
+		String? out_prefix = "kinship"
 		
 		# runtime attributes
 		Int addldisk = 5
@@ -317,28 +324,25 @@ task kinship_plots {
 			else:
 				f.write('kinship_method "~{kinship_method}"\n')
 		else:
-			f.write('kinship_method king\n')
+			f.write('kinship_method "king_ibdseg"\n')
 
 		# check for empty string
-		if "~{kinship_plot_threshold}" != "":
-				f.write('kinship_plot_threshold "~{kinship_plot_threshold}"\n')
-
 		if "~{kinship_plot_threshold}" != "":
 				f.write('kinship_plot_threshold "~{kinship_plot_threshold}"\n')		
 
 		if "~{out_prefix}" != "":
-			f.write('out_file_all "~{kinship_method}"_all.pdf\n')
-			f.write('out_file_cross "~{kinship_method}"_cross_group.pdf\n')
-			f.write('out_file_study "~{kinship_method}"_within_group.pdf.pdf\n')
+			f.write('out_file_all "' + "~{out_prefix}" + '_all.pdf"\n')
+			f.write('out_file_cross "' + "~{out_prefix}" + '_cross_group.pdf"\n')
+			f.write('out_file_study "' + "~{out_prefix}" + '_within_group.pdf"\n')
 
 		if "~{defPhenotypeFile}" == "true":
-			f.write('phenotype_file "~{phenotype_file}"\n')
+			f.write('phenotype_file ""~{phenotype_file}""\n')
 
 		if "~{group}" != "":
-				f.write('study "~{group}"\n')		
+				f.write('study ""~{group}""\n')		
 
 		if "~{defSampleInclude}" == "true":
-			f.write('sample_include_file "~{sample_include_file}"\n')
+			f.write('sample_include_file ""~{sample_include_file}""\n')
 
 
 		f.close()
