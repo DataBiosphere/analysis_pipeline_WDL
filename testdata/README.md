@@ -7,6 +7,8 @@ http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
 
 The variants are in genome build hg19.
 
+Test data for king.wdl is 149.9 Mb and housed on Seven Bridges: https://platform.sb.biodatacatalyst.nhlbi.nih.gov/u/aisling/topmed-pipeline-open-data-only/files/60c3ac59e7fd9443605f1546/
+
 # WDL Fork Notes
 chrX varies from what is currently (as of April 9th 2021) is on the UWGAC repo. This repo's chrX is filtered as some of the lines on the original repo's chrX are invalid and will error out. See https://github.com/UW-GAC/analysis_pipeline/issues/46
 
