@@ -1,17 +1,34 @@
+# CWL vs WDL: A Comparison of Both Versions of these Programs
+This document is intended for the following people:
+* Those who have used the CWL versions of these programs who wish to know how the WDL version varies
+* Those who seek to contribute to this repo
+* Those who like to compare WDL and CWL for their own learning purposes
+
+The typical user coming straight to this WDL from the Python versions, or who is new to these programs, will be unlikely to find anything useful.
+
 # Significant CWL/WDL Differences
 These are differences that have implications for cost or outputs.  
 
 ### All Workflows
-* The original CWLs allocate memory and CPUs on a workflow level, while the WDLs do it on a task level. In other words, the WDLs' runtime attributes are more granular. This was done because GCS has stricter requirements than AWS regarding storage. Doing it this way also allows resource-heavy tasks (such as check_gds in vcf-to-gds-wf) to only use the large number of resources they need in their respective task, instead of the whole workflow.  
+The original CWLs allocate memory and CPUs on a workflow level, while the WDLs do it on a task level. In other words, the WDLs' runtime attributes are more granular. This was done because GCS has stricter requirements than AWS regarding storage. Doing it this way also allows resource-heavy tasks (such as check_gds in vcf-to-gds-wf) to only use the large number of resources they need in their respective task, instead of the whole workflow.  
 
 ### ld-pruning-wf.wdl
 * The CWL appears to contain a bug where `exclude_PCA_cor` being set to false is not respected ([#14](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/14)). The WDL avoids this. 
 * The output of merge_gds across the CWL and WDL do not md5 to the same value, but should be functionally equivalent. See [#22](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/22) for more information.   
 
 ### null-model-wf.wdl
-The CWL includes a function which appears designed to have an output phenotype file inherit metadata from the required input phenotype file. It appears to either be non-functional or SB specific and therefore has not been included. We have tested the workflow extensively and have not found a situation where the phenotype output file from the WDL varies from what the phenotype output from the CWL is; ie, in spite of this deletion the two outputs md5 across workflows.
+The CWL includes a function which is designed to have an output phenotype file inherit metadata from the required input phenotype file. It is specific to the Seven Bridges platform and therefore has not been included in the WDL. We have tested the workflow extensively and have not found a situation where the phenotype output file from the WDL varies from what the phenotype output from the CWL is; ie, in spite of this deletion the two outputs md5 across workflows.
 
-One place where outputs do differ is in null_model_file.
+Be aware that the original CWL gives different output for null_model_file depending on whether the Seven Bridges backend selected at workspace creation time is AWS (default) or Google. To clarify:
+
+|                    	| WDL, local 	| WDL, Terra 	| CWL, 7B via AWS 	| CWL, 7B via Google 	|
+|--------------------	|------------	|------------	|-----------------	|--------------------	|
+| WDL, local         	| pass       	| pass       	| fail            	| pass               	|
+| WDL, Terra         	| pass       	| pass       	| fail            	| pass               	|
+| CWL, 7B via AWS    	| fail       	| fail       	| pass            	| fail               	|
+| CWL, 7B via Google 	| pass       	| pass       	| fail            	| pass               	|
+
+----------
 
 # Algorithmic CWL/WDL Differences
 These differences are likely only of interest to maintainers of this repo or those seeking to fully understand the CWL-->WDL conversion process.  
