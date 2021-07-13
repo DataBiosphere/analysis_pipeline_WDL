@@ -63,7 +63,7 @@ The twice-localized workaround is used for a slightly different reason that it i
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().
 * check_merged_gds uses the chromosome file workaround.
 
-### vcf-to-gds-wf.wdl     
+## vcf-to-gds-wf.wdl     
 * The twice-localized workaround is used in unique_variant_ids due to the fact the R script requires an array of GDS files and uses a config file which can only support an array of GDS files if each GDS file is in the same parent directory. As the GDS files are generated from a scattered task, they are sometimes given unique input directories on some file systems. As such, they first need to be pulled from all of their input directories and placed in the working directory before the config file is generated. This is explained more in-depth as the example case for [#2](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/2).
 * The WDL will not start the check_gds task if check_gds is false. The CWL will start the check_gds task regardless and generate a config file, and the true/false only applies to calling the  script.
 	* Reasoning: The way GCS billing works, this has the potential of being cheaper. Otherwise we would spend for having a powerful non-preemptible compute designed for an intense task, then only using that compute for making a text file.
