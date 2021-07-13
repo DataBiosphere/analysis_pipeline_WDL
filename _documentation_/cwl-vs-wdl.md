@@ -4,7 +4,7 @@ This document is intended for the following people:
 * Those who seek to contribute to this repo
 * Those who like to compare WDL and CWL for their own learning purposes
 
-The [Algorithmic Differences](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/implement-null-model/_documentation_/cwl-vs-wdl.md#algorithmic-differences) section is only useful to the last two. Users of the CWL coming to the WDL are likely only interested in the [Significant Differences](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/implement-null-model/_documentation_/cwl-vs-wdl.md#significant-differences) section, as it contains everything which may have cost and output implications.
+The [Algorithmic Differences](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/implement-null-model/_documentation_/cwl-vs-wdl.md#algorithmic-differences) section is only useful to the last two. Users of the CWL coming to the WDL are likely only interested in the [Significant Differences](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/implement-null-model/_documentation_/cwl-vs-wdl.md#significant-differences) section, as it contains everything which may have cost and output implications. 
 
 The typical user coming straight to this WDL from the Python versions, or who is entirely new to these programs, will be unlikely to find anything useful in this document.  
 
