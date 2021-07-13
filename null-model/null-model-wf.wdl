@@ -2,10 +2,10 @@ version 1.0
 
 # Most pipelines so far use a .config file to point requiste inputs to the Rscript.
 # null_model_r works like this, generating a .config file which is used by null_model.R
-# But null_model_report bucks this trend completely. It essentially needs two configs.
+# But null_model_report essentially needs two configs.
 # First of all it generates a .config file which only contains the distribution family,
-# the outprefix, and n_catagories_boxplot. You would expect it to contain the other
-# stuff, such as phenotype_file, in that same configuration file, but it does not.
+# the outprefix, and n_catagories_boxplot. From other workflows, one may expect it to contain
+# phenotype_file or other inputs, in that same configuration file, but it does not.
 # Instead, it uses the previous tasks' params file for that stuff. This params file was
 # generated in the first task and acts like a copy of the first task's config file. 
 # It is this param file from the first task that is used to generated an Rmd (R markdown) file
@@ -17,7 +17,7 @@ version 1.0
 task null_model_r {
 	input {
 		# these are in rough alphabetical order here
-		# for sanity's sake, but the inline Python
+		# for clarity's sake, but the inline Python
 		# follows the original order of the CWL
 
 		# required 
@@ -169,77 +169,7 @@ task null_model_r {
 			f.write('norm_bygroup ~{norm_bygroup}\n')
 
 		f.close()
-			
-		############
-		'''
-		The follow section is included in the CWL but not the WDL as it appears
-		to either be specific to seven bridges or have no purpose, as the WDL lacks
-		it yet still MD5s to the output of the SB CWLs. It is included here with 
-		additional comments to document what is missing from the WDL.
-
-		In the CWL, inheritMetadata is called on (self, inputs.phenotype_file) as
-		an output evaluation for the null model phenotype output.
-		So, o1 is the phenotype output, and o2 is the phenotype input file.
-
-		class: InlineJavascriptRequirement
-		expressionLib:
-		- |2-
-
-			var setMetadata = function(file, metadata) {
-
-				# if there is no metadata in the file then set it to the entirity of metadata
-				if (!('metadata' in file))
-					file['metadata'] = metadata;
-				
-				# else, dont do a wholesale overwrite, instead just add new keys/overwrite confliciting keys  
-				else {
-					for (var key in metadata) {
-						file['metadata'][key] = metadata[key];
-					}
-				}
-				return file
-			};
-
-			var inheritMetadata = function(o1, o2) {
-				var commonMetadata = {};
-
-				# if not an array, make it an array
-				if (!Array.isArray(o2)) {
-					o2 = [o2]
-				}
-				for (var i = 0; i < o2.length; i++) {
-					var example = o2[i]['metadata'];
-					for (var key in example) {
-
-						# on the zeroeth iteration of the outer loop,
-						# give the empty set keys-value pairs matching
-						# that of o2s zeroeth metadata 
-						if (i == 0)
-							commonMetadata[key] = example[key];
-						
-						# on all other iterations of the outer loop,
-						# delete stuff that... does not exist???
-						else {
-							if (!(commonMetadata[key] == example[key])) {
-								delete commonMetadata[key]
-							}
-						}
-					}
-				}
-				if (!Array.isArray(o1)) {
-					# if not an array, set metadata based on commonMetadata
-					# (which itself is based on o2s metadata, kind of)
-					o1 = setMetadata(o1, commonMetadata)
-				} else {
-					# if it is an array, add common metadata to what it already has
-					for (var i = 0; i < o1.length; i++) {
-						o1[i] = setMetadata(o1[i], commonMetadata)
-					}
-				}
-				return o1;
-			};
-		'''
-		############
+		
 		exit()
 		CODE
 		
@@ -307,7 +237,7 @@ task null_model_r {
 task null_model_report {
 	input {
 		# these are in rough alphabetical order here
-		# for sanity's sake, but the inline Python
+		# for clarity's sake, but the inline Python
 		# follows the original order of the CWL
 
 		# required
@@ -446,8 +376,6 @@ workflow nullmodel {
 	input {
 
 		# These variables are used by all tasks
-		# n_categories_boxplot and the runtime
-		# attributes are the only task-level ones
 
 		String family
 		File phenotype_file
@@ -466,6 +394,9 @@ workflow nullmodel {
 		String? rescale_variance
 		Boolean? resid_covars
 		File? sample_include_file
+
+		# n_categories_boxplot and the runtime attributes
+		# (CPU, disks, mem) are the only task-level inputs
 	}
 	
 	call null_model_r {
