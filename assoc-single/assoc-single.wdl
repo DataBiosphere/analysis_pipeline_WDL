@@ -1,6 +1,6 @@
 version 1.0
 
-task check_enums {
+task wdl_only__check_enums {
 	# WDL lacks the enum type, so this workaround will
 	# stop the pipeline if any are incorrectly defined
 	input {
@@ -24,6 +24,11 @@ task check_enums {
 				print("Invalid test type. Please only select either score, score.spa, or BinomiRare.")
 				exit(1)
 		CODE
+	>>>
+
+	output {
+		String wdl_only__enums_valid = "This string ensures check_enums executes first."
+	}
 }
 
 task define_segments_r {
@@ -32,10 +37,32 @@ task define_segments_r {
 		Int? n_segments
 		String? genome_build
 	}
+
+	output {
+		File config
+		File define_segments_output
+	}
 	
 }
 
 task assoc_single_r {
+	input {
+		File gds_file
+		File null_model_file
+		File phenotype_file
+		Float? mac_threshold
+		Float? maf_threshold
+		Boolean? pass_only
+		File? segment_file
+		String? test_type  # enum
+		File? variant_include_file
+		String? chromosome  # 1-24 | X | Y
+		Int? segment
+		# memory_gb and cpu are runtime vars in WDL
+		Int? variant_block_size
+		String? out_prefix
+		String? genome_build  # enum
+	}
 	
 }
 
