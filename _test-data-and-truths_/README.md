@@ -25,7 +25,7 @@ GDS files created as the output of the unique_variant_IDs task. They were instea
 The merged GDS file as the output of the merge_gds task, which also underwent LD pruning on the default settings.
 
 ## null_model
-Test files pulled from [UWGAC Github](https://github.com/UW-GAC/analysis_pipeline/tree/master/testdata), with the exception of the two Null_model_mixed* files which came from the GENESIS Null Model sample workspace, based upon Revision 17 of the CWL null model workflow, on Seven Bridges. All files are based upon older versions of 1000 Genomes data. It is not recommend to use these for your "real" data; they are presented here as truth files.
+Test files pulled from [UWGAC Github](https://github.com/UW-GAC/analysis_pipeline/tree/master/testdata), with the exception of the two *Null_model_mixed* files which came from the GENESIS Null Model sample workspace, based upon Revision 17 of the CWL null model workflow, on Seven Bridges. All files are based upon older versions of 1000 Genomes data but may have undergone additional processing, the details of which are unknown due to the age of the files. *It is not recommended to use any of these for real analysis, as they are made for a specific test data set.*
 
 ## vcfs/
 These are the same vcf.gz files as can be found in the UWGAC, with the exception of chrX. This repo's chrX is filtered as some of the lines on the original repo's chrX are invalid and will error out. See https://github.com/UW-GAC/analysis_pipeline/issues/46.
