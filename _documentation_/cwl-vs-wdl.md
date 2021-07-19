@@ -25,11 +25,11 @@ Due to a workaround involving file inputs, some WDL tasks require up to twice as
 * The output of merge_gds across the CWL and WDL do not md5 to the same value, but should be functionally equivalent. See [#22](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/22) for more information.   
 
 ## null-model-wf.wdl
-The majority of input files are affected by the twice-localized workaround in both tasks. As such, we recommend allocating about double the amount of disk space as the size of your inputs.
+The majority of input files are affected by the twice-localized workaround in both tasks. As such, we recommend that, in each task, you allocate about double the amount of disk space as the size of your inputs.
 
 The CWL includes a function which is designed to have an output phenotype file inherit metadata from the required input phenotype file. It is specific to the Seven Bridges platform and therefore has not been included in the WDL. We have tested the workflow extensively and have not found a situation where the phenotype output file from the WDL varies from what the phenotype output from the CWL is; ie, in spite of this deletion the two outputs md5 across workflows.
 
-Be aware that the original CWL gives different output for null_model_file depending on whether the Seven Bridges backend selected at workspace creation time is AWS (default) or Google. To clarify:
+Be aware that the original CWL gives significantly different output for null_model_file depending on whether the Seven Bridges backend selected at workspace creation time is AWS (default) or Google [(#3 on CWL)](https://github.com/UW-GAC/analysis_pipeline_cwl/issues/3). This naturally carries over when comparing the output of the original CWL on an AWS backend to the output of this WDL on a non-AWS backend. Rather than relying on an md5sum, we define "significantly different output" to mean the outputs in question do not pass when the R function `all.equal()` is run at default values. By these criteria:
 
 |                    	| WDL, local 	| WDL, Terra 	| CWL, 7B via AWS 	| CWL, 7B via Google 	|
 |--------------------	|------------	|------------	|-----------------	|--------------------	|
