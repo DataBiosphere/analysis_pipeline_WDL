@@ -89,3 +89,28 @@ task sbg_prepare_segments_1 {
 task sbg_group_segments_1 {
 	
 }
+
+
+# order on SB seems to be
+# 1. sbg_gds_renamer
+# 2. define_segments_r
+# 3. sbg_prepare_segments_1
+# 4. assoc_single_r
+# 5. sbg_flatten_lists
+# 6. sbg_group_segments_1
+# 7. assoc_combine_r
+# 8. assoc_plots_r
+
+# order in Python seems to be (excludes the job that doesn't happen in single)
+# for chr in chr list
+#   1. assoc
+#   2. combine
+# 3. assoc_plots
+# 4. assoc_report
+# 5. post_analysis
+
+# SB:assoc_single_r probably correlates with py:assoc
+# SB:assoc_combine_r probably correlates with py:combine
+# SB:assoc_plots_r probably correlates with py:assoc_plots
+# SB seems to lack anything for assoc_report and post_analysis so we can prob skip those
+
