@@ -1,6 +1,6 @@
 version 1.0
 
-# Most pipelines so far use a .config file to point requiste inputs to the Rscript.
+# Most pipelines so far use a .config file to point inputs to the Rscript.
 # null_model_r works like this, generating a .config file which is used by null_model.R
 # But null_model_report essentially needs two configs.
 # First of all it generates a .config file which only contains the distribution family,
@@ -11,7 +11,6 @@ version 1.0
 # It is this param file from the first task that is used to generated an Rmd (R markdown) file
 # in the second task.
 
-# null_model_fast_scoreSE.config is in original repo's testdata, but is not for this workflow
 
 # [1] null_model_r
 task null_model_r {
@@ -46,6 +45,28 @@ task null_model_r {
 		Int memory = 4
 		Int preempt = 3
 	}
+
+	# Estimate disk size required -- recall most inputs are duplicated
+	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
+	
+	Int finalDiskSize = phenotype_size + addldisk
+
+	# Strictly speaking this is only needed for Array variables
+	# But we'll do it for most of them for consistency's sake
+	Boolean isdefined_conditvar = defined(conditional_variant_file)
+	Boolean isdefined_covars = defined(covars)
+	Boolean isdefined_gds = defined(gds_files)
+	Boolean isdefined_group = defined(group_var)
+	Boolean isdefined_inverse = defined(inverse_normal)
+	Boolean isdefined_matrix = defined(relatedness_matrix_file)
+	Boolean isdefined_npcs = defined(n_pcs)
+	Boolean isdefined_norm = defined(norm_bygroup)
+	Boolean isdefined_pca = defined(pca_file)
+	Boolean isdefined_resid = defined(resid_covars)
+	Boolean isdefined_sample = defined(sample_include_file)
+
+	# basename workaround
+	String base_phenotype = basename(phenotype_file)
 	
 	command <<<
 		set -eux -o pipefail
@@ -176,30 +197,6 @@ task null_model_r {
 		echo "Calling R script null_model.R"
 		Rscript /usr/local/analysis_pipeline/R/null_model.R null_model.config
 	>>>
-
-	# Estimate disk size required -- recall most inputs are duplicated
-	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
-	# todo: other files, etc
-	Int finalDiskSize = phenotype_size + addldisk
-
-	# defined workaround
-	#
-	# Strictly speaking this is only needed for Array variables
-	# But we'll do it for most of 'em for consistency's sake
-	Boolean isdefined_conditvar = defined(conditional_variant_file)
-	Boolean isdefined_covars = defined(covars)
-	Boolean isdefined_gds = defined(gds_files)
-	Boolean isdefined_group = defined(group_var)
-	Boolean isdefined_inverse = defined(inverse_normal)
-	Boolean isdefined_matrix = defined(relatedness_matrix_file)
-	Boolean isdefined_npcs = defined(n_pcs)
-	Boolean isdefined_norm = defined(norm_bygroup)
-	Boolean isdefined_pca = defined(pca_file)
-	Boolean isdefined_resid = defined(resid_covars)
-	Boolean isdefined_sample = defined(sample_include_file)
-
-	# basename workaround
-	String base_phenotype = basename(phenotype_file)
 	
 	runtime {
 		cpu: cpu
@@ -274,6 +271,23 @@ task null_model_report {
 		Int memory = 4
 		Int preempt = 2
 	}
+
+	# Estimate disk size required -- recall most inputs are duplicated
+	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
+
+	Int finalDiskSize = phenotype_size + addldisk
+
+	Boolean isdefined_conditvar = defined(conditional_variant_file)
+	Boolean isdefined_covars = defined(covars)
+	Boolean isdefined_gds = defined(gds_files)
+	Boolean isdefined_inverse = defined(inverse_normal)
+	Boolean isdefined_matrix = defined(relatedness_matrix_file)
+	Boolean isdefined_norm = defined(norm_bygroup)
+	Boolean isdefined_null = defined(null_model_files)
+	Boolean isdefined_pca = defined(pca_file)
+	Boolean isdefined_resid = defined(resid_covars)
+	Boolean isdefined_sample = defined(sample_include_file)
+	
 	command <<<
 		set -eux -o pipefail
 
@@ -337,26 +351,6 @@ task null_model_report {
 		echo "Calling null_model_report.R"
 		Rscript /usr/local/analysis_pipeline/R/null_model_report.R null_model_report.config
 	>>>
-	
-	# Estimate disk size required -- recall most inputs are duplicated
-	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
-	# todo: other files
-	Int finalDiskSize = phenotype_size + addldisk
-
-	# Workaround
-	# Strictly speaking this is only needed for Array variables
-	# But we'll do it for most of 'em for consistency's sake
-	Boolean isdefined_conditvar = defined(conditional_variant_file)
-	Boolean isdefined_covars = defined(covars)
-	Boolean isdefined_gds = defined(gds_files)
-	Boolean isdefined_inverse = defined(inverse_normal)
-	Boolean isdefined_matrix = defined(relatedness_matrix_file)
-	Boolean isdefined_norm = defined(norm_bygroup)
-	Boolean isdefined_null = defined(null_model_files)
-	Boolean isdefined_pca = defined(pca_file)
-	Boolean isdefined_resid = defined(resid_covars)
-	Boolean isdefined_sample = defined(sample_include_file)
-	
 
 	runtime {
 		cpu: cpu
