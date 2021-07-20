@@ -12,6 +12,22 @@ A few R scripts require chromosome numbers to be passed in on the command line r
 ## null-model-wf.wdl
 The twice-localized workaround is used for a slightly different reason that it is in other workflows. The null model workflow generates a parameters file in its first task, which must use a general path, because the next tasks that same parameters file to generate its own output. If it used absolute paths, the path would point to the first task's inputs directory, which is not available in the second task. This is because, when running on Terra, each task is running inside of a Docker container. (The local version of Cromwell technically does not need Docker, but for Terra it is a hard requirement.) Files that are not explictly passed in or out of that container cannot be accessed by other tasks. In other words, in the WDL context, each task has its own file system. Additionally, the input directory's name is not consistent across tasks even if they are based upon the same Docker image, nor can it be predicted before runtime. Therefore, we must use relative paths in the params file, and we additionally must duplicate files from the input directory to the working directory for these relative paths to function with the R scripts.
 
+Additionally, the CWL technically has duplicated outputs. The WDL instead returns each file once. On SB, cwl.output.json sets the outputs as the following, where ! indicates a duplicated output, inverse norm transformation is applied, and the output_prefix is set to `test`:
+* configs:
+  * null_model.config
+  * ! null_model.config.null_model.params
+* null_model_files:
+  * ! test_null_model_invnorm.RData
+  * test_null_model_invnorm_reportonly.RData
+  * test_null_model_reportonly.RData
+* null_model_output:
+  * ! test_null_model_invnorm.RData
+* null_model_params:
+  * ! null_model.config.null_model.params
+* null_model_phenotypes:
+  * test_phenotypes.RData
+Because everything in null_model_output is already covered by null_model_files, it does not exist as an output in the WDL.
+
 ## ld-pruning-wf.wdl
 * The twice-localized workaround is used for the same reason as it is in unique_variant_ids; it is taking in an input array of files from more than one input directory.
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().

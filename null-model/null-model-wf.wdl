@@ -209,26 +209,12 @@ task null_model_r {
 		preemptibles: "${preempt}"
 	}
 	output {
-		# cwl.output.json on SB has duplicated outputs
-		# configs:
-		# * null_model.config
-		# * ! null_model.config.null_model.params
-		# null_model_files:
-		# * ! test_null_model_invnorm.RData
-		# * test_null_model_invnorm_reportonly.RData
-		# * test_null_model_reportonly.RData
-		# null_model_output:
-		# * ! test_null_model_invnorm.RData
-		# null_model_params:
-		# * ! null_model.config.null_model.params
-		# null_model_phenotypes:
-		# * test_phenotypes.RData
-
-		File config_file = "null_model.config"  # CWL globs this with the parameters file, ie, params shows up twice as an ouput
+		# The CWL duplicates some outputs but the WDL returns each file just once
+		# See this repo's _documentation_/for developers/cwl-vs-wdl.md for more info
+		File config_file = "null_model.config"
 		File null_model_phenotypes = glob("*phenotypes.RData")[0]
 		Array[File] null_model_files = glob("${output_prefix}*null_model*RData")
 		File null_model_params = glob("*.params")[0]
-		# the CWL also has null_model_output but this is already in null_model_files and not repeated here
 	}
 }
 
