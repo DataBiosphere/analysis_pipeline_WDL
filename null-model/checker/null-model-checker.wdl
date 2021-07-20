@@ -46,7 +46,7 @@ task md5sum {
 		then
 			# R
 			echo "Calling Rscript for approximate comparison"
-			if Rscript /opt/are_outputs_kinda_equal.R testcopy_$test_basename truthcopy_$truth_basename ~{tolerance}
+			if Rscript /opt/rough_equivalence_check.R testcopy_$test_basename truthcopy_$truth_basename ~{tolerance}
 			then
 				echo "Outputs are not identical, but are mostly equivalent."
 				# do not exit, check the others
