@@ -357,8 +357,8 @@ workflow nullmodel {
 		String outcome
 
 		File? conditional_variant_file
-		Array[String]? covars
-		Array[File]? gds_files
+		Array[String?] covars
+		Array[File?] gds_files
 		String? group_var
 		Boolean? inverse_normal
 		Int? n_pcs
