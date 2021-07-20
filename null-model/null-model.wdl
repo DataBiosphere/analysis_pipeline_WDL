@@ -166,7 +166,7 @@ task null_model_r {
 	# Estimate disk size required -- recall most inputs are duplicated
 	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
 	Int conditional_size = 2*select_first([ceil(size(conditional_variant_file, "GB")), 0])
-	Int gds_size_debug_debug = 2*ceil(size(select_first[gds_files], 0), "GB")
+	Int gds_size_debug_debug = 2*ceil(size(select_first[gds_files, 0]), "GB")
 	Int gds_size_debug = 2*ceil(select_first([size(gds_files, "GB"), 0]))
 	Int gds_size = 2*select_first([ceil(size(gds_files, "GB")), 0])
 	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
