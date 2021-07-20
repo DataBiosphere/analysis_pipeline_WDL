@@ -5,6 +5,7 @@
 * Running this on Google Cloud Compute will give different outputs compared to it being run on AWS. More information here: https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/31 
 * Be aware that the optional checker workflow for Null Model varies considerably from other checker workflows in this repo. If you intend on using it, please be sure to read the [checker workflow documentation](https://github.com/DataBiosphere/analysis_pipeline_WDL/null-model/checker/README.md).
 * A total of nine sample JSONs are present in this repo. They are based upon example configuration files in [the original repo's testdata folder](https://github.com/UW-GAC/analysis_pipeline/tree/master/testdata). Note that [fast_scoreSE](https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/null_model_fast_scoreSE.config) refers to another pipeline and the various `*_reportonly.config` files are redundant; these configs have therefore not been included.
+* When run on Google Cloud Compute, each task of this pipeline will request double the disk size of your inputs + 1 GB. Manually overriding this to a smalller number is not recommended.
 
 ## Table Of Contents
 <!---toc start-->
