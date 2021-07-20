@@ -1,9 +1,5 @@
 version 1.0
 
-
-
-# null_model_fast_scoreSE.config is in original repo's testdata, but is not for this workflow
-
 # [1] null_model_r
 task null_model_r {
 	input {
