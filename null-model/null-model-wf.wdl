@@ -3,16 +3,15 @@ version 1.0
 # [1] null_model_r
 task null_model_r {
 	input {
-		# these are in rough alphabetical order here
-		# for clarity's sake, but the inline Python
-		# follows the original order of the CWL
+		# Inputs are in rough alphabetical order here for clarity's sake, but the
+		# inline Python follows the original order of the CWL
 
 		# required 
 		String outcome
 		File phenotype_file
-		String family  # required on SB but not in original pipeline
+		String family  # required in CWL but not in original pipeline
 
-		# optional stuff
+		# optional
 		File? conditional_variant_file
 		Array[String]? covars
 		Array[File]? gds_files
@@ -171,18 +170,10 @@ task null_model_r {
 	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
 	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
 	Int sample_size = 2*select_first([ceil(size(sample_include_file, "GB")), 0])
-	Int finalDiskSize = phenotype_size 
-		+ conditional_size 
-		+ gds_size
-		+ pca_size
-		+ related_size
-		+ sample_size
-		+ addldisk
+	Int finalDiskSize = phenotype_size + conditional_size + gds_size + pca_size
+		+ related_size + sample_size + addldisk
 
-	# defined workaround
-	#
-	# Strictly speaking this is only needed for Array variables
-	# But we'll do it for most of 'em for consistency's sake
+	# Strictly speaking only needed for arrays, but we want to be consistent
 	Boolean isdefined_conditvar = defined(conditional_variant_file)
 	Boolean isdefined_covars = defined(covars)
 	Boolean isdefined_gds = defined(gds_files)
@@ -225,13 +216,11 @@ task null_model_report {
 
 		# required
 		String family
-		#String outcome  # not consistent in CWL? check!
 		File phenotype_file
 
 		# passed in from previous
 		File null_model_params
 		Array[File]? null_model_files  # CWL treats as optional
-
 
 		# optional
 		File? conditional_variant_file
@@ -256,12 +245,15 @@ task null_model_report {
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 2
+
+		# outcome is present in previous task but not this one
 	}
+	
 	command <<<
 		set -eux -o pipefail
 
 		echo "Twice-localized workaround: Copying params file into workdir"
-		# workaround for rmd file being unable to param file
+		# workaround for rmd file being unable to find param file
 		cp ~{null_model_params} .
 
 		echo "Twice-localized workaround: Copying phenotypic file input into workdir"
@@ -323,12 +315,15 @@ task null_model_report {
 	
 	# Estimate disk size required -- recall most inputs are duplicated
 	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
-	# todo: other files
-	Int finalDiskSize = phenotype_size + addldisk
+	Int conditional_size = 2*select_first([ceil(size(conditional_variant_file, "GB")), 0])
+	Int gds_size = 2*select_first([ceil(size(gds_files, "GB")), 0])
+	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
+	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
+	Int sample_size = 2*select_first([ceil(size(sample_include_file, "GB")), 0])
+	Int finalDiskSize = phenotype_size + conditional_size + gds_size + pca_size
+		+ related_size + sample_size + addldisk
 
-	# Workaround
-	# Strictly speaking this is only needed for Array variables
-	# But we'll do it for most of 'em for consistency's sake
+	# Strictly speaking only needed for arrays, but we want to be consistent
 	Boolean isdefined_conditvar = defined(conditional_variant_file)
 	Boolean isdefined_covars = defined(covars)
 	Boolean isdefined_gds = defined(gds_files)
@@ -340,7 +335,6 @@ task null_model_report {
 	Boolean isdefined_resid = defined(resid_covars)
 	Boolean isdefined_sample = defined(sample_include_file)
 	
-
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
@@ -349,7 +343,7 @@ task null_model_report {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File null_model_report_config = "null_model_report.config"  # glob in CWL?
+		File null_model_report_config = "null_model_report.config"
 		Array[File] html_reports = glob("*.html")
 		Array[File] rmd_files = glob("*.Rmd")
 	}
@@ -357,9 +351,6 @@ task null_model_report {
 
 workflow nullmodel {
 	input {
-
-		# These variables are used by all tasks
-
 		String family
 		File phenotype_file
 		String outcome
@@ -377,9 +368,6 @@ workflow nullmodel {
 		String? rescale_variance
 		Boolean? resid_covars
 		File? sample_include_file
-
-		# n_categories_boxplot and the runtime attributes
-		# (CPU, disks, mem) are the only task-level inputs
 	}
 	
 	call null_model_r {
@@ -415,7 +403,6 @@ workflow nullmodel {
 			output_prefix = output_prefix,
 			conditional_variant_file = conditional_variant_file,
 			gds_files = gds_files
-
 	}
 
 	meta {
