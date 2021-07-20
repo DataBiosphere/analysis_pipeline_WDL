@@ -171,9 +171,9 @@ task null_model_r {
 	Int gds_size = 2*select_first([ceil(size(gds_files, "GB")), 0])
 	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
 	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
-	Int sample_size = 2*select_first([ceil(size(sample_include_file, "GB")), 0])
+	
 	Int finalDiskSize = phenotype_size + conditional_size + gds_size_debug_debug + pca_size
-		+ related_size + sample_size + addldisk
+		+ related_size + addldisk
 
 	# Strictly speaking only needed for arrays, but we want to be consistent
 	Boolean isdefined_conditvar = defined(conditional_variant_file)
