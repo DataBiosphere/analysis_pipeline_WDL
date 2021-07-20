@@ -13,8 +13,8 @@ task null_model_r {
 
 		# optional
 		File? conditional_variant_file
-		Array[String?] covars
-		Array[File?] gds_files
+		Array[String]? covars
+		Array[File]? gds_files
 		String? group_var
 		Boolean? inverse_normal
 		Int? n_pcs
@@ -166,7 +166,8 @@ task null_model_r {
 	# Estimate disk size required -- recall most inputs are duplicated
 	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
 	Int conditional_size = 2*select_first([ceil(size(conditional_variant_file, "GB")), 0])
-	Int gds_size_debug = ceil(select_first([size(gds_files, "GB"), 0]))
+	Int gds_size_debug_debug = 2*ceil(size(select_first[gds_files], 0), "GB")
+	Int gds_size_debug = 2*ceil(select_first([size(gds_files, "GB"), 0]))
 	Int gds_size = 2*select_first([ceil(size(gds_files, "GB")), 0])
 	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
 	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
@@ -221,12 +222,12 @@ task null_model_report {
 
 		# passed in from previous
 		File null_model_params
-		Array[File?] null_model_files  # CWL treats as optional
+		Array[File]? null_model_files  # CWL treats as optional
 
 		# optional
 		File? conditional_variant_file
-		Array[String?] covars
-		Array[File?] gds_files
+		Array[String]? covars
+		Array[File]? gds_files
 		String? group_var
 		Boolean? inverse_normal
 		Int? n_pcs
@@ -357,8 +358,8 @@ workflow nullmodel {
 		String outcome
 
 		File? conditional_variant_file
-		Array[String?] covars
-		Array[File?] gds_files
+		Array[String]? covars
+		Array[File]? gds_files
 		String? group_var
 		Boolean? inverse_normal
 		Int? n_pcs
