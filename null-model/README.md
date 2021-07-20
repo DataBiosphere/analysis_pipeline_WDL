@@ -39,6 +39,7 @@ The type of regression used is based on the values given for the variables `rela
 
 
 ## Inputs
+### Required
 phenotype_file:
 * Type: *File*
 * RData file with an AnnotatedDataFrame of phenotypes and covariates. Sample identifiers must be in column named “sample.id”.  
@@ -62,7 +63,7 @@ All other inputs in this workflow are optional.
 
 Note that `addldisk` is adding gigabytes **on top of** the WDL's best-guess estimate of disk space needed based on the size of your inputs.
 
-### Additional Null Model Settings
+### Optional null_model_r Inputs
 | variable          			            | type     | default|info                                 |
 |---------------------------------------	|----------|------- |------------------------------------	|
 | null_model_r.conditional_variant_file 	| File     | n/a    | RData file with a data.frame of identifiers for variants to be included as covariates for conditional analysis. Columns should include “chromosome” and “variant.id” that match the variant.id in the GDS files. The alternate allele dosage of these variants will be included as covariates in the analysis.	|
@@ -82,9 +83,9 @@ Note that `addldisk` is adding gigabytes **on top of** the WDL's best-guess esti
 
 † In the CWL, this is type enum, which doesn't exist in WDL.
 
-### Additional Report Settings
+### Optional null_model_report Inputs
 n_categories_boxplot:
-* Int? (optional)
+* Type: *Int?* (optional)
 * Number of catagories in box plot. Default is 10.
 
 ## Outputs
@@ -114,4 +115,3 @@ null_model_file:
 ## More Information
 * [Original Python pipeline's description](https://github.com/UW-GAC/analysis_pipeline#null-model)
 * [CWL Pipeline's documentation](https://github.com/UW-GAC/analysis_pipeline_cwl/blob/c68ac3f3c8b07512d0fcaffd03ed2d168e294993/association/null-model-wf.cwl#L4) -- note that cost estimations in that CWL do **not** apply to this WDL
-
