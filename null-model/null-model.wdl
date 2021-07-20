@@ -316,12 +316,12 @@ task null_model_report {
 	# Estimate disk size required -- recall most inputs are duplicated
 	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
 	Int conditional_size = 2*select_first([ceil(size(conditional_variant_file, "GB")), 0])
-	Int gds_size = 2*select_first([ceil(size(gds_files, "GB")), 0])
+	Int gds_size_debug_debug = 2*ceil(size(select_first([gds_files, 0]), "GB"))
 	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
 	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
-	Int sample_size = 2*select_first([ceil(size(sample_include_file, "GB")), 0])
-	Int finalDiskSize = phenotype_size + conditional_size + gds_size + pca_size
-		+ related_size + sample_size + addldisk
+	
+	Int finalDiskSize = phenotype_size + conditional_size + gds_size_debug_debug + pca_size
+		+ related_size + addldisk
 
 	# Strictly speaking only needed for arrays, but we want to be consistent
 	Boolean isdefined_conditvar = defined(conditional_variant_file)
