@@ -32,6 +32,32 @@ task null_model_r {
 		Int memory = 4
 		Int preempt = 3
 	}
+
+	# Estimate disk size required -- recall most inputs are duplicated
+	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
+	Int conditional_size = 2*select_first([ceil(size(conditional_variant_file, "GB")), 0])
+	Int gds_size = 2*ceil(size(select_first([gds_files, 0]), "GB"))
+	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
+	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
+	
+	Int finalDiskSize = phenotype_size + conditional_size + gds_size + pca_size
+		+ related_size + addldisk
+
+	# Strictly speaking only needed for arrays, but we want to be consistent
+	Boolean isdefined_conditvar = defined(conditional_variant_file)
+	Boolean isdefined_covars = defined(covars)
+	Boolean isdefined_gds = defined(gds_files)
+	Boolean isdefined_group = defined(group_var)
+	Boolean isdefined_inverse = defined(inverse_normal)
+	Boolean isdefined_matrix = defined(relatedness_matrix_file)
+	Boolean isdefined_npcs = defined(n_pcs)
+	Boolean isdefined_norm = defined(norm_bygroup)
+	Boolean isdefined_pca = defined(pca_file)
+	Boolean isdefined_resid = defined(resid_covars)
+	Boolean isdefined_sample = defined(sample_include_file)
+
+	# basename workaround
+	String base_phenotype = basename(phenotype_file)
 	
 	command <<<
 		set -eux -o pipefail
@@ -121,7 +147,11 @@ task null_model_r {
 			base_matrix = os.path.basename("~{relatedness_matrix_file}")
 			f.write('relatedness_matrix_file "%s"\n' % base_matrix)
 		
-		if "~{family}" != "":
+		if "~{family}" not in ['gaussian', 'poisson', 'binomial']:
+			f.close()
+			print("Invalid value for family. Please enter either gaussian, poisson, or binomial. These are case-sensitive.")
+			exit(1)
+		else:
 			f.write('family ~{family}\n')
 		
 		if "~{isdefined_conditvar}" == "true":
@@ -162,32 +192,6 @@ task null_model_r {
 		echo "Calling R script null_model.R"
 		Rscript /usr/local/analysis_pipeline/R/null_model.R null_model.config
 	>>>
-
-	# Estimate disk size required -- recall most inputs are duplicated
-	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
-	Int conditional_size = 2*select_first([ceil(size(conditional_variant_file, "GB")), 0])
-	Int gds_size = 2*ceil(size(select_first([gds_files, 0]), "GB"))
-	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
-	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
-	
-	Int finalDiskSize = phenotype_size + conditional_size + gds_size + pca_size
-		+ related_size + addldisk
-
-	# Strictly speaking only needed for arrays, but we want to be consistent
-	Boolean isdefined_conditvar = defined(conditional_variant_file)
-	Boolean isdefined_covars = defined(covars)
-	Boolean isdefined_gds = defined(gds_files)
-	Boolean isdefined_group = defined(group_var)
-	Boolean isdefined_inverse = defined(inverse_normal)
-	Boolean isdefined_matrix = defined(relatedness_matrix_file)
-	Boolean isdefined_npcs = defined(n_pcs)
-	Boolean isdefined_norm = defined(norm_bygroup)
-	Boolean isdefined_pca = defined(pca_file)
-	Boolean isdefined_resid = defined(resid_covars)
-	Boolean isdefined_sample = defined(sample_include_file)
-
-	# basename workaround
-	String base_phenotype = basename(phenotype_file)
 	
 	runtime {
 		cpu: cpu
@@ -248,6 +252,28 @@ task null_model_report {
 
 		# outcome is present in previous task but not this one
 	}
+
+	# Estimate disk size required -- recall most inputs are duplicated
+	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
+	Int conditional_size = 2*select_first([ceil(size(conditional_variant_file, "GB")), 0])
+	Int gds_size = 2*ceil(size(select_first([gds_files, 0]), "GB"))
+	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
+	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
+	
+	Int finalDiskSize = phenotype_size + conditional_size + gds_size + pca_size
+		+ related_size + addldisk
+
+	# Strictly speaking only needed for arrays, but we want to be consistent
+	Boolean isdefined_conditvar = defined(conditional_variant_file)
+	Boolean isdefined_covars = defined(covars)
+	Boolean isdefined_gds = defined(gds_files)
+	Boolean isdefined_inverse = defined(inverse_normal)
+	Boolean isdefined_matrix = defined(relatedness_matrix_file)
+	Boolean isdefined_norm = defined(norm_bygroup)
+	Boolean isdefined_null = defined(null_model_files)
+	Boolean isdefined_pca = defined(pca_file)
+	Boolean isdefined_resid = defined(resid_covars)
+	Boolean isdefined_sample = defined(sample_include_file)
 	
 	command <<<
 		set -eux -o pipefail
@@ -297,7 +323,12 @@ task null_model_report {
 		python << CODE
 		import os
 		f = open("null_model_report.config", "a")
-		f.write("family ~{family}\n")
+		if "~{family}" not in ['gaussian', 'poisson', 'binomial']:
+			f.close()
+			print("Invalid value for family. Please enter either gaussian, poisson, or binomial. These are case-sensitive.")
+			exit(1)
+		else:
+			f.write('family ~{family}\n')
 		if "~{isdefined_inverse}" == "true":
 			f.write("inverse_normal ~{inverse_normal}\n")
 		if "~{output_prefix}" != "":
@@ -312,28 +343,6 @@ task null_model_report {
 		echo "Calling null_model_report.R"
 		Rscript /usr/local/analysis_pipeline/R/null_model_report.R null_model_report.config
 	>>>
-	
-	# Estimate disk size required -- recall most inputs are duplicated
-	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
-	Int conditional_size = 2*select_first([ceil(size(conditional_variant_file, "GB")), 0])
-	Int gds_size = 2*ceil(size(select_first([gds_files, 0]), "GB"))
-	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
-	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
-	
-	Int finalDiskSize = phenotype_size + conditional_size + gds_size + pca_size
-		+ related_size + addldisk
-
-	# Strictly speaking only needed for arrays, but we want to be consistent
-	Boolean isdefined_conditvar = defined(conditional_variant_file)
-	Boolean isdefined_covars = defined(covars)
-	Boolean isdefined_gds = defined(gds_files)
-	Boolean isdefined_inverse = defined(inverse_normal)
-	Boolean isdefined_matrix = defined(relatedness_matrix_file)
-	Boolean isdefined_norm = defined(norm_bygroup)
-	Boolean isdefined_null = defined(null_model_files)
-	Boolean isdefined_pca = defined(pca_file)
-	Boolean isdefined_resid = defined(resid_covars)
-	Boolean isdefined_sample = defined(sample_include_file)
 	
 	runtime {
 		cpu: cpu
