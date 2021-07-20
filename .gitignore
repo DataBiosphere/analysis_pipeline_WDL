@@ -3,3 +3,5 @@
 cromwell-input/*
 Cromwell.stderr.txt
 Cromwell.stdout.txt
+.Rproj.user
+_test-data-and-truths_/null_model/truth_outputs/.Rhistory

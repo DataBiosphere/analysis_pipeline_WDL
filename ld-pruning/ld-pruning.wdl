@@ -213,8 +213,8 @@ task merge_gds {
 	command <<<
 		set -eux -o pipefail
 
-		# CWL has an ln -s, will probably need to use copy trick again
-		echo "Copying inputs into the workdir"
+		# CWL has an ln -s, so we use the twice-localized workaround
+		echo "Twice-localized workaround: Copying GDS inputs into the workdir"
 		BASH_FILES=(~{sep=" " gdss})
 		for BASH_FILE in ${BASH_FILES[@]};
 		do

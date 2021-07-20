@@ -64,7 +64,8 @@ task unique_variant_id {
 
 		# This is a workaround for the Python code to work correctly
 		# Symlinks would be preferable, but they do not work on GCS
-		echo "Copying inputs into the workdir"
+		# This is known as the twice-localized workaround
+		echo "Twice-localized workaround: Copying GDS inputs into the workdir"
 		BASH_FILES=(~{sep=" " gdss})
 		for BASH_FILE in ${BASH_FILES[@]};
 		do
