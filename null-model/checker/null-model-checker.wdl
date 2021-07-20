@@ -80,9 +80,9 @@ workflow checker_nullmodel {
 		# commented out variables, included here for clarity,
 		# change depending on specific run and are set manually elsewhere
 		File? conditional_variant_file
-		#Array[String]? covars
+		#Array[String?] covars
 		#String family
-		Array[File]? gds_files
+		Array[File?] gds_files
 		String? group_var
 		Boolean? inverse_normal
 		#Int? n_pcs  

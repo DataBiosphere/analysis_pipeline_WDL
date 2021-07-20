@@ -221,7 +221,7 @@ task null_model_report {
 
 		# passed in from previous
 		File null_model_params
-		Array[File]? null_model_files  # CWL treats as optional
+		Array[File?] null_model_files  # CWL treats as optional
 
 		# optional
 		File? conditional_variant_file
