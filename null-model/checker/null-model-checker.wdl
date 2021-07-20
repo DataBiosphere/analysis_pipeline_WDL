@@ -11,6 +11,10 @@ task md5sum {
 		Float? tolerance = 0.00000001  # 1.0e-8
 	}
 
+	Int test_size = 2*ceil(size(select_first([test, 0]), "GB"))
+	Int truth_size = 2*ceil(size(select_first([truth, 0]), "GB"))
+	Int finalDiskSize = test_size + truth_size + 1
+
 	command <<<
 
 	# the md5 stuff pulls from the files in /inputs/
@@ -62,6 +66,8 @@ task md5sum {
 	>>>
 
 	runtime {
+		cpu: 2
+		disks: "local-disk " + finalDiskSize + " HDD"
 		docker: "quay.io/aofarrel/rchecker:1.1.0"
 		memory: "2 GB"
 		preemptible: 2
