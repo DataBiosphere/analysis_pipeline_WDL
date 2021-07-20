@@ -62,7 +62,7 @@ task md5sum {
 	>>>
 
 	runtime {
-		docker: "quay.io/aofarrel/rchecker:1.0.9"
+		docker: "quay.io/aofarrel/rchecker:1.1.0"
 		memory: "2 GB"
 		preemptible: 2
 	}
