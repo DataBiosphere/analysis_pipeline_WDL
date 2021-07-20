@@ -2,7 +2,7 @@ version 1.0
 
 # Caveat programmator: This runs the null model workflow TEN times.
 
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-null-model/null-model/null-model-wf.wdl" as nullmodel
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-null-model/null-model/null-model.wdl" as nullmodel
 
 task md5sum {
 	input {

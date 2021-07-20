@@ -9,12 +9,12 @@ In line with workflow inputs: The original CWL does not have an option for disk 
 ##### *The twice-localized workaround*
 Due to a workaround involving file inputs, some WDL tasks require up to twice as much disk space as their CWL equivalent tasks would require. Exactly which files must be duplicated depends on the workflow. Be aware that sometimes the size of the files that need to be duplicated will scale with the size of your inputs. Cost-related implications for users are discussed for each workflow below; algorithmic explainations beyond what the typical user needs to know can be found in [this document](https://github.com/DataBiosphere/analysis_pipeline_WDL/tree/implement-null-model/_documentation_/for%20developers/cwl-vs-wdl-dev.md).
 
-## ld-pruning-wf.wdl
+## ld-pruning.wdl
 * The twice-localized workaround duplicates a series of intermediate files (specifically in the merge_gds task). **The size of these intermediate files scale with the size of your input GDS files.** However, they have already been pruned by a previous task, so you can assume they will be smaller than you input files.
 * The CWL appears to contain a bug where `exclude_PCA_cor` being set to false is not respected ([#14](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/14)). The WDL avoids this. 
 * The output of merge_gds across the CWL and WDL do not md5 to the same value, but should be functionally equivalent. See [#22](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/22) for more information.   
 
-## null-model-wf.wdl
+## null-model.wdl
 The majority of input files are affected by the twice-localized workaround in both tasks. As such, we recommend that, in each task, you allocate about double the amount of disk space as the size of your inputs.
 
 The CWL includes a function which is designed to have an output phenotype file inherit metadata from the required input phenotype file. It is specific to the Seven Bridges platform and therefore has not been included in the WDL. We have tested the workflow extensively and have not found a situation where the phenotype output file from the WDL varies from what the phenotype output from the CWL is; ie, in spite of this deletion the two outputs md5 across workflows.
@@ -29,5 +29,5 @@ Be aware that the original CWL gives significantly different output for null_mod
 | CWL, 7B via Google 	| pass       	| pass       	| fail            	| pass               	|
 
 
-## vcf-to-gds-wf.wdl   
+## vcf-to-gds.wdl   
 * The twice-localized workaround duplicates a series of intermediate files (specifically in the unique_variant_ids task). **The size of these intermediate files scale with the size of your input VCFs.** However, they are GDS files, which are more heavily compressed than VCFs, so you can assume they will be smaller than you input files.

@@ -1,4 +1,4 @@
-# Null Model (null-model-wf.wdl)  
+# Null Model (null-model.wdl)  
 *Authorship note: Much of this file paraphrases documentation written by Stephanie Gogarten*
 
 ## Very Important Notes
