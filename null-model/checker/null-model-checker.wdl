@@ -79,9 +79,8 @@ workflow checker_nullmodel {
 	input {
 
 		# run the one known configuration which is likely to error out
-		# only useful to brave debuggers; we don't know what causes this
+		# only useful to brave debuggers; this is likely related to an AWS issue
 		Boolean run_conditionalinv = false 
-
 
 		# commented out variables, included here for clarity,
 		# change depending on specific run and are set manually elsewhere
