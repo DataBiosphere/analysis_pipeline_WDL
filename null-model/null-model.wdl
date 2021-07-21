@@ -36,7 +36,7 @@ task null_model_r {
 	# Estimate disk size required -- recall most inputs are duplicated
 	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
 	Int conditional_size = 2*select_first([ceil(size(conditional_variant_file, "GB")), 0])
-	Int gds_size = 2*ceil(size(select_first([gds_files, 0]), "GB"))
+	Int gds_size = 2*ceil(size(select_first([gds_files, phenotype_file]), "GB"))
 	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
 	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
 	
@@ -256,7 +256,7 @@ task null_model_report {
 	# Estimate disk size required -- recall most inputs are duplicated
 	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
 	Int conditional_size = 2*select_first([ceil(size(conditional_variant_file, "GB")), 0])
-	Int gds_size = 2*ceil(size(select_first([gds_files, 0]), "GB"))
+	Int gds_size = 2*ceil(size(select_first([gds_files, phenotype_file]), "GB"))
 	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
 	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
 	
