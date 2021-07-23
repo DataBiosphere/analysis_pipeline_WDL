@@ -30,4 +30,4 @@ Be aware that the original CWL gives significantly different output for null_mod
 
 
 ## vcf-to-gds.wdl   
-* The twice-localized workaround duplicates a series of intermediate files (specifically in the unique_variant_ids task). **The size of these intermediate files scale with the size of your input VCFs.** However, they are GDS files, which are more heavily compressed than VCFs, so you can assume they will be smaller than you input files.
+* The twice-localized workaround duplicates a series of intermediate files (specifically in the unique_variant_ids task). **The size of these intermediate files scale with the size of your input VCFs.** However, they are GDS files, which are more heavily compressed than VCFs, so you can assume they will be smaller than your input files.

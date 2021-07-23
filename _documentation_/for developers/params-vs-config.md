@@ -7,7 +7,7 @@ But one of the first things null_model.R does is generate a params file based up
 
 This is because null_model_report essentially needs two configs.
 
-First of all null_model_report generates a .config file which only contains the distribution family, the outprefix, and n_catagories_boxplot. If it were like most other tasks in this repo, the config file would also contain phenotype_file or other inputs, but it does not. Instead, null_model_report uses the previous tasks' params file for most of its inputs. It is this param file from the first task that is used to generated an Rmd (R markdown) file in the second task.
+First of all null_model_report generates a .config file which only contains the distribution family, the outprefix, and n_categories_boxplot. If it were like most other tasks in this repo, the config file would also contain phenotype_file or other inputs, but it does not. Instead, null_model_report uses the previous tasks' params file for most of its inputs. It is this param file from the first task that is used to generated an Rmd (R markdown) file in the second task.
 
 Additionally, the null_model_report task uses a full copy of all files passed into the null_model_r. For instance, if you place 23 chromosome level GDS files into null_model_r, then they will also be passed into null_model_report.
 
