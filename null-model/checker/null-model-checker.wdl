@@ -2,7 +2,7 @@ version 1.0
 
 # Caveat programmator: This runs the null model workflow TEN times.
 
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-null-model/null-model/null-model-wf.wdl" as nullmodel
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-null-model/null-model/null-model.wdl" as nullmodel
 
 task md5sum {
 	input {
@@ -10,6 +10,10 @@ task md5sum {
 		Array[File] truth
 		Float? tolerance = 0.00000001  # 1.0e-8
 	}
+
+	Int test_size = 2*ceil(size(select_first([test, 0]), "GB"))
+	Int truth_size = 2*ceil(size(select_first([truth, 0]), "GB"))
+	Int finalDiskSize = test_size + truth_size + 1
 
 	command <<<
 
@@ -46,7 +50,7 @@ task md5sum {
 		then
 			# R
 			echo "Calling Rscript for approximate comparison"
-			if Rscript /opt/are_outputs_kinda_equal.R testcopy_$test_basename truthcopy_$truth_basename ~{tolerance}
+			if Rscript /opt/rough_equivalence_check.R testcopy_$test_basename truthcopy_$truth_basename ~{tolerance}
 			then
 				echo "Outputs are not identical, but are mostly equivalent."
 				# do not exit, check the others
@@ -62,7 +66,9 @@ task md5sum {
 	>>>
 
 	runtime {
-		docker: "quay.io/aofarrel/rchecker:1.0.9"
+		cpu: 2
+		disks: "local-disk " + finalDiskSize + " HDD"
+		docker: "quay.io/aofarrel/rchecker:1.1.0"
 		memory: "2 GB"
 		preemptible: 2
 	}
@@ -73,9 +79,8 @@ workflow checker_nullmodel {
 	input {
 
 		# run the one known configuration which is likely to error out
-		# only useful to brave debuggers; we don't know what causes this
+		# only useful to brave debuggers; this is likely related to an AWS issue
 		Boolean run_conditionalinv = false 
-
 
 		# commented out variables, included here for clarity,
 		# change depending on specific run and are set manually elsewhere

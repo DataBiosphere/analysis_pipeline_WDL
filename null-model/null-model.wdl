@@ -1,30 +1,17 @@
 version 1.0
 
-# Most pipelines so far use a .config file to point inputs to the Rscript.
-# null_model_r works like this, generating a .config file which is used by null_model.R
-# But null_model_report essentially needs two configs.
-# First of all it generates a .config file which only contains the distribution family,
-# the outprefix, and n_catagories_boxplot. From other workflows, one may expect it to contain
-# phenotype_file or other inputs, in that same configuration file, but it does not.
-# Instead, it uses the previous tasks' params file for that stuff. This params file was
-# generated in the first task and acts like a copy of the first task's config file. 
-# It is this param file from the first task that is used to generated an Rmd (R markdown) file
-# in the second task.
-
-
 # [1] null_model_r
 task null_model_r {
 	input {
-		# these are in rough alphabetical order here
-		# for clarity's sake, but the inline Python
-		# follows the original order of the CWL
+		# Inputs are in rough alphabetical order here for clarity's sake, but the
+		# inline Python follows the original order of the CWL
 
 		# required 
 		String outcome
 		File phenotype_file
-		String family  # required on SB but not in original pipeline
+		String family  # required in CWL but not in original pipeline
 
-		# optional stuff
+		# optional
 		File? conditional_variant_file
 		Array[String]? covars
 		Array[File]? gds_files
@@ -48,11 +35,15 @@ task null_model_r {
 
 	# Estimate disk size required -- recall most inputs are duplicated
 	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
+	Int conditional_size = 2*select_first([ceil(size(conditional_variant_file, "GB")), 0])
+	Int gds_size = 2*ceil(size(select_first([gds_files, phenotype_file]), "GB"))
+	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
+	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
 	
-	Int finalDiskSize = phenotype_size + addldisk
+	Int finalDiskSize = phenotype_size + conditional_size + gds_size + pca_size
+		+ related_size + addldisk
 
-	# Strictly speaking this is only needed for Array variables
-	# But we'll do it for most of them for consistency's sake
+	# Strictly speaking only needed for arrays, but we want to be consistent
 	Boolean isdefined_conditvar = defined(conditional_variant_file)
 	Boolean isdefined_covars = defined(covars)
 	Boolean isdefined_gds = defined(gds_files)
@@ -156,7 +147,11 @@ task null_model_r {
 			base_matrix = os.path.basename("~{relatedness_matrix_file}")
 			f.write('relatedness_matrix_file "%s"\n' % base_matrix)
 		
-		if "~{family}" != "":
+		if "~{family}" not in ['gaussian', 'poisson', 'binomial']:
+			f.close()
+			print("Invalid value for family. Please enter either gaussian, poisson, or binomial. These are case-sensitive.")
+			exit(1)
+		else:
 			f.write('family ~{family}\n')
 		
 		if "~{isdefined_conditvar}" == "true":
@@ -175,9 +170,14 @@ task null_model_r {
 		if "~{isdefined_npcs}" == "true":
 			if int("~{n_pcs}") > 0:  # must be done this way or else syntax err when n_pcs not defined
 				f.write('n_pcs ~{n_pcs}\n')
-	
+
 		if "~{rescale_variance}" != "":
-			f.write('rescale_variance "~{rescale_variance}"\n')
+			if "~{rescale_variance}" not in ['marginal', 'varcomp', 'none']:
+				f.close()
+				print("Invalid entry for rescale_variance. Options: ")
+				exit(1)
+			else:
+				f.write('rescale_variance "~{rescale_variance}"\n')
 		
 		if "~{isdefined_resid}" == "true":
 			f.write('reside_covars ~{resid_covars}\n')
@@ -206,26 +206,12 @@ task null_model_r {
 		preemptibles: "${preempt}"
 	}
 	output {
-		# cwl.output.json on SB has duplicated outputs
-		# configs:
-		# * null_model.config
-		# * ! null_model.config.null_model.params
-		# null_model_files:
-		# * ! test_null_model_invnorm.RData
-		# * test_null_model_invnorm_reportonly.RData
-		# * test_null_model_reportonly.RData
-		# null_model_output:
-		# * ! test_null_model_invnorm.RData
-		# null_model_params:
-		# * ! null_model.config.null_model.params
-		# null_model_phenotypes:
-		# * test_phenotypes.RData
-
-		File config_file = "null_model.config"  # CWL globs this with the parameters file, ie, params shows up twice as an ouput
+		# The CWL duplicates some outputs but the WDL returns each file just once
+		# See this repo's _documentation_/for developers/cwl-vs-wdl.md for more info
+		File config_file = "null_model.config"
 		File null_model_phenotypes = glob("*phenotypes.RData")[0]
 		Array[File] null_model_files = glob("${output_prefix}*null_model*RData")
 		File null_model_params = glob("*.params")[0]
-		# the CWL also has null_model_output but this is already in null_model_files and not repeated here
 	}
 }
 
@@ -239,13 +225,11 @@ task null_model_report {
 
 		# required
 		String family
-		#String outcome  # not consistent in CWL? check!
 		File phenotype_file
 
 		# passed in from previous
 		File null_model_params
 		Array[File]? null_model_files  # CWL treats as optional
-
 
 		# optional
 		File? conditional_variant_file
@@ -270,13 +254,21 @@ task null_model_report {
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 2
+
+		# outcome is present in previous task but not this one
 	}
 
 	# Estimate disk size required -- recall most inputs are duplicated
 	Int phenotype_size = 2*ceil(size(phenotype_file, "GB"))
+	Int conditional_size = 2*select_first([ceil(size(conditional_variant_file, "GB")), 0])
+	Int gds_size = 2*ceil(size(select_first([gds_files, phenotype_file]), "GB"))
+	Int pca_size = 2*select_first([ceil(size(pca_file, "GB")), 0])
+	Int related_size = 2*select_first([ceil(size(relatedness_matrix_file, "GB")), 0])
+	
+	Int finalDiskSize = phenotype_size + conditional_size + gds_size + pca_size
+		+ related_size + addldisk
 
-	Int finalDiskSize = phenotype_size + addldisk
-
+	# Strictly speaking only needed for arrays, but we want to be consistent
 	Boolean isdefined_conditvar = defined(conditional_variant_file)
 	Boolean isdefined_covars = defined(covars)
 	Boolean isdefined_gds = defined(gds_files)
@@ -292,7 +284,7 @@ task null_model_report {
 		set -eux -o pipefail
 
 		echo "Twice-localized workaround: Copying params file into workdir"
-		# workaround for rmd file being unable to param file
+		# workaround for rmd file being unable to find param file
 		cp ~{null_model_params} .
 
 		echo "Twice-localized workaround: Copying phenotypic file input into workdir"
@@ -336,7 +328,12 @@ task null_model_report {
 		python << CODE
 		import os
 		f = open("null_model_report.config", "a")
-		f.write("family ~{family}\n")
+		if "~{family}" not in ['gaussian', 'poisson', 'binomial']:
+			f.close()
+			print("Invalid value for family. Please enter either gaussian, poisson, or binomial. These are case-sensitive.")
+			exit(1)
+		else:
+			f.write('family ~{family}\n')
 		if "~{isdefined_inverse}" == "true":
 			f.write("inverse_normal ~{inverse_normal}\n")
 		if "~{output_prefix}" != "":
@@ -351,7 +348,7 @@ task null_model_report {
 		echo "Calling null_model_report.R"
 		Rscript /usr/local/analysis_pipeline/R/null_model_report.R null_model_report.config
 	>>>
-
+	
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master:2.10.0"
@@ -360,7 +357,7 @@ task null_model_report {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File null_model_report_config = "null_model_report.config"  # glob in CWL?
+		File null_model_report_config = "null_model_report.config"
 		Array[File] html_reports = glob("*.html")
 		Array[File] rmd_files = glob("*.Rmd")
 	}
@@ -368,9 +365,6 @@ task null_model_report {
 
 workflow nullmodel {
 	input {
-
-		# These variables are used by all tasks
-
 		String family
 		File phenotype_file
 		String outcome
@@ -388,9 +382,6 @@ workflow nullmodel {
 		String? rescale_variance
 		Boolean? resid_covars
 		File? sample_include_file
-
-		# n_categories_boxplot and the runtime attributes
-		# (CPU, disks, mem) are the only task-level inputs
 	}
 	
 	call null_model_r {
@@ -426,7 +417,6 @@ workflow nullmodel {
 			output_prefix = output_prefix,
 			conditional_variant_file = conditional_variant_file,
 			gds_files = gds_files
-
 	}
 
 	meta {

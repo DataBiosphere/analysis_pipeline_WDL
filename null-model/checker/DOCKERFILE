@@ -1,5 +1,5 @@
 FROM r-base:4.1.0
-COPY are_outputs_kinda_equal.R /opt/are_outputs_kinda_equal.R
-RUN chmod +x /opt/are_outputs_kinda_equal.R
+COPY rough_equivalence_check.R /opt/rough_equivalence_check.R
+RUN chmod +x /opt/rough_equivalence_check.R
 ENV PATH="${PATH}:/opt/"
 CMD "/bin/bash"

@@ -12,3 +12,17 @@ workflows:
         - /ld-pruning/ld-pruning-terra.json
         - /ld-pruning/ld-pruning-local.json
      name: ld-pruning-wdl
+   - subclass: WDL
+     primaryDescriptorPath: /null-model/null-model.wdl
+     testParameterFiles:
+        - /null-model/null-model.json
+        - /null-model/null-model-binary.json
+        - /null-model/null-model-conditional.json
+        - /null-model/null-model-grm.json
+        - /null-model/null-model-group.json
+        - /null-model/null-model-norm-bygroup.json
+        - /null-model/null-model-notransform.json
+        - /null-model/null-model-unrel-binary.json
+        - /null-model/null-model-unrel.json
+        - /null-model/terra-null-model-conditional.json
+     name: null-model-wdl
