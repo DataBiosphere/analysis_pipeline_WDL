@@ -170,9 +170,14 @@ task null_model_r {
 		if "~{isdefined_npcs}" == "true":
 			if int("~{n_pcs}") > 0:  # must be done this way or else syntax err when n_pcs not defined
 				f.write('n_pcs ~{n_pcs}\n')
-	
+
 		if "~{rescale_variance}" != "":
-			f.write('rescale_variance "~{rescale_variance}"\n')
+			if "~{rescale_variance}" not in ['marginal', 'varcomp', 'none']:
+				f.close()
+				print("Invalid entry for rescale_variance. Options: ")
+				exit(1)
+			else:
+				f.write('rescale_variance "~{rescale_variance}"\n')
 		
 		if "~{isdefined_resid}" == "true":
 			f.write('reside_covars ~{resid_covars}\n')
