@@ -65,12 +65,21 @@ task unique_variant_id {
 		# This is a workaround for the Python code to work correctly
 		# Symlinks would be preferable, but they do not work on GCS
 		# This is known as the twice-localized workaround
-		echo "Twice-localized workaround: Copying GDS inputs into the workdir"
+		#echo "Twice-localized workaround: Copying GDS inputs into the workdir"
+
 		BASH_FILES=(~{sep=" " gdss})
+
 		for BASH_FILE in ${BASH_FILES[@]};
 		do
-			cp ${BASH_FILE} .
+			ln -s ${BASH_FILE} .
 		done
+
+		pwd
+		ls -lha
+		ls -lha fc-b80b0846-369e-4bdc-89df-f470b5497c18
+		ls -lhaR fc-b80b0846-369e-4bdc-89df-f470b5497c18
+		ls -lha -R fc-b80b0846-369e-4bdc-89df-f470b5497c18
+		ls -lha fc-b80b0846-369e-4bdc-89df-f470b5497c18/*/vcftogds*/call-vcf2gds/*
 
 		echo "Generating config file"
 		python << CODE
@@ -229,6 +238,8 @@ task check_gds {
 
 workflow vcftogds {
 	input {
+		#Array[File] quick_gds
+
 		Array[File] vcf_files
 		Array[String] format = ["GT"]
 		Boolean check_gds = false
@@ -246,6 +257,11 @@ workflow vcftogds {
 		input:
 			gdss = vcf2gds.gds_output,
 	}
+
+	call unique_variant_id as quick_uvi {
+		input:
+			gdss = unique_variant_id.unique_variant_id_gds_per_chr
+	}
 	
 	if(check_gds) {
 		scatter(gds in unique_variant_id.unique_variant_id_gds_per_chr) {
@@ -258,7 +274,7 @@ workflow vcftogds {
 	}
 
 	output {
-		Array[File] pruned_output = unique_variant_id.unique_variant_id_gds_per_chr
+		Array[File] gds_with_unique_ids = unique_variant_id.unique_variant_id_gds_per_chr
 	}
 
 	meta {
