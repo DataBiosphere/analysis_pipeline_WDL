@@ -71,15 +71,8 @@ task unique_variant_id {
 
 		for BASH_FILE in ${BASH_FILES[@]};
 		do
-			ln -s ${BASH_FILE} .
+			cp ${BASH_FILE} .
 		done
-
-		pwd
-		ls -lha
-		ls -lha fc-b80b0846-369e-4bdc-89df-f470b5497c18
-		ls -lhaR fc-b80b0846-369e-4bdc-89df-f470b5497c18
-		ls -lha -R fc-b80b0846-369e-4bdc-89df-f470b5497c18
-		ls -lha fc-b80b0846-369e-4bdc-89df-f470b5497c18/*/vcftogds*/call-vcf2gds/*
 
 		echo "Generating config file"
 		python << CODE
