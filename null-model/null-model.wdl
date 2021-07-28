@@ -66,34 +66,34 @@ task null_model_r {
 		# otherwise the next task cannot read from this task's params file
 		# this also requires copying some things to the workdir
 
-		echo "Twice-localized workaround: Copying phenotypic file input into workdir"
-		cp ~{phenotype_file} .
+		echo "Symlinking phenotypic file input into workdir"
+		ln -s ~{phenotype_file} .
 
 		if ~{isdefined_conditvar}; then
-			echo "Twice-localized workaround: Copying conditional variant file input into workdir"
-			cp ~{conditional_variant_file} .
+			echo "Symlinking conditional variant file input into workdir"
+			ln -s ~{conditional_variant_file} .
 		fi
 
 		if ~{isdefined_gds}; then
-			echo "Twice-localized workaround: Copying GDS file inputs into workdir"
+			echo "Symlinking GDS file inputs into workdir"
 			GDS_FILESS=(~{sep=" " gds_files})
 			for GDS_FILE in ${GDS_FILESS[@]};
 			do
-				cp ${GDS_FILE} .
+				ln -s ${GDS_FILE} .
 			done
 		fi
 		
 		if ~{isdefined_matrix}; then
-			echo "Twice-localized workaround: Copying relatedness matrix file input into workdir"
-			cp ~{relatedness_matrix_file} .
+			echo "Symlinking relatedness matrix file input into workdir"
+			ln -s ~{relatedness_matrix_file} .
 		fi
 		if ~{isdefined_pca}; then
-			echo "Twice-localized workaround: Copying PCA file input into workdir"
-			cp ~{pca_file} .
+			echo "Symlinking PCA file input into workdir"
+			ln -s ~{pca_file} .
 		fi
 		if ~{isdefined_sample}; then
-			echo "Twice-localized workaround: Copying sample include file input into workdir"
-			cp ~{sample_include_file} .
+			echo "Symlinking sample include file input into workdir"
+			ln -s ~{sample_include_file} .
 		fi
 
 
@@ -283,45 +283,45 @@ task null_model_report {
 	command <<<
 		set -eux -o pipefail
 
-		echo "Twice-localized workaround: Copying params file into workdir"
+		echo "Symlinking params file into workdir"
 		# workaround for rmd file being unable to find param file
-		cp ~{null_model_params} .
+		ln -s ~{null_model_params} .
 
-		echo "Twice-localized workaround: Copying phenotypic file input into workdir"
-		cp ~{phenotype_file} .
+		echo "Symlinking phenotypic file input into workdir"
+		ln -s ~{phenotype_file} .
 
 		if ~{isdefined_null}; then
-			echo "Twice-localized workaround: Copying null model file input(s) into workdir"
+			echo "Symlinking null model file input(s) into workdir"
 			NULL_MODEL_FILESS=(~{sep=" " null_model_files})
 			for NULL_MODE_FILE in ${NULL_MODEL_FILESS[@]};
 			do
-				cp ${NULL_MODE_FILE} .
+				ln -s ${NULL_MODE_FILE} .
 			done
 		fi
 
 		if ~{isdefined_conditvar}; then
-			echo "Twice-localized workaround: Copying conditional variant file input into workdir"
-			cp ~{conditional_variant_file} .
+			echo "Symlinking conditional variant file input into workdir"
+			ln -s ~{conditional_variant_file} .
 		fi
 		if ~{isdefined_gds}; then
-			echo "Twice-localized workaround: Copying GDS file inputs into workdir"
+			echo "Symlinking GDS file inputs into workdir"
 			GDS_FILESS=(~{sep=" " gds_files})
 			for GDS_FILE in ${GDS_FILESS[@]};
 			do
-				cp ${GDS_FILE} .
+				ln -s ${GDS_FILE} .
 			done
 		fi
 		if ~{isdefined_matrix}; then
-			echo "Twice-localized workaround: Copying relatedness matrix file input into workdir"
-			cp ~{relatedness_matrix_file} .
+			echo "Symlinking relatedness matrix file input into workdir"
+			ln -s ~{relatedness_matrix_file} .
 		fi
 		if ~{isdefined_pca}; then
-			echo "Twice-localized workaround: Copying PCA file input into workdir"
-			cp ~{pca_file} .
+			echo "Symlinking PCA file input into workdir"
+			ln -s ~{pca_file} .
 		fi
 		if ~{isdefined_sample}; then
-			echo "Twice-localized workaround: Copying sample include file input into workdir"
-			cp ~{sample_include_file} .
+			echo "Symlinking sample include file input into workdir"
+			ln -s ~{sample_include_file} .
 		fi
 
 		echo "Generating config file"
