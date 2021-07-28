@@ -231,8 +231,6 @@ task check_gds {
 
 workflow vcftogds {
 	input {
-		#Array[File] quick_gds
-
 		Array[File] vcf_files
 		Array[String] format = ["GT"]
 		Boolean check_gds = false
@@ -249,11 +247,6 @@ workflow vcftogds {
 	call unique_variant_id {
 		input:
 			gdss = vcf2gds.gds_output,
-	}
-
-	call unique_variant_id as quick_uvi {
-		input:
-			gdss = unique_variant_id.unique_variant_id_gds_per_chr
 	}
 	
 	if(check_gds) {
