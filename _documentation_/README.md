@@ -10,8 +10,9 @@ For pipeline specific docs, see the README file in their folder (such as /ld-pru
 | running-locally.md  | Advice for running these workflows locally						|
 
 ### Dev Documentation
-| file          	  | description                                                             	|
-|---------------	  |-------------------------------------------------------------------------	|
-| cwl-vs-wdl-dev.md   | In-depth comparison of the CWL and WDL versions of this pipeline        	|
-| params-vs-config.md   | Overview of the unique way the null model wf operates including why it quadruples inputs        	|
-| update-checklist.md | General notes for code maintaners  										|
+| file          	     | description                                                             	|
+|---------------	     |-------------------------------------------------------------------------	|
+| cwl-vs-wdl-dev.md      | In-depth comparison of the CWL and WDL versions of this pipeline        	|
+| params-vs-config.md    | Overview of the unique way the null model wf operates |
+| symlink-workaround.md  | Explains how Cromwell file localization can cause need for symlinking |
+| update-checklist.md    | General notes for code maintaners  										|
