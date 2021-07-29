@@ -10,7 +10,7 @@ This situation, wherein a scattered task passes in inputs to a non-scattered tas
 
 <img width="623" alt="Screenshot 2021-04-09 at 3 34 00 PM" src="https://user-images.githubusercontent.com/27784612/114250466-a9331f80-9952-11eb-9e09-f114f9d89e4f.png">
 
-That is to say, each GDS file now lives in its own folder within /inputs/.
+That is to say, each GDS file now lives in its own folder within /inputs/. On both Terra and the local filesystem, this is preceeded by a folder name which includes random integers/characters, thereby preventing the full path from being predicted before runtime -- in other words, the full path cannot just be hardcoded.
 
 This is problematic with how the R scripts use configuration files. These configuration files expect one line to represent a given pattern for an input file, such as 
 
