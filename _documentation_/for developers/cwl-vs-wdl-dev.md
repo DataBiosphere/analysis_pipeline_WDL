@@ -32,7 +32,7 @@ Because everything in null_model_output is already covered by null_model_files, 
 * check_merged_gds uses the chromosome file workaround.
 
 ## vcf-to-gds.wdl     
-* The twice-localized workaround is used in unique_variant_ids due to permission erros on Terra. See [#2](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/2).
+* The twice-localized workaround is used in unique_variant_ids due to permission errors on Terra. See [#2](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/2).
 * The WDL will not start the check_gds task if check_gds is false. The CWL will start the check_gds task regardless and generate a config file, and the true/false only applies to calling the  script.
 	* Reasoning: The way GCS billing works, this has the potential of being cheaper. Otherwise we would spend for having a powerful non-preemptible compute designed for an intense task, then only using that compute for making a text file.
 * The WDL can correctly handle a mixture of file extensions, not so much by design, but due to the specifics of implementation. The CWL will handle such a mixture incorrectly in check_gds (but can correctly handle a homogenous group, such as all being bcf files).
