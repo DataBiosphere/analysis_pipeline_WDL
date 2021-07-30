@@ -207,18 +207,17 @@ task merge_gds {
 
 	# Estimate disk size required
 	Int gds_size = ceil(size(gdss, "GB"))
-	Int final_disk_dize = gds_size * 3 + addldisk
+	Int final_disk_dize = gds_size * 2 + addldisk
+	# doubled because merged gds output is expected to be similiar in size to sum(inputs)
 	String filename = select_first([out_prefix, "merged"])
 
 	command <<<
 		set -eux -o pipefail
 
-		# CWL has an ln -s, so we use the twice-localized workaround
-		echo "Twice-localized workaround: Copying GDS inputs into the workdir"
 		BASH_FILES=(~{sep=" " gdss})
 		for BASH_FILE in ${BASH_FILES[@]};
 		do
-			cp ${BASH_FILE} .
+			ln -s ${BASH_FILE} .
 		done
 
 		echo "Generating config file"

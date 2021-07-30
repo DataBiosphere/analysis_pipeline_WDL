@@ -62,11 +62,12 @@ task unique_variant_id {
 	command <<<
 		set -eux -o pipefail
 
-		# This is a workaround for the Python code to work correctly
-		# Symlinks would be preferable, but they do not work on GCS
-		# This is known as the twice-localized workaround
-		echo "Twice-localized workaround: Copying GDS inputs into the workdir"
+		# The Rscript in this task is unique in that it directly modifies
+		# the input files, rather than creating a fresh input file. For
+		# more information on this workaround, see Github.
+
 		BASH_FILES=(~{sep=" " gdss})
+
 		for BASH_FILE in ${BASH_FILES[@]};
 		do
 			cp ${BASH_FILE} .
@@ -258,7 +259,7 @@ workflow vcftogds {
 	}
 
 	output {
-		Array[File] pruned_output = unique_variant_id.unique_variant_id_gds_per_chr
+		Array[File] gds_with_unique_ids = unique_variant_id.unique_variant_id_gds_per_chr
 	}
 
 	meta {
