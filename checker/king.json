@@ -1,0 +1,6 @@
+{
+  "checker.gds_file": "/Users/akhadilk/Documents/ALL.pruned.gds",
+  "checker.truth_king_ibdseg_output": "/Users/akhadilk/Documents/king.seg",
+  "checker.truth_king_matrix": "/Users/akhadilk/Documents/null_king_ibdseg_matrix.RData",
+  "checker.truth_kinship_plots": "/Users/akhadilk/Documents/null_king_ibdseg_all.pdf"  
+}
