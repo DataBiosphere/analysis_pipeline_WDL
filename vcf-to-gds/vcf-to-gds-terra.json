@@ -27,6 +27,6 @@
   "vcftogds.vcf2gds.addldisk": 1,
   "vcftogds.unique_variant_id.addldisk": 1,
   "vcftogds.check_gds": true,
-  "vcftogds.checkgds.addldisk": 1,
-  "vcftogds.check_gds.preemptible_tries": 1
+  "vcftogds.check_gds.addldisk": 1,
+  "vcftogds.check_gds.preempt": 1
 }
