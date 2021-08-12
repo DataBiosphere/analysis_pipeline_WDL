@@ -67,7 +67,7 @@ task gds2bed {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File processed_bed = glob("*.bed")[0] # Note: check if secondary files need to be outputted
+		File processed_bed = glob("*.bed")[0]
 		File processed_bim = glob("*.bim")[0]
 		File processed_fam = glob("*.fam")[0]
 		File config_file = "gds2bed.config"
@@ -77,7 +77,7 @@ task gds2bed {
 
 # [2] plink_make_bed -- process bed file through plink
 
-# Add java script?
+# Add java script from cwl?
 
 task plink_make_bed {
 	input {
@@ -107,10 +107,8 @@ task plink_make_bed {
 		f = open("plink_cmd.sh", "a")
 
 		f.write('#!/bin/bash\n')
-		# plink --bfile toy --bed bob --freq
 		f.write('plink --make-bed --bfile ' + '.'.join("~{bimfile}".split('.')[:-1]) + ' --bed ' + "~{bedfile}" + ' --fam ' + "~{famfile}" + ' --out ' + os.path.basename('.'.join(("~{bedfile}").split('.')[:-1])) + '_recode\n')
-		#f.write('plink --make-just-bed --bfile ' + "~{bedfile}" + ' --out ' + os.path.basename('.'.join(("~{bedfile}").split('.')[:-1])) + '_recode\n')
-
+	
 		CODE
 
 		echo "Calling command through executable bash file for plink"
@@ -194,7 +192,7 @@ task king_ibdseg {
 
 # [4] king_to_matrix -- 
 
-# Add java script?
+# Add java script from cwl?
 
 task king_to_matrix {
 	input {
@@ -360,7 +358,7 @@ task kinship_plots {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File kinship_plots = glob("*.pdf")[0] # Note: check if secondary files need to be outputted
+		File kinship_plots = glob("*.pdf")[0]
 		File config_file = "kinship_plots.config"
 	}
 
