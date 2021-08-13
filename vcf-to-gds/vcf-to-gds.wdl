@@ -4,7 +4,8 @@ version 1.0
 task vcf2gds {
 	input {
 		File vcf
-		String output_file_name = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
+		String debug_basename = basename(vcf)
+		String debug_basenamesub = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
 		Array[String] format # vcf formats to keep
 		# runtime attributes
 		Int addldisk = 1
@@ -15,15 +16,25 @@ task vcf2gds {
 	command {
 		set -eux -o pipefail
 
+		echo "Input vcf is: " | tee -a debug.txt
+		echo "~{vcf}" | tee debug.txt
+		echo "Basename of input vcf is: " | tee -a debug.txt
+		echo "~{debug_basename}" | tee -a debug.txt
+		echo "Basename of input vcf with a subsitution is: " | tee -a debug.txt
+		echo "~{debug_basenamesub}" | tee -a debug.txt
+
 		echo "Generating config file"
 		python << CODE
 		import os
+		py_basename = ((os.path.basename("~{vcf}")).split(".vcf"))[0]
+		py_newname = py_basename+".gds"
+
 		f = open("vcf2gds.config", "a")
 		f.write("vcf_file ~{vcf}\n")
 		f.write("format ")
 		for py_formattokeep in ['~{sep="','" format}']:
 			f.write(py_formattokeep)
-		f.write("\ngds_file '~{output_file_name}'\n")
+		f.write("\ngds_file "+"'"+py_newname+"'\n")
 		f.close()
 		exit()
 		CODE
@@ -44,8 +55,9 @@ task vcf2gds {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File gds_output = output_file_name
+		File gds_output = glob("*.gds")[0]
 		File config_file = "vcf2gds.config"
+		File debug_basneames = "debug.txt"
 	}
 }
 
