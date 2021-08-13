@@ -55,9 +55,6 @@ task null_model_r {
 	Boolean isdefined_pca = defined(pca_file)
 	Boolean isdefined_resid = defined(resid_covars)
 	Boolean isdefined_sample = defined(sample_include_file)
-
-	# basename workaround
-	String base_phenotype = basename(phenotype_file)
 	
 	command <<<
 		set -eux -o pipefail
@@ -131,7 +128,8 @@ task null_model_r {
 			f.write('out_phenotype_file "phenotypes.RData"\n')
 
 		f.write('outcome ~{outcome}\n')
-		f.write('phenotype_file "~{base_phenotype}"\n')
+		base_pheno = os.path.basename("~{phenotype_file}")
+		f.write('phenotype_file "%s"\n' % base_pheno)
 		
 		if "~{isdefined_gds}" == "true":
 			py_gds_array = ['~{sep="','" gds_files}']
