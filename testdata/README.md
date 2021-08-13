@@ -7,8 +7,7 @@ http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
 
 The variants are in genome build hg19.
 
-Test data for king.wdl is about 149.9 Mb and available as ALL.pruned.gds in: gs://topmed_workflow_testing/UWGAC_WDL/ALL.pruned.gds
-
+Test data for king.wdl is about 149.9 Mb and available as ALL.pruned.gds here: https://console.cloud.google.com/storage/browser/_details/topmed_workflow_testing/UWGAC_WDL/ALL.pruned.gds
 # WDL Fork Notes
 chrX varies from what is currently (as of April 9th 2021) is on the UWGAC repo. This repo's chrX is filtered as some of the lines on the original repo's chrX are invalid and will error out. See https://github.com/UW-GAC/analysis_pipeline/issues/46
 
