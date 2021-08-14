@@ -23,6 +23,9 @@ task vcf2gds {
 		echo "Basename of input vcf with a subsitution is: " | tee -a debug.txt
 		echo "~{debug_basenamesub}" | tee -a debug.txt
 
+		echo "Twice-localized workaround (used for DRS URIs)"
+		cp ~{vcf} .  # this ensures it shows up as an output
+
 		echo "Generating config file"
 		python << CODE
 		import os
@@ -45,7 +48,7 @@ task vcf2gds {
 	
 	# Estimate disk size required
 	Int vcf_size = ceil(size(vcf, "GB"))
-	Int finalDiskSize = 2*vcf_size + addldisk
+	Int finalDiskSize = 4*vcf_size + addldisk
 	
 	runtime {
 		cpu: cpu
@@ -55,7 +58,7 @@ task vcf2gds {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File vcf_output = vcf  # workaround for check_gds issues with drs URIs
+		File vcf_output = glob("*.vcf")[0]  # workaround for check_gds issues with drs URIs
 		File gds_output = glob("*.gds")[0]
 		File config_file = "vcf2gds.config"
 		File debug_basneames = "debug.txt"
