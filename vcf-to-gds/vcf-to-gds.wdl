@@ -55,6 +55,7 @@ task vcf2gds {
 		preemptibles: "${preempt}"
 	}
 	output {
+		File vcf_output = vcf  # workaround for check_gds issues with drs URIs
 		File gds_output = glob("*.gds")[0]
 		File config_file = "vcf2gds.config"
 		File debug_basneames = "debug.txt"
@@ -148,6 +149,7 @@ task unique_variant_id {
 	}
 	output {
 		Array[File] unique_variant_id_gds_per_chr = glob("*.gds")
+		File config_file = "unique_variant_ids.config"
 	}
 }
 
@@ -238,6 +240,9 @@ task check_gds {
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
+	output {
+		File config_file = "check_gds.config"
+	}
 }
 
 workflow vcftogds {
@@ -265,7 +270,7 @@ workflow vcftogds {
 			call check_gds {
 				input:
 					gds = gds,
-					vcfs = vcf_files
+					vcfs = vcf2gds.vcf_output
 			}
 		}
 	}
