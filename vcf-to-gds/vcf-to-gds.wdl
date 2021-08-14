@@ -23,14 +23,18 @@ task vcf2gds {
 		echo "Basename of input vcf with a subsitution is: " | tee -a debug.txt
 		echo "~{debug_basenamesub}" | tee -a debug.txt
 
-		echo "Twice-localized workaround (used for DRS URIs)"
-		cp ~{vcf} .  # this ensures it shows up as an output
-
 		echo "Generating config file"
 		python << CODE
 		import os
-		py_basename = ((os.path.basename("~{vcf}")).split(".vcf"))[0]
-		py_newname = py_basename+".gds"
+		import shutil
+		py_split = (os.path.basename("~{vcf}")).split(".vcf")
+		py_basename = py_split[0]
+		if len(py_split) != 1:
+			py_ext = py_split[1]
+		else:
+			py_ext = ""
+		shutil.copy2("~{vcf}", "./%s.vcf%s" % (py_basename, py_ext))
+		py_newname = "%s.gds" % py_basename
 
 		f = open("vcf2gds.config", "a")
 		f.write("vcf_file ~{vcf}\n")
@@ -58,7 +62,7 @@ task vcf2gds {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File vcf_output = glob("*.vcf")[0]  # workaround for check_gds issues with drs URIs
+		File vcf_output = glob("*.vcf*")[0]  # workaround for check_gds issues with drs URIs
 		File gds_output = glob("*.gds")[0]
 		File config_file = "vcf2gds.config"
 		File debug_basneames = "debug.txt"
@@ -224,7 +228,7 @@ task check_gds {
 
 		echo "Setting chromosome number"
 		BASH_CHR=$(<chr_number)
-		echo "Chromosme number is ${BASH_CHR}"
+		echo "Chromosome number is ${BASH_CHR}"
 
 		echo "Calling check_gds.R"
 		Rscript /usr/local/analysis_pipeline/R/check_gds.R check_gds.config --chromosome ${BASH_CHR}
