@@ -176,6 +176,14 @@ task check_gds {
 		# triple carrot syntax is required for this command section
 		set -eux -o pipefail
 
+		echo "Twice localized workaround"
+		BASH_FILES=(~{sep=" " vcfs})
+
+		for BASH_FILE in ${BASH_FILES[@]};
+		do
+			cp ${BASH_FILE} .
+		done
+
 		echo "Searching for VCF and generating config file"
 		python << CODE
 		import os
@@ -223,7 +231,7 @@ task check_gds {
 		py_gds = "~{gds}"
 		py_vcf = py_vcfarray[0]
 		py_base = os.path.basename(py_vcf)
-		write_config(py_vcf, py_gds)
+		write_config(py_base, py_gds)
 		CODE
 
 		echo "Setting chromosome number"
@@ -237,7 +245,7 @@ task check_gds {
 	# Estimate disk size required
 	Int gds_size = ceil(size(gds, "GB"))
 	Int vcfs_size = ceil(size(vcfs, "GB"))
-	Int finalDiskSize = gds_size + vcfs_size + addldisk
+	Int finalDiskSize = gds_size + 2*vcfs_size + addldisk
 
 	runtime {
 		cpu: cpu
