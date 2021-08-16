@@ -26,3 +26,9 @@ workflows:
         - /null-model/null-model-unrel.json
         - /null-model/terra-null-model-conditional.json
      name: null-model-wdl
+   - subclass: WDL
+     primaryDescriptorPath: /king/king.wdl
+     testParameterFiles:
+         - /king/king-terra.json
+         - /king/king-local.json
+     name: king-wdl
