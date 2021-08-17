@@ -1,0 +1,12 @@
+{
+  "nullmodel.output_prefix": "test",
+  "nullmodel.phenotype_file": "_test-data-and-truths_/null_model/1KG_phase3_subset_annot.RData",
+  "nullmodel.relatedness_matrix_file": "_test-data-and-truths_/null_model/pcrelate_Matrix.RData",
+  "nullmodel.pca_file": "_test-data-and-truths_/null_model/pcair.RData",
+  "nullmodel.sample_include_file": "_test-data-and-truths_/null_model/sample_include.RData",
+  "nullmodel.outcome": "outcome",
+  "nullmodel.covars": ["sex", "Population"],
+  "nullmodel.group_var": "Population",
+  "nullmodel.n_pcs": 4,
+  "nullmodel.family": "gaussian"
+}

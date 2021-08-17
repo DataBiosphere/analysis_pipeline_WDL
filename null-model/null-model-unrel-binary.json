@@ -1,0 +1,10 @@
+{
+  "nullmodel.output_prefix": "test",
+  "nullmodel.phenotype_file": "_test-data-and-truths_/null_model/1KG_phase3_subset_annot.RData",
+  "nullmodel.pca_file": "_test-data-and-truths_/null_model/pcair.RData",
+  "nullmodel.sample_include_file": "_test-data-and-truths_/null_model/unrelated.RData",
+  "nullmodel.outcome": "status",
+  "nullmodel.family": "binomial",
+  "nullmodel.covars": ["sex"],
+  "nullmodel.n_pcs": 4
+}
