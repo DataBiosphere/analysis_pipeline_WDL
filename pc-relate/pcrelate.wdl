@@ -79,6 +79,9 @@ task sample_blocks_to_segments {
 	command {
 		set -eux -o pipefail
 
+		# With default settings, the CWL outputs [ 1 ]
+		# With n_sample_blocks=5, CWL outputs [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ]
+
 		python << CODE
 		import os
 		blocks = []
@@ -94,7 +97,9 @@ task sample_blocks_to_segments {
 		print(segments)
 
 		f = open("segs.txt", "a")
-		f.write(str(segments))
+		for number in segments:
+			f.write(number)
+			f.write('\n')
 		f.close()
 		CODE
 	}
@@ -108,7 +113,7 @@ task sample_blocks_to_segments {
 	}
 	output {
 		# not valid in WDL -- read_int can only read one integer
-		Array[Int] segments = read_int("segs.txt")
+		Array[Int] segments = read_lines("segs.txt")
 	}
 }
 
@@ -117,14 +122,14 @@ task pcrelate {
 		File gds_file
 		File pca_file
 		File beta_file
-		Int? n_pcs
+		Int n_pcs = 3
 		String? out_prefix
 		File? variant_include_file
-		Int? variant_block_size = 1024
+		Int variant_block_size = 1024  # input in the CWL but goes unused
 		File? sample_include_file
-		Int? n_sample_blocks = 1
-		Int? segment = 1
-		Boolean? ibd_probs = true
+		Int n_sample_blocks = 1
+		Int segment = 1
+		Boolean ibd_probs = true
 		
 		# runtime attributes
 		Int addldisk = 1
@@ -140,10 +145,32 @@ task pcrelate {
 	Int vrinc_size = select_first([ceil(size(variant_include_file, "GB")), 0])
 	Int finalDiskSize = gds_size + pca_size + beta_size + smpl_size + vrinc_size + addldisk
 	
+	# Workaround for optional files
+	Boolean defSampleInclude = defined(sample_include_file)
+	Boolean defVariantInclude = defined(variant_include_file)
+
 	command {
 		set -eux -o pipefail
+		python << CODE
+		import os
+		f = open("pcrelate.config", "a")
+		f.write('gds_file "~{gds_file}"\n')
+		f.write('pca_file "~{pca_file}"\n')
+		f.write('beta_file "~{beta_file}"\n')
+		if "~{defVariantInclude}" == "true":
+			f.write('variant_include_file "~{variant_include_file}"\n')
+		if "~{out_prefix}" != "":
+			f.write('out_prefix "~{out_prefix}"\n')
+		# n_pcs has a default (not SB default!) in CWL ergo always is defined so we don't check here
+		f.write("n_pcs ~{n_pcs}\n")
+		if "~{defSampleInclude}" == "true":
+			f.write('sample_include_file "~{sample_include_file}"\n')
+		f.write("n_sample_blocks ~{n_sample_blocks}\n")
+		f.write("ibd_probs ~{ibd_probs}\n")
+		f.close()
+		CODE
 
-		touch "blah.RData"
+		R -q --vanilla --args pcrelate.config --segment ~{segment} < /usr/local/analysis_pipeline/R/pcrelate.R
 
 	}
 	
@@ -156,8 +183,8 @@ task pcrelate {
 	}
 	output {
 		# CWL seems to have inconsistency where this is marked an optional output
-		# but it also is a not-optional input into pcrelate -- double check!
-		File block = glob("*.RData")
+		# but it also is a not-optional input elsewhere -- double check!
+		File block = glob("*.RData")[0]
 
 	}
 }
@@ -165,8 +192,8 @@ task pcrelate {
 task pcrelate_correct {
 	input {
 		Array[File] pcrelate_block_files
-		Int? n_sample_blocks
-		Float? sparse_threshold
+		Int n_sample_blocks = 1
+		Float sparse_threshold = 0.02209709
 
 		# runtime attributes
 		Int addldisk = 1
@@ -180,6 +207,21 @@ task pcrelate_correct {
 
 	command {
 		set -eux -o pipefail
+
+		python << CODE
+		import os
+		f = open("pcrelate_correct.config", "a")
+		prefix = pcrelate_block_files[0].nameroot.split("_block_")[0]
+		f.write("pcrelate_prefix \"%s"\"\n")
+		f.write("n_sample_blocks ~{n_sample_blocks}\n")
+		f.write("sparse_threshold ~{sparse_threshold}\n")
+		CODE
+
+		BASH_FILES=(~{sep=" " pcrelate_block_files})
+		for BASH_FILE in ${BASH_FILES[@]};
+		do
+			ln -s ${BASH_FILE} .
+		done
 
 		touch asdf_pcrelate.RData
 		touch asdf_pcrelate_Matrix.RData
@@ -195,8 +237,8 @@ task pcrelate_correct {
 	output {
 		# CWL seems to have inconsistency where this is marked an optional output
 		# but it also is a not-optional input into kinship_plots -- double check!
-		File pcrelate_output = glob("*_pcrelate.RData")
-		File pcrelate_matrix = glob("*_pcrelate_Matrix.RData")
+		Array[File] pcrelate_output = glob("*_pcrelate.RData")
+		Array[File] pcrelate_matrix = glob("*_pcrelate_Matrix.RData")
 	}
 }
 

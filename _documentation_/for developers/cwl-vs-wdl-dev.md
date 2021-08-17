@@ -12,6 +12,7 @@ These differences are likely only of interest to maintainers of this repo or tho
 
 ## pcrelate.wdl
 * The kinship_plots task, in the CWL, takes in an out_prefix input via `valueFrom: ${ return inputs.out_prefix + "_pcrelated` } but WDL does not allow this sort of evaulation during a call task. As such the calculation of this string is instead made at runtime of the task.
+* The tasks pcrelate_beta and pcrelate both check each input variable is defined before writing that variable to the config file. Some of these inputs must always be defined, so the WDL skips checks for non-optional inputs.
 
 ## null-model.wdl
 The CWL technically has duplicated outputs. The WDL instead returns each file once. On SB, cwl.output.json sets the outputs as the following, where ! indicates a duplicated output, inverse norm transformation is applied, and the output_prefix is set to `test`:
