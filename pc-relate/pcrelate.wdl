@@ -8,7 +8,7 @@ task pcrelate_beta {
 		String? out_prefix
 		File? sample_include_file
 		File? variant_include_file
-		Int? variant_block_size
+		Int variant_block_size = 1024
 
 		# runtime attributes
 		Int addldisk = 1
@@ -22,11 +22,32 @@ task pcrelate_beta {
 	Int smpl_size = select_first([ceil(size(sample_include_file, "GB")), 0])
 	Int vrinc_size = select_first([ceil(size(variant_include_file, "GB")), 0])
 	Int finalDiskSize = gds_size + pca_size + smpl_size + vrinc_size + addldisk
+
+	# Workaround for optional files
+	Boolean defSampleInclude = defined(sample_include_file)
+	Boolean defVariantInclude = defined(variant_include_file)
 	
 	command {
 		set -eux -o pipefail
-
-		touch "first.RData"
+		python << CODE
+		import os
+		f = open("pcrelate_beta.config", "a")
+		f.write('gds_file "~{gds_file}"\n')
+		f.write('pca_file "~{pca_file}"\n')
+		if "~{defVariantInclude}" == "true":
+			f.write('variant_include_file "~{variant_include_file}"\n')
+		if "~{out_prefix}" != "":
+			f.write('out_prefix "~{out_prefix}"\n')
+		# n_pcs has a default (not SB default!) in CWL ergo always is defined so we don't check here
+		f.write("n_pcs ~{n_pcs}\n")
+		if "~{defSampleInclude}" == "true":
+			f.write('sample_include_file "~{sample_include_file}"\n')
+		# this is another case where there is a default-valued variable doesn't need a check
+		f.write("variant_block_size ~{variant_block_size}\n")
+		f.close()
+		CODE
+		
+		R -q --vanilla --args pcrelate_beta.config < /usr/local/analysis_pipeline/R/pcrelate_beta.R
 	}
 	
 	runtime {
@@ -58,7 +79,24 @@ task sample_blocks_to_segments {
 	command {
 		set -eux -o pipefail
 
-		touch segs.txt
+		python << CODE
+		import os
+		blocks = []
+		N = ~{n_sample_blocks}
+		for i in range(1, N+1):
+			for j in range(i, N+1):
+				blocks.append([i,j])
+		segments = []
+		for k in range(1, len(blocks)+1):
+			segments.append(str(k))
+		
+		print(blocks)
+		print(segments)
+
+		f = open("segs.txt", "a")
+		f.write(str(segments))
+		f.close()
+		CODE
 	}
 	
 	runtime {
