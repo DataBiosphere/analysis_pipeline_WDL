@@ -92,9 +92,6 @@ task sample_blocks_to_segments {
 		segments = []
 		for k in range(1, len(blocks)+1):
 			segments.append(str(k))
-		
-		print(blocks)
-		print(segments)
 
 		f = open("segs.txt", "a")
 		for number in segments:
@@ -185,7 +182,6 @@ task pcrelate {
 		# CWL seems to have inconsistency where this is marked an optional output
 		# but it also is a not-optional input elsewhere -- double check!
 		File block = glob("*.RData")[0]
-
 	}
 }
 
@@ -205,17 +201,8 @@ task pcrelate_correct {
 	Int block_size = ceil(size(pcrelate_block_files, "GB"))
 	Int finalDiskSize = 2*block_size + addldisk
 
-	command {
+	command <<<
 		set -eux -o pipefail
-
-		python << CODE
-		import os
-		f = open("pcrelate_correct.config", "a")
-		prefix = pcrelate_block_files[0].nameroot.split("_block_")[0]
-		f.write("pcrelate_prefix \"%s"\"\n")
-		f.write("n_sample_blocks ~{n_sample_blocks}\n")
-		f.write("sparse_threshold ~{sparse_threshold}\n")
-		CODE
 
 		BASH_FILES=(~{sep=" " pcrelate_block_files})
 		for BASH_FILE in ${BASH_FILES[@]};
@@ -223,9 +210,19 @@ task pcrelate_correct {
 			ln -s ${BASH_FILE} .
 		done
 
-		touch asdf_pcrelate.RData
-		touch asdf_pcrelate_Matrix.RData
-	}
+		python << CODE
+		import os
+		f = open("pcrelate_correct.config", "a")
+		one_file = ["~{sep="," pcrelate_block_files}"][0]
+		prefix = os.path.basename(one_file).split("_block_")[0]
+		f.write("pcrelate_prefix \"%s\"\n" % prefix)
+		f.write("n_sample_blocks ~{n_sample_blocks}\n")
+		f.write("sparse_threshold ~{sparse_threshold}\n")
+		CODE
+
+		R -q --vanilla --args pcrelate_correct.config < /usr/local/analysis_pipeline/R/pcrelate_correct.R
+
+	>>>
 	
 	runtime {
 		cpu: cpu
@@ -237,8 +234,8 @@ task pcrelate_correct {
 	output {
 		# CWL seems to have inconsistency where this is marked an optional output
 		# but it also is a not-optional input into kinship_plots -- double check!
-		Array[File] pcrelate_output = glob("*_pcrelate.RData")
-		Array[File] pcrelate_matrix = glob("*_pcrelate_Matrix.RData")
+		File pcrelate_output = glob("*_pcrelate.RData")[0]
+		File pcrelate_matrix = glob("*_pcrelate_Matrix.RData")[0]
 	}
 }
 
@@ -264,8 +261,38 @@ task kinship_plots {
 	command {
 		set -eux -o pipefail
 
-		touch cool.pdf
+		python << CODE
+		import os
+		f = open("kinship_plots.config", "a")
+		f.write('kinship_file "~{kinship_file}"\n')
+		if "~{kinship_method}" not in ['pcrelate', 'king_ibdseg', 'king_robust']:
+			f.close()
+			print("Invalid kinship method. Must be pcrelate, king_robust, or king_ibdseg")
+			exit(1)
+		elif "~{kinship_method}" == "king_robust":
+			f.write('kinship_method "king"\n')
+		else:
+			f.write('kinship_method "~{kinship_method}"\n')
 
+		if "~{kinship_plot_threshold}" is not "":
+			f.write('kinship_threshold "~{kinship_plot_threshold}"\n')
+
+		f.write('out_file_all "~{out_prefix_final}_all.pdf"\n')
+		f.write('out_file_cross "~{out_prefix_final}_cross_group.pdf"\n')
+		f.write('out_file_study "~{out_prefix_final}_within_group.pdf"\n')
+
+		if "~{phenotype_file}" is not "":
+			f.write('phenotype_file "~{phenotype_file}"\n')
+		
+		if "~{group}" is not "":
+			f.write('study "~{group}"\n')
+
+		if "~{sample_include_file}" is not "":
+			f.write('sample_include_file "~{sample_include_file}"\n')
+
+		CODE
+
+		R -q --vanilla --args kinship_plots.config < /usr/local/analysis_pipeline/R/kinship_plots.R
 	}
 	
 	# Estimate disk size required
@@ -333,7 +360,6 @@ workflow pcrel {
 				n_sample_blocks = n_sample_blocks,
 				segment = seg,
 				ibd_probs = ibd_probs
-				
 		}
 	}
 
