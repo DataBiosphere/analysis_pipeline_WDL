@@ -1,6 +1,8 @@
 version 1.0
 
-# king.wdl -- This workflow uses the KING --ibdseg method to estimate kinship coefficients, and returns results for pairs of related samples. These kinship estimates can be used as measures of kinship in PC-AiR.
+# king.wdl -- This workflow uses the KING --ibdseg method to estimate kinship coefficients,
+# and returns results for pairs of related samples. These kinship estimates can be used as
+#  measures of kinship in PC-AiR.
 
 # [1] gds2bed -- convert gds file to bed file
 
@@ -9,7 +11,8 @@ task gds2bed {
 		File gds_file
 
 		# optional
-		String? bed_file # provides the file name for the processed bed file, if not provided, the file name of the input gds file is used
+		String? bed_file # provides the file name for the processed bed file, if not
+		# provided, the file name of the input gds file is used
 		File? sample_include_file
 		File? variant_include_file
 		
@@ -107,7 +110,9 @@ task plink_make_bed {
 		f = open("plink_cmd.sh", "a")
 
 		f.write('#!/bin/bash\n')
-		f.write('plink --make-bed --bfile ' + '.'.join("~{bimfile}".split('.')[:-1]) + ' --bed ' + "~{bedfile}" + ' --fam ' + "~{famfile}" + ' --out ' + os.path.basename('.'.join(("~{bedfile}").split('.')[:-1])) + '_recode\n')
+		f.write('plink --make-bed --bfile ' + '.'.join("~{bimfile}".split('.')[:-1]) \
+		+ ' --bed ' + "~{bedfile}" + ' --fam ' + "~{famfile}" + ' --out ' \
+		+ os.path.basename('.'.join(("~{bedfile}").split('.')[:-1])) + '_recode\n')
 	
 		CODE
 
@@ -132,7 +137,8 @@ task plink_make_bed {
 
 }
 
-# [3] king_ibdseg -- Use KING --ibdseg method to estimate kinship coefficients, and returns results for pairs of related samples.
+# [3] king_ibdseg -- Use KING --ibdseg method to estimate kinship coefficients,
+# and returns results for pairs of related samples.
 
 task king_ibdseg {
 	input {
@@ -166,9 +172,12 @@ task king_ibdseg {
 		g.write('#!/bin/bash\n')
 
 		if "~{out_prefix}" != "":
-			g.write('king --ibdseg -b ' + "~{bed_file}" + ' --bim ' + "~{bim_file}" + ' --fam ' + "~{fam_file}"  + ' --cpus ' + "~{cpu}" + ' --prefix ' + "~{out_prefix}" + '\n')
+			g.write('king --ibdseg -b ' + "~{bed_file}" + ' --bim ' + "~{bim_file}" \
+			+ ' --fam ' + "~{fam_file}"  + ' --cpus ' + "~{cpu}" + ' --prefix ' \
+			+ "~{out_prefix}" + '\n')
 		else:
-			g.write('king --ibdseg -b ' + "~{bed_file}" + ' --bim ' + "~{bim_file}" + ' --fam ' + "~{fam_file}"  + ' --cpus ' + "~{cpu}" + ' --prefix king_ibdseg\n')
+			g.write('king --ibdseg -b ' + "~{bed_file}" + ' --bim ' + "~{bim_file}" \
+			+ ' --fam ' + "~{fam_file}"  + ' --cpus ' + "~{cpu}" + ' --prefix king_ibdseg\n')
 
 		CODE
 		echo "Calling command through executable bash file for king"
@@ -190,7 +199,7 @@ task king_ibdseg {
 
 }
 
-# [4] king_to_matrix -- 
+# [4] king_to_matrix -- Format initial kinship estimates from KING as a matrix
 
 # Add java script from cwl?
 
@@ -275,7 +284,7 @@ task king_to_matrix {
 
 }
 
-# [5] kinship_plots -- 
+# [5] kinship_plots -- Make hexbin plots of the initial kinship estimates from KING
 
 task kinship_plots {
 	input {
@@ -374,7 +383,6 @@ workflow king {
 		Float? kinship_plot_threshold
 		String? group
 		Float? sparse_threshold
-		String? kinship_method # not included in king-ibdseg-wf.cwl but is an input in king_to_matrix task
 	}
 	call gds2bed{
 		input:
@@ -400,15 +408,13 @@ workflow king {
 			king_file = king_ibdseg.king_ibdseg_output,
 			sample_include_file = sample_include_file,
 			sparse_threshold = sparse_threshold,
-			out_prefix = out_prefix,
-			kinship_method = kinship_method
+			out_prefix = out_prefix
 	}	
 	call kinship_plots{
 		input:
 			kinship_file = king_ibdseg.king_ibdseg_output,
 			phenotype_file = phenotype_file,
-			sample_include_file = sample_include_file,
-			kinship_method = kinship_method
+			sample_include_file = sample_include_file
 	}
 
 	output {
