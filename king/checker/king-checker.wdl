@@ -1,6 +1,5 @@
 version 1.0
 
-# Replace the first URL here with the URL of the workflow to be checked.
 import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/implement-king/king.wdl" as check_me
 import "https://raw.githubusercontent.com/aofarrel/checker-WDL-templates/v0.9.3/tasks/filecheck_task.wdl" as checker_file
 
@@ -13,15 +12,6 @@ workflow checker {
 		File truth_king_ibdseg_output
 		File truth_king_matrix
 		File truth_kinship_plots
-
-		# Optional inputs:
-		#String king_ibdseg_out_prefix = "king_ibdseg"
-		#Float sparse_threshold = 0.02209709
-		#String king_to_matrix_out_prefix = "king_ibdseg_matrix"
-		#String king_to_matrix_kinship_method = "king_ibdseg"
-		#String kinship_plots_kinship_method = "king"
-
-
 	}
 
 	# Task 1 - gds2bed
