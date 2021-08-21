@@ -80,7 +80,7 @@ task gds2bed {
 
 # [2] plink_make_bed -- process bed file through plink
 
-# Add java script from cwl?
+# This task skips the seven bridges-specific inheritance of metadata 
 
 task plink_make_bed {
 	input {
@@ -201,7 +201,7 @@ task king_ibdseg {
 
 # [4] king_to_matrix -- Format initial kinship estimates from KING as a matrix
 
-# Add java script from cwl?
+# This task skips the seven bridges-specific inheritance of metadata 
 
 task king_to_matrix {
 	input {
