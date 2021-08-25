@@ -25,7 +25,9 @@ task gds2bed {
 
 	# Estimate disk size required
 	Int gds_size = ceil(size(gds_file, "GB"))
-	Int final_disk_dize = gds_size + addldisk
+	Int smpl_size = select_first([ceil(size(sample_include_file, "GB")), 0])
+	Int var_size = select_first([ceil(size(variant_include_file, "GB")), 0])
+	Int final_disk_dize = 2*gds_size + smpl_size + var_size + addldisk
 
 	# Workaround for optional files
 	Boolean defSampleInclude = defined(sample_include_file)
@@ -97,7 +99,9 @@ task plink_make_bed {
 
 	# Estimate disk size required
 	Int bed_size = ceil(size(bedfile, "GB"))
-	Int final_disk_dize = bed_size + addldisk
+	Int bim_size = ceil(size(bimfile, "GB"))
+	Int fam_size = ceil(size(famfile, "GB"))
+	Int final_disk_dize = 2*bed_size + 2*bim_size + 2*fam_size + addldisk
 
 	
 	command {
@@ -156,7 +160,9 @@ task king_ibdseg {
 
 	# Estimate disk size required
 	Int bed_size = ceil(size(bed_file, "GB"))
-	Int final_disk_dize = bed_size + addldisk
+	Int bim_size = ceil(size(bim_file, "GB"))
+	Int fam_size = ceil(size(fam_file, "GB"))
+	Int final_disk_dize = 2*bed_size + bim_size + fam_size + addldisk
 
 	
 	command {
@@ -222,7 +228,7 @@ task king_to_matrix {
 
 	# Estimate disk size required
 	Int king_size = ceil(size(king_file, "GB"))
-	Int final_disk_dize = king_size + addldisk
+	Int final_disk_dize = 2*king_size + addldisk
 
 	# Workaround for optional files
 	Boolean defSampleInclude = defined(sample_include_file)
@@ -307,7 +313,9 @@ task kinship_plots {
 
 	# Estimate disk size required
 	Int kinship_size = ceil(size(kinship_file, "GB"))
-	Int final_disk_dize = kinship_size + addldisk
+	Int pheno_size = select_first([ceil(size(phenotype_file, "GB")), 0])
+	Int smpl_size = select_first([ceil(size(sample_include_file, "GB")), 0])
+	Int final_disk_dize = 2*kinship_size + pheno_size + smpl_size + addldisk
 
 	# Workaround for optional files
 	Boolean defPhenotypeFile = defined(phenotype_file)
