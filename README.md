@@ -12,10 +12,12 @@ This is a work-in-progress project to implement some components of the Universit
 Example files are provided in `test-data-and-truths` and in `gs://topmed_workflow_testing/UWGAC_WDL/`.  
 
 The original pipeline had arguments relating to runtime such as `ncores` and `cluster_type` that do not apply to WDL. Please familarize yourself with the [runtime attributes of WDL](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/) if you are unsure how your settings may transfer. For more information on specific runtime attributes for specific tasks, see [the further reading section](https://github.com/DataBiosphere/analysis_pipeline_WDL/main/README.md#further-reading).  
+
 ### Terra users
 For Terra users, it is recommended to import via Dockstore. Importing the correct JSON file for your workflow at the workflow field entry page will fill in test data and recommended runtime attributes for said test data. For example, load `vcf-to-gds-terra.json` for `vcf-to-gds.wfl`. If you are using your own data, please be sure to increase your runtime attributes appropriately.  
+
 ### Local users
-Running these workflows locally is technically possible, but this is not officially supported due to how the local version of Cromwell handles local resources. Please see [this document](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/_documentation_/for%20users/running-locally.md) for specifics on running locally.
+Cromwell does not manage resources well on local executions -- parameters such as `memory` and `disks` get ignored when Cromwell detects it is not running on the cloud. As a result, these pipelines (LD pruning especially) may get their processes killed by your OS for hogging too much memory, or completely lock up Docker, even on a relatively powerful machine running on downsampled test data. That being said, preliminary testing of these pipelines is performed on a local machine running OSX Catalina, so while we cannot officially support this method of execution, the only thing really blocking it from running smoothly on a local machine is Cromwell's resource management and the power needed by some of these algorithms. These issues can *generally* be avoided by changing the concurrent job limit in your Cromwell configuration. [See instructions here](https://docs.dockstore.org/en/develop/getting-started/getting-started-with-wdl.html) for how to set it in the Dockstore CLI.
 
 ## Further reading
 * [checker workflows](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/_documentation_/for%20users/checker.md)
