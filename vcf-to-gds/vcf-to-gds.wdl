@@ -47,7 +47,6 @@ task vcf2gds {
 		CODE
 
 		echo "Calling R script vcfToGds.R"
-		sudo su - root
 		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R vcf2gds.config
 	}
 	
@@ -141,7 +140,8 @@ task unique_variant_id {
 		exit()
 		CODE
 		
-		echo "Calling uniqueVariantIDs.R"
+		echo "Calling uniqueVariantIDs.R"		
+		sudo su - root
 		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
 	>>>
 	# Estimate disk size required
