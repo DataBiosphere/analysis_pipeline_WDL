@@ -47,6 +47,7 @@ task vcf2gds {
 		CODE
 
 		echo "Calling R script vcfToGds.R"
+		sudo su - root
 		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R vcf2gds.config
 	}
 	
