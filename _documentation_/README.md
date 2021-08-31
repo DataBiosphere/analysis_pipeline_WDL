@@ -7,7 +7,6 @@ For pipeline specific docs, see the README file in their folder (such as /ld-pru
 |---------------	  |-------------------------------------------------------------------------	|
 | checker.md    	  | Documentation on the checker workflow                                   	|
 | cwl-vs-wdl-user.md  | Basic comparison of the CWL and WDL versions of this pipeline        	|
-| running-locally.md  | Advice for running these workflows locally						|
 
 ### Dev Documentation
 | file          	     | description                                                             	|
