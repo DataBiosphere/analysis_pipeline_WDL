@@ -30,5 +30,4 @@ workflows:
      primaryDescriptorPath: /king/king.wdl
      testParameterFiles:
          - /king/king-terra.json
-         - /king/king-local.json
      name: king-wdl
