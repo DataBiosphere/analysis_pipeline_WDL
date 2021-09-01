@@ -1,65 +1,72 @@
-# Relatedness and Population Structure Filtering (ld-pruning-wf.wdl)
-**Cost estimate when running on Terra, default inputs: $0.67**  
-This workflow prunes on the basis of linkage disequilibrium. It then subsets GDS files based on those pruned variants, then performs merging and optional checks the merged files. This represents [the second "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#relatedness-and-population-structure).
+# Relatedness and Population Structure - Getting Initial Kinship Estimates (king.wdl)
+**Cost estimate when running on Terra, default inputs: $0.07**  
+This workflow first converts the ld-pruned gds file to the bed file format. Next, it uses the [PLINK](https://www.cog-genomics.org/plink2/) program to process the bed file. It then used the [KING](https://www.chen.kingrelatedness.com/) program to get initial kinship estimates. It also outputs a kinship matrix and kinship hexbin plot based on the kinship estimates. This represents [the third "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#relatedness-and-population-structure).
 
 Original CWL description:
-> This workflow LD prunes variants and creates a new GDS file containing only the pruned variants. Linkage disequilibrium (LD) is a measure of correlation of genotypes between a pair of variants. LD-pruning is the process filtering variants so that those that remain have LD measures below a given threshold. This procedure is typically used to identify a (nearly) independent subset of variants. This is often the first step in evaluating relatedness and population structure to avoid having results driven by clusters of variants in high LD regions of the genome.
+> This workflow uses the KING --ibdseg method to estimate kinship coefficients, and returns results for pairs of related samples. These kinship estimates can be used as measures of kinship in PC-AiR.
 
 Some variable descriptions have been pulled from the CWL.
 
 ## Inputs
-Note that this pipeline only directly takes in variant_include_file in the first step. If you pass in variant_include_file, that is used as a vector of variants to consider for LD pruning. LD pruning outputs an RData file. After the LD pruning task, a variable called variant_include_file is also used in the subset task, but it takes in the output of the previous task's RData file, **not** the file you input for the first task.
+Note that this pipeline the only required input is the gds_file. A sample_include_file, variant_include_file, and phenotype_file are optional input files that may be used at various steps in the workflow. A bim_file and fam_file are generated as secondary outputs in the first and second task and are given as input to the next consecutive task.
 
 ### Input Files
 * gds_files
 	* Required
-	* An array of GDS files, with names that contain "chr" + the number/letter of the chromosome, such as ["chr1.gds", "chr2.gds"]
+	* GDS file with only LD pruned variants, all chromosomes
 * sample_include_file
 	* Optional
-	* RData file with vector of sample.id to use for LD pruning (unrelated samples are recommended)
-	* If not provided, all samples in the GDS files are included
+	* RData file with vector of sample.id to include
+	* Required to ensure that the output matrix includes all samples for later analysis
 * variant_include_file
 	* Optional
-	* RData file with vector of variant.id to consider for LD pruning
-	* If not provided, all variants in the GDS files are included
+	* RData file with vector of variant.id to include
+* phenotype_file
+	* Optional
+	* RData file with AnnotatedDataFrame of phenotypes
+	* Used for plotting kinship estimates separately by study
 
 
 ### Runtime Attributes
 | variable          			| type | default | info   										|
 |---------------------------	|---   |-------- |------------------------------------------	|
-| check_merged_gds.addldisk		| int  | 5       | Extra disk space to allot for 4th task    	|
-| check_merged_gds.cpu	 		| int  | 2       | Runtime cores to allot for 4th task          |
-| check_merged_gds.memory  		| int  | 4       | Runtime memory to allot for 4th task   	    |
-| check_merged_gds.preempt 		| int  | 3       | # of preemptible VM tries for 4th task       |
-| ld_pruning.addldisk 			| int  | 5       | Extra disk space to allot for 1st task    	|
-| ld_pruning.cpu	 			| int  | 2       | Runtime cores to allot for 1st task          |
-| ld_pruning.memory  			| int  | 4       | Runtime memory to allot for 1st task   	    |
-| ld_pruning.preempt 			| int  | 3       | # of preemptible VM tries for 1st task       |
-| merge_gds.addldisk 			| int  | 5       | Extra disk space to allot for 3rd task    	|
-| merge_gds.cpu	 				| int  | 2       | Runtime cores to allot for 3rd task          |
-| merge_gds.memory  			| int  | 4       | Runtime memory to allot for 3rd task   	    |
-| merge_gds.preempt 			| int  | 3       | # of preemptible VM tries for 3rd task       |
-| subset_gds.addldisk 			| int  | 5       | Extra disk space to allot for 2nd task    	|
-| subset_gds.cpu	 			| int  | 2       | Runtime cores to allot for 2nd task          |
-| subset_gds.memory  			| int  | 4       | Runtime memory to allot for 2nd task   	    |
-| subset_gds.preempt 			| int  | 3       | # of preemptible VM tries for 2nd task       |  
+| gds2bed.addldisk		| int  | 5       | Extra disk space to allot for 1st task    	|
+| gds2bed.cpu	 		| int  | 2       | Runtime cores to allot for 1st task          |
+| gds2bed.memory  		| int  | 4       | Runtime memory to allot for 1st task   	|
+| gds2bed.preempt 		| int  | 3       | # of preemptible VM tries for 1st task       |
+| plink_make_bed.addldisk		| int  | 5       | Extra disk space to allot for 2nd task    	|
+| plink_make_bed.cpu	 		| int  | 2       | Runtime cores to allot for 2nd task          |
+| plink_make_bed.memory  		| int  | 4       | Runtime memory to allot for 2nd task   	|
+| plink_make_bed.preempt 		| int  | 3       | # of preemptible VM tries for 2nd task       |
+| king_ibdseg.addldisk		| int  | 5       | Extra disk space to allot for 3rd task    	|
+| king_ibdseg.cpu	 	| int  | 2       | Runtime cores to allot for 3rd task          |
+| king_ibdseg.memory  		| int  | 4       | Runtime memory to allot for 3rd task   	|
+| king_ibdseg.preempt 		| int  | 3       | # of preemptible VM tries for 3rd task       |
+| king_to_matrix.addldisk		| int  | 5       | Extra disk space to allot for 4th task    	|
+| king_to_matrix.cpu	 		| int  | 2       | Runtime cores to allot for 4th task          |
+| king_to_matrix.memory  		| int  | 4       | Runtime memory to allot for 4th task   	|
+| king_to_matrix.preempt 		| int  | 3       | # of preemptible VM tries for 4th task       |
+| kinship_plots.addldisk		| int  | 5       | Extra disk space to allot for 5th task    	|
+| kinship_plots.cpu	 		| int  | 2       | Runtime cores to allot for 5th task          |
+| kinship_plots.memory  		| int  | 4       | Runtime memory to allot for 5th task   	|
+| kinship_plots.preempt 		| int  | 3       | # of preemptible VM tries for 5th task       |
+  
 
 Note that `addldisk` is adding gigabytes **on top of** the WDL's best-guess estimate of disk space needed based on the size of your inputs.
 
 ### Tuning Your LD Pruning
-| variable          			| type   | default    |info                                 |
-|----------------------------	|--------|----------- |------------------------------------	|
-| ld_pruning.exclude_pca_corr 	| Boolean|    true    | Exclude variants in regions with high correlation with PCs (HLA, LCT, inversions)    	|
-| ld_pruning.genome_build 		| String |    "hg38"  | Must be "hg38", "hg19", or "hg18"	|
-| ld_pruning.ld_r_threshold		| Float  |    0.32    | R threshold (0.32^2 = 0.1)    		|
-| ld_pruning.ld_win_size 		| Float  |    10.0    | Sliding window size in Mb    		|
-| ld_pruning.maf_threshold 		| Float  |    0.01    | Minimum MAF for variants    		|
-| ld_pruning.missing_threshold 	| Float  |    0.01    | Maximum missing call rate for variants    	|
+| variable          			| type   | default    |info                                 	|
+|--------------------------------------	|--------|----------- |----------------------------------------	|
+| gds2bed.bed_file		 	| String |    ""      | Output BED file name		    	|
+| king_to_matrix.sparse_threshold 	| Float  | 0.02209709 | Minimum kinship to use for creating the sparse matrix from king --ibdseg output |
+| kinship_plots.study			| String |    ""      | Name of column in phenotype_file containing study variable    			|
 
 ### Other
 out_prefix: Prefix for all output files (except the config files), type String
 
 ## Outputs
-ld_pruning_output: Array[File] of RData from the first task
+king_ibdseg_output: Text [File].seg with pairwise kinship estimates for all sample pairs with any detected IBD segmentsfrom the third task
+king_ibdseg_matrix: Block-diagonal matrix [File].seg of pairwise kinship estimates from the fourth task
+king_ibdseg_plots: Hexbin plots [File].RData of estimated kinship coefficients from the the fifth task
 
 
