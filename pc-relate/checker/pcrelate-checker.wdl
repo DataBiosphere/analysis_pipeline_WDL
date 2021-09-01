@@ -56,8 +56,10 @@ workflow checker_pcrelate {
 			truth = matrixTruth
 	}
 
+	# Strictly speaking this only has one truth file, but the CWL considers
+	# the plots output to be an array of files
 	if (defined(pcrel.pcrelate_plots)) {
-		call verify_array.arraycheck_optional as scatteredChecker {
+		call verify_array.arraycheck_optional as check_plot {
 			input:
 				test = pcrel.pcrelate_plots,
 				truth = plotsTruth
