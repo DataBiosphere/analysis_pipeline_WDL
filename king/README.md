@@ -65,8 +65,8 @@ Note that `addldisk` is adding gigabytes **on top of** the WDL's best-guess esti
 out_prefix: Prefix for all output files (except the config files), type String
 
 ## Outputs
-king_ibdseg_output: Text [File].seg with pairwise kinship estimates for all sample pairs with any detected IBD segmentsfrom the third task
-king_ibdseg_matrix: Block-diagonal matrix [File].seg of pairwise kinship estimates from the fourth task
-king_ibdseg_plots: Hexbin plots [File].RData of estimated kinship coefficients from the the fifth task
+* king_ibdseg_output: Text [File].seg with pairwise kinship estimates for all sample pairs with any detected IBD segmentsfrom the third task
+* king_ibdseg_matrix: Block-diagonal matrix [File].seg of pairwise kinship estimates from the fourth task
+* king_ibdseg_plots: Hexbin plots [File].RData of estimated kinship coefficients from the the fifth task
 
 
