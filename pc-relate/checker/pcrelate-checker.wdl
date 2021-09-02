@@ -62,7 +62,8 @@ workflow checker_pcrelate {
 		call verify_array.arraycheck_optional as check_plot {
 			input:
 				test = pcrel.pcrelate_plots,
-				truth = plotsTruth
+				truth = plotsTruth,
+				fastfail = true
 		}
 	}
 
