@@ -1,7 +1,7 @@
 version 1.0
 import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/pc-relate/pc-relate/pcrelate.wdl" as pcrelate
-import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v0.99.1/checker_tasks/filecheck_task.wdl" as verify_file
-import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v0.99.1/checker_tasks/arraycheck_task.wdl" as verify_array
+import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v0.99.2/checker_tasks/filecheck_task.wdl" as verify_file
+import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v0.99.2/checker_tasks/arraycheck_task.wdl" as verify_array
 
 workflow checker_pcrelate {
 	input {
