@@ -4,6 +4,5 @@
   "checker_pcrelate.n_sample_blocks": 1,
   "checker_pcrelate.phenotype_file": "_test-data-and-truths_/null_model/1KG_phase3_subset_annot.RData",
   "checker_pcrelate.outTruth": "_test-data-and-truths_/pcrelate/pcrelate_pcrelate.RData",
-  "checker_pcrelate.matrixTruth": "_test-data-and-truths_/pcrelate/pcrelate_pcrelate_Matrix.RData",
-  "checker_pcrelate.plotsTruth": ["_test-data-and-truths_/pcrelate/_pcrelate_all.pdf"]
+  "checker_pcrelate.matrixTruth": "_test-data-and-truths_/pcrelate/pcrelate_pcrelate_Matrix.RData"
 }
