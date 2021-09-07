@@ -1,6 +1,6 @@
 version 1.0
 
-import "king.wdl" as check_me
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/main/king/king.wdl" as check_me
 import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v0.100.0/checker_tasks/filecheck_task.wdl" as checker_file
 
 workflow checker {
