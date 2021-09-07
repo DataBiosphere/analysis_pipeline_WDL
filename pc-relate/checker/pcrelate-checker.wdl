@@ -1,7 +1,7 @@
 version 1.0
 import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/pc-relate/pc-relate/pcrelate.wdl" as pcrelate
-import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v0.99.2/checker_tasks/filecheck_task.wdl" as verify_file
-import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v0.99.2/checker_tasks/arraycheck_task.wdl" as verify_array
+import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v0.100.0/checker_tasks/filecheck_task.wdl" as verify_file
+import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v0.100.0/checker_tasks/arraycheck_task.wdl" as verify_array
 
 workflow checker_pcrelate {
 	input {
@@ -23,7 +23,6 @@ workflow checker_pcrelate {
 		# checker-specific inputs
 		File outTruth
 		File matrixTruth
-		Array[File] plotsTruth
 	}
 
 	# Run the workflow to be checked
@@ -47,13 +46,15 @@ workflow checker_pcrelate {
 	call verify_file.filecheck as check_output {
 		input:
 			test = pcrel.pcrelate_output,
-			truth = outTruth
+			truth = outTruth,
+			rdata_check = true
 	}
 
 	call verify_file.filecheck as check_matrix {
 		input:
 			test = pcrel.pcrelate_matrix,
-			truth = matrixTruth
+			truth = matrixTruth,
+			rdata_check = true
 	}
 
 	# The PDFs cannot be checked beyond an MD5sum and due to how the
