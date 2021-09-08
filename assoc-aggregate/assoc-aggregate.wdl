@@ -9,6 +9,7 @@ task wdl_validate_inputs {
 	}
 
 	command <<<
+		set -eux -o pipefail
 		acceptable_genome_builds = ("hg38" "hg19")
 		acceptable_aggreg_types = ("allele" "position")
 		acceptable_test_values = ("burden" "skat" "smmat" "fastskat" "skato")
@@ -19,11 +20,19 @@ task wdl_validate_inputs {
 			echo "Invalid input for genome_build. Must be hg38 or hg19."
 			exit(1)
 		fi
+
+		# do other checks!
 	>>>
 
 	runtime {
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		preemptibles: 2
+	}
+
+	output {
+		String? valid_genome_build = genome_build
+		String? valid_aggregate_type = aggregate_type
+		String? valid_test = test
 	}
 
 }
@@ -55,24 +64,26 @@ task sbg_gds_renamer {
 			chrom_num = file.split("chr")[1]
 			return chrom_num
 
-		nameroot = os.path.basename(~{in_variant}).rsplit[".", 1][0]
+		nameroot = os.path.basename("~{in_variant}").rsplit[".", 1][0]
 		chr = find_chromosome(nameroot)
 		base = nameroot.split('chr'+chr)[0]
 
 		print(base+'chr'+chr+".gds")
 		CODE
+
+		touch foo.txt
 	>>>
 
 	runtime {
-		cpu: cpu
+		cpu: 2
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-		disks: "local-disk " + finalDiskSize + " HDD"
-		memory: "${memory} GB"
-		preemptibles: "${preempt}"
+		disks: "local-disk " + gds_size + " HDD"
+		memory: "4 GB"
+		preemptibles: 2
 	}
-	#output {
-	#	File renamed_variant
-	#}
+	output {
+		File renamed_variants = "foo.txt"
+	}
 }
 
 task define_segments_r {
@@ -89,6 +100,8 @@ task define_segments_r {
 	}
 	
 	command {
+		touch foo.txt
+		touch define_segments_r.config
 	}
 
 	Int finalDiskSize = 10
@@ -102,26 +115,49 @@ task define_segments_r {
 	}
 	output {
 		File config_file = "define_segments_r.config"
-		File define_segments_output = ""
+		File define_segments_output = "foo.txt"
+	}
+}
+
+# This task is probably not strictly necessary in WDL, as WDL can handle lists of lists better than CWL.
+# Nevertheless, it is in this WDL to ensure compatiability with the CWL version.
+task sbg_flatten_lists {
+	input {
+		Array[File] input_list
+	}
+
+	command {
+		pass
+	}
+
+	output {
+		Array[File] output_list = input_list
 	}
 }
 # comes after define segs and gds renamer
 task sbg_group_segments_1 {
-	inputs {
+	input {
 		Array[File] assoc_files
 	}
 
+	command {
+		touch foo.txt
+		touch bar.txt
+		touch bizz.txt
+	}
+
 	output {
-		Array[File} grouped_assoc_files
-		chromosome
+		Array[File] grouped_assoc_files = ["foo.txt", "bar.txt"]
+		File chromosome = "bizz.txt"
+		File gds_output = "foo.txt"
 	}
 }
 
 task aggregate_list {
 	input {
 		File variant_group_file
-		String aggregate_type
-		String group_id
+		String? aggregate_type
+		String? group_id
 
 		# runtime attr
 		Int addldisk = 1
@@ -129,12 +165,12 @@ task aggregate_list {
 		Int memory = 4
 		Int preempt = 2
 	}
-	command <<<
-		set -eux -o pipefail
-	>>>
 	# Estimate disk size required
 	Int vargroup_size = ceil(size(variant_group_file, "GB"))
 	Int finalDiskSize = vargroup_size + addldisk
+	command <<<
+		set -eux -o pipefail
+	>>>
 
 	runtime {
 		cpu: cpu
@@ -144,7 +180,7 @@ task aggregate_list {
 		preemptibles: "${preempt}"
 	}
 	output {
-		Array[File] unique_variant_id_gds_per_chr = glob("*.gds")
+		Array[File] aggregate_list = glob("*.gds")
 		File config_file = "unique_variant_ids.config"
 	}
 }
@@ -175,14 +211,15 @@ task assoc_aggregate {
 		Int memory = 8
 		Int preempt = 0
 	}
+	# Estimate disk size required
+	Int varweight_size = select_first([ceil(size(variant_weight_file, "GB")), 0])
+	Int gds_size = ceil(size(gds_file, "GB"))
+	Int finalDiskSize = gds_size + varweight_size
 
 	command <<<
+		touch foo.txt
+		touch bar.txt
 	>>>
-
-	# Estimate disk size required
-	select_first([ceil(size(sample_include_file, "GB")), 0])
-
-	Int gds_size = ceil(size(gds, "GB"))
 
 	runtime {
 		cpu: cpu
@@ -193,7 +230,7 @@ task assoc_aggregate {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File config_file = "check_gds.config"
+		Array[File] assoc_aggregate = ["foo.txt", "bar.txt"]
 	}
 }
 
@@ -204,28 +241,80 @@ task sbg_prepare_segments_1 {
 		Array[File] aggregate_files
 		Array[File] variant_include_files
 	}
-}
+	command {
+		touch foo.txt
+	}
 
-task sbg_flatten_lists {
-	input {
-		input_list
-
+	output {
+		File gds_output = "foo.txt"
 	}
 }
 
+task assoc_combine_r {
+	input {
+		Pair[File, File] chr_n_assocfiles
+		String? assoc_type
+	}
+
+	command <<<
+		touch foo.txt
+		touch bar.txt
+	>>>
+
+	output {
+		Array[File] assoc_combined = ["foo.txt", "bar.txt"]
+	}
+}
+
+task assoc_plots_r {
+	input {
+		Array[File] assoc_files
+		String assoc_type
+		String? plots_prefix
+		Boolean? disable_thin
+		File? known_hits_file
+		Int? thin_npoints
+		Int? thin_nbins
+		Int? plot_mac_threshold
+		Float? truncate_pval_threshold
+	}
+
+	command {
+		pass
+	}
+}
 
 
 workflow assoc_agg {
 	input {
-		Int? segment_length
-		Int? n_segements
-		String? genome_build
-		String? aggregate_type
-		String? test
-		Array[File] input_gds_files
+		String?      aggregate_type
+		Float?       alt_freq_max
+		Boolean?     disable_thin
+		String?      genome_build
+		String?      group_id
+		File?        known_hits_file
+		Array[File]  input_gds_files
+		Int?         n_segments
+		File         null_model_file
+		String?      out_prefix
+		Boolean?     pass_only
+		File         phenotype_file
+		Int?         plot_mac_threshold
+		Array[Float]? rho
+		Int?         segment_length
+		String?      test
+		Int?         thin_nbins
+		Int?         thin_npoints
+		Float?       truncate_pval_threshold
+		Array[File]  variant_group_files
 		Array[File]? variant_include_files
+		File?        variant_weight_file
+		String?      weight_beta
+		String?      weight_user
 	}
 
+	# In order to force this to run first, all other tasks that uses these psuedoenums
+	# will take them in via outputs of this task
 	call wdl_validate_inputs {
 		input:
 			genome_build = genome_build,
@@ -239,7 +328,6 @@ workflow assoc_agg {
 				in_variant = gds_file
 		}
 	}
-
 	call define_segments_r {
 		input:
 			segment_length = segment_length,
@@ -260,17 +348,46 @@ workflow assoc_agg {
 		input:
 			input_gds_files = sbg_gds_renamer.renamed_variants,
 			segments_file = define_segments_r.define_segments_output,
-			aggregate_files = aggreagate_list.aggregate_list,
+			aggregate_files = aggregate_list.aggregate_list,
 			variant_include_files = variant_include_files
 	}
 
-	# CWL uses a dotproduct scatter; this is the closest WDL equivalent
+	call assoc_aggregate {
+		input:
+			gds_file = sbg_prepare_segments_1.gds_output,
+
+	}
+
+	call sbg_flatten_lists {
+		input:
+			input_list = assoc_aggregate.assoc_aggregate
+	}
+
+	call sbg_group_segments_1 {
+		input:
+			assoc_files = sbg_flatten_lists.output_list
+	}
+
+	# CWL uses a dotproduct scatter; this is the closest WDL equivalent that I'm aware of
 	scatter(chr_n_assocfiles in zip(sbg_group_segments_1.chromosome, sbg_group_segments_1.grouped_assoc_files)) {
 		call assoc_combine_r {
 			input:
 				chr_n_assocfiles = chr_n_assocfiles,
-				assoc_type = assoc_type
+				assoc_type = "aggregate"
 		}
+	}
+
+	call assoc_plots_r {
+		input:
+			assoc_files = assoc_combine_r.assoc_combined,
+			assoc_type = "aggregate",
+			plots_prefix = out_prefix,
+			disable_thin = disable_thin,
+			known_hits_file = known_hits_file,
+			thin_npoints = thin_npoints,
+			thin_nbins = thin_nbins,
+			plot_mac_threshold = plot_mac_threshold,
+			truncate_pval_threshold = truncate_pval_threshold
 	}
 
 	meta {
