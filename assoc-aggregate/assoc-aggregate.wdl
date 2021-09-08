@@ -148,8 +148,8 @@ task sbg_group_segments_1 {
 
 	output {
 		Array[File] grouped_assoc_files = ["foo.txt", "bar.txt"]
-		File chromosome = "bizz.txt"
-		File gds_output = "foo.txt"
+		Array[String] chromosome = ["foo", "bar"]
+		File gds_output = "bizz.txt"
 	}
 }
 
@@ -157,6 +157,7 @@ task aggregate_list {
 	input {
 		File variant_group_file
 		String? aggregate_type
+		String? out_file
 		String? group_id
 
 		# runtime attr
@@ -165,11 +166,17 @@ task aggregate_list {
 		Int memory = 4
 		Int preempt = 2
 	}
+	# Basenames
+	File basename_vargroup = basename(variant_group_file)
 	# Estimate disk size required
 	Int vargroup_size = ceil(size(variant_group_file, "GB"))
 	Int finalDiskSize = vargroup_size + addldisk
 	command <<<
 		set -eux -o pipefail
+
+		cp ~{variant_group_file} ~{basename_vargroup}
+
+		#Rscript /usr/local/analysis_pipeline/R/aggregate_list.R aggregate_list.config
 	>>>
 
 	runtime {
@@ -180,7 +187,7 @@ task aggregate_list {
 		preemptibles: "${preempt}"
 	}
 	output {
-		Array[File] aggregate_list = glob("*.gds")
+		File aggregate_list = glob("*.RData")[0]
 		File config_file = "unique_variant_ids.config"
 	}
 }
@@ -203,7 +210,7 @@ task assoc_aggregate {
 		Boolean? pass_only
 		File? variant_weight_file
 		String? weight_user
-		String genome_build # acts as enum
+		String? genome_build # acts as enum
 
 		# runtime attr
 		Int addldisk = 1
@@ -239,7 +246,7 @@ task sbg_prepare_segments_1 {
 		Array[File] input_gds_files
 		File segments_file
 		Array[File] aggregate_files
-		Array[File] variant_include_files
+		Array[File]? variant_include_files
 	}
 	command {
 		touch foo.txt
@@ -247,13 +254,18 @@ task sbg_prepare_segments_1 {
 
 	output {
 		File gds_output = "foo.txt"
+		Array[Int]? segments = [1,2]
+		File aggregate_output = "foo.txt" # seems optional in CWL but WDL is pickier
+		File variant_include_output = "foo.txt" # again, may be optional
 	}
 }
 
 task assoc_combine_r {
 	input {
-		Pair[File, File] chr_n_assocfiles
+		Pair[String, File] chr_n_assocfiles
 		String? assoc_type
+		String? out_prefix
+		File? conditional_variant_file
 	}
 
 	command <<<
@@ -262,7 +274,7 @@ task assoc_combine_r {
 	>>>
 
 	output {
-		Array[File] assoc_combined = ["foo.txt", "bar.txt"]
+		File assoc_combined = glob("*.RData")[0]
 	}
 }
 
@@ -352,43 +364,60 @@ workflow assoc_agg {
 			variant_include_files = variant_include_files
 	}
 
-	call assoc_aggregate {
-		input:
-			gds_file = sbg_prepare_segments_1.gds_output,
+	# CWL has this as a four way dot product scatter... not sure how to do this in WDL!
+#	call assoc_aggregate {
+#		input:
+#			gds_file = sbg_prepare_segments_1.gds_output, # CWL has linkMerge: merge_flattened for all inputs from other tasks
+#			null_model_file = null_model_file,
+#			phenotype_file = phenotype_file,
+#			aggregate_variant_file = sbg_prepare_segments_1.aggregate_output,
+#			out_prefix = out_prefix,
+#			rho = rho,
+#			segment_file = define_segments_r.define_segments_output,
+#			test = test,
+#			variant_include_file = sbg_prepare_segments_1.variant_include_output,
+#			weight_beta = weight_beta,
+#			segment = sbg_prepare_segments_1.segments,
+#			aggregate_type = aggregate_type,
+#			alt_freq_max = alt_freq_max,
+#			pass_only = pass_only,
+#			variant_weight_file = variant_weight_file,
+#			weight_user = weight_user,
+#			genome_build = genome_build
+#
+#	}
 
-	}
+	#call sbg_flatten_lists {
+	#	input:
+	#		input_list = assoc_aggregate.assoc_aggregate
+	#}
 
-	call sbg_flatten_lists {
-		input:
-			input_list = assoc_aggregate.assoc_aggregate
-	}
-
-	call sbg_group_segments_1 {
-		input:
-			assoc_files = sbg_flatten_lists.output_list
-	}
+	#call sbg_group_segments_1 {
+	#	input:
+	#		assoc_files = sbg_flatten_lists.output_list
+	#}
 
 	# CWL uses a dotproduct scatter; this is the closest WDL equivalent that I'm aware of
-	scatter(chr_n_assocfiles in zip(sbg_group_segments_1.chromosome, sbg_group_segments_1.grouped_assoc_files)) {
-		call assoc_combine_r {
-			input:
-				chr_n_assocfiles = chr_n_assocfiles,
-				assoc_type = "aggregate"
-		}
-	}
+	#scatter(chr_n_assocfiles in zip(sbg_group_segments_1.chromosome, sbg_group_segments_1.grouped_assoc_files)) {
+	#	call assoc_combine_r {
+	#		input:
+	#			chr_n_assocfiles = chr_n_assocfiles,
+	#			assoc_type = "aggregate"
+	#	}
+	#}
 
-	call assoc_plots_r {
-		input:
-			assoc_files = assoc_combine_r.assoc_combined,
-			assoc_type = "aggregate",
-			plots_prefix = out_prefix,
-			disable_thin = disable_thin,
-			known_hits_file = known_hits_file,
-			thin_npoints = thin_npoints,
-			thin_nbins = thin_nbins,
-			plot_mac_threshold = plot_mac_threshold,
-			truncate_pval_threshold = truncate_pval_threshold
-	}
+#	call assoc_plots_r {
+#		input:
+#			assoc_files = assoc_combine_r.assoc_combined,
+#			assoc_type = "aggregate",
+#			plots_prefix = out_prefix,
+#			disable_thin = disable_thin,
+#			known_hits_file = known_hits_file,
+#			thin_npoints = thin_npoints,
+#			thin_nbins = thin_nbins,
+#			plot_mac_threshold = plot_mac_threshold,
+#			truncate_pval_threshold = truncate_pval_threshold
+#	}
 
 	meta {
 		author: "Ash O'Farrell"
