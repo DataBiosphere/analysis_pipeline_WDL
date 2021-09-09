@@ -10,15 +10,21 @@ task wdl_validate_inputs {
 
 	command <<<
 		set -eux -o pipefail
-		acceptable_genome_builds = ("hg38" "hg19")
-		acceptable_aggreg_types = ("allele" "position")
-		acceptable_test_values = ("burden" "skat" "smmat" "fastskat" "skato")
+		acceptable_genome_builds=("hg38" "hg19")
+		acceptable_aggreg_types=("allele" "position")
+		acceptable_test_values=("burden" "skat" "smmat" "fastskat" "skato")
 		
+		#if [[ ~{genome_build} = "" ]]
 		# first do a defined check before doing this
-		if [[ ! " ${acceptable_genome_builds}[*]} " =~ " ~{genome_build} " ]]
+		if [[ ! "${acceptable_genome_builds}[*]}" =~ "~{genome_build}" ]]
 		then
 			echo "Invalid input for genome_build. Must be hg38 or hg19."
-			exit(1)
+			exit 1
+		fi
+		if [[ ! " ${acceptable_aggreg_types}[*]} " =~ " ~{aggregate_type} " ]]
+		then
+			echo "Invalid input for aggregate_type. Must be allele or position."
+			exit 1
 		fi
 
 		# do other checks!
@@ -334,35 +340,35 @@ workflow assoc_agg {
 			test = test
 	}
 
-	scatter(gds_file in input_gds_files) {
-		call sbg_gds_renamer {
-			input:
-				in_variant = gds_file
-		}
-	}
-	call define_segments_r {
-		input:
-			segment_length = segment_length,
-			n_segments = n_segments,
-			genome_build = genome_build
-	}
+#	scatter(gds_file in input_gds_files) {
+#		call sbg_gds_renamer {
+#			input:
+#				in_variant = gds_file
+#		}
+#	}
+#	call define_segments_r {
+#		input:
+#			segment_length = segment_length,
+#			n_segments = n_segments,
+#			genome_build = genome_build
+#	}
 
-	scatter(variant_group_file in variant_group_files) {
-		call aggregate_list {
-			input:
-				variant_group_file = variant_group_file,
-				aggregate_type = aggregate_type,
-				group_id = group_id
-		}
-	}
+#	scatter(variant_group_file in variant_group_files) {
+#		call aggregate_list {
+#			input:
+#				variant_group_file = variant_group_file,
+#				aggregate_type = aggregate_type,
+#				group_id = group_id
+#		}
+#	}
 
-	call sbg_prepare_segments_1 {
-		input:
-			input_gds_files = sbg_gds_renamer.renamed_variants,
-			segments_file = define_segments_r.define_segments_output,
-			aggregate_files = aggregate_list.aggregate_list,
-			variant_include_files = variant_include_files
-	}
+#	call sbg_prepare_segments_1 {
+#		input:
+#			input_gds_files = sbg_gds_renamer.renamed_variants,
+#			segments_file = define_segments_r.define_segments_output,
+#			aggregate_files = aggregate_list.aggregate_list,
+#			variant_include_files = variant_include_files
+#	}
 
 	# CWL has this as a four way dot product scatter... not sure how to do this in WDL!
 #	call assoc_aggregate {
