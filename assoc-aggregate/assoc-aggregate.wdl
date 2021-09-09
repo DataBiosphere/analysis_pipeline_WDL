@@ -89,7 +89,17 @@ task sbg_gds_renamer {
 		def find_chromosome(file):
 			chr_array = []
 			chrom_num = split_on_chromosome(file)
-			if(unicode(str(chrom_num[1])).isnumeric()):
+			if len(chrom_num) == 1:
+				acceptable_chrs = [str(integer) for integer in list(range(1,22))]
+				acceptable_chrs.extend(["X","Y","M"])
+				print(acceptable_chrs)
+				print(type(chrom_num))
+				if chrom_num in acceptable_chrs:
+					return chrom_num
+				else:
+					print("%s appears to be an invalid chromosome number." % chrom_num)
+					exit(1)
+			elif (unicode(str(chrom_num[1])).isnumeric()):
 				# two digit number
 				chr_array.append(chrom_num[0])
 				chr_array.append(chrom_num[1])
@@ -102,14 +112,14 @@ task sbg_gds_renamer {
 			chrom_num = file.split("chr")[1]
 			return chrom_num
 
-		nameroot = os.path.basename("~{in_variant}").rsplit[".", 1][0]
+		nameroot = os.path.basename("~{in_variant}").rsplit(".", 1)[0]
 		chr = find_chromosome(nameroot)
 		base = nameroot.split('chr'+chr)[0]
+		newname = base+'chr'+chr+".gds"
 
-		print(base+'chr'+chr+".gds")
+		os.rename("~{in_variant}", newname)
 		CODE
 
-		touch foo.txt
 	>>>
 
 	runtime {
@@ -120,7 +130,7 @@ task sbg_gds_renamer {
 		preemptibles: 2
 	}
 	output {
-		File renamed_variants = "foo.txt"
+		File renamed_variants = glob("*.gds")[0]
 	}
 }
 
@@ -379,12 +389,12 @@ workflow assoc_agg {
 		}
 	}
 	
-	call define_segments_r {
-		input:
-			segment_length = segment_length,
-			n_segments = n_segments,
-			genome_build = wdl_validate_inputs.valid_genome_build
-	}
+#	call define_segments_r {
+#		input:
+#			segment_length = segment_length,
+#			n_segments = n_segments,
+#			genome_build = wdl_validate_inputs.valid_genome_build
+#	}
 
 #	scatter(variant_group_file in variant_group_files) {
 #		call aggregate_list {
