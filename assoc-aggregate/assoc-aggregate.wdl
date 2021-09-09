@@ -13,22 +13,34 @@ task wdl_validate_inputs {
 		acceptable_genome_builds=("hg38" "hg19")
 		acceptable_aggreg_types=("allele" "position")
 		acceptable_test_values=("burden" "skat" "smmat" "fastskat" "skato")
-		
-		#if [[ ~{genome_build} = "" ]]
-		# first do a defined check before doing this
-		if [[ ! "${acceptable_genome_builds}[*]}" =~ "~{genome_build}" ]]
+
+		if [[ ! ~{genome_build} = "" ]]
 		then
-			echo "Invalid input for genome_build. Must be hg38 or hg19."
-			exit 1
-		fi
-		if [[ ! " ${acceptable_aggreg_types}[*]} " =~ " ~{aggregate_type} " ]]
-		then
-			echo "Invalid input for aggregate_type. Must be allele or position."
-			exit 1
+			if [[ ! "hg38" = "~{genome_build}" ]]
+			then
+				if [[ ! "hg19" = "~{genome_build}" ]]
+				then
+					echo "Invalid input for genome_build. Must be hg38 or hg19."
+					exit 1
+				else
+					$(valid_genome_build)=genome_build
+				fi
+			fi
 		fi
 
-		# do other checks!
-	>>>
+		if [[ ! ~{aggregate_type} = "" ]]
+		then
+			if [[ ! "allele" = "~{aggregate_type}" ]]
+			then
+				if [[ ! "position" = "~{aggregate_type}" ]]
+				then
+					echo "Invalid input for aggregate_type. Must be allele or position."
+					exit 1
+				else
+					$(valid_aggregate_type) = aggregate_type
+				fi
+			fi
+		fi
 
 	runtime {
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
