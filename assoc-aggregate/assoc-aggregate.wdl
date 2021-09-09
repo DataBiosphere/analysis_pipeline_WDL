@@ -140,30 +140,56 @@ task define_segments_r {
 		Int? n_segments
 		String? genome_build
 
-		# runtime attributes
+		# runtime attributes, which you shouldn't need
 		Int addldisk = 1
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 3
 	}
 	
-	command {
-		touch foo.txt
-		touch define_segments_r.config
-	}
+	command <<<
+		python << CODE
+		import os
+		f = open("define_segments.config", "a")
+		f.write('out_file "segments.txt"\n')
+		if "~{genome_build}" != "":
+			f.write('genome_build "~{genome_build}"\n')
+		f.close()
+		CODE
 
-	Int finalDiskSize = 10
+		# this could be improved
+		if [[ ! "~{segment_length}" = "" ]]
+		then
+			if [[ ! "~{n_segments}" = "" ]]
+			then
+				# has both args
+				Rscript /usr/local/analysis_pipeline/R/define_segments.R --segment_length ~{segment_length} --n_segments ~{n_segments} define_segments.config
+			else
+				# has only seg length
+				Rscript /usr/local/analysis_pipeline/R/define_segments.R --segment_length ~{segment_length} define_segments.config
+			fi
+		else
+			if [[ ! "~{n_segments}" = "" ]]
+			then
+				# has only n segs
+				Rscript /usr/local/analysis_pipeline/R/define_segments.R --n_segments ~{n_segments} define_segments.config
+			else
+				# has no args
+				Rscript /usr/local/analysis_pipeline/R/define_segments.R define_segments.config
+			fi
+		fi
+
+	>>>
 	
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
 	output {
-		File config_file = "define_segments_r.config"
-		File define_segments_output = "foo.txt"
+		File config_file = "define_segments.config"
+		File define_segments_output = "segments.txt"
 	}
 }
 
@@ -389,12 +415,12 @@ workflow assoc_agg {
 		}
 	}
 	
-#	call define_segments_r {
-#		input:
-#			segment_length = segment_length,
-#			n_segments = n_segments,
-#			genome_build = wdl_validate_inputs.valid_genome_build
-#	}
+	call define_segments_r {
+		input:
+			segment_length = segment_length,
+			n_segments = n_segments,
+			genome_build = wdl_validate_inputs.valid_genome_build
+	}
 
 #	scatter(variant_group_file in variant_group_files) {
 #		call aggregate_list {
