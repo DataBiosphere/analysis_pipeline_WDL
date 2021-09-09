@@ -23,12 +23,12 @@ task wdl_validate_inputs {
 					echo "Invalid input for genome_build. Must be hg38 or hg19."
 					exit 1
 				else
-					$(valid_genome_build)=genome_build
+					echo "~{genome_build} seems valid"
 				fi
 			fi
 		fi
 
-		if [[ ! ~{aggregate_type} = "" ]]
+		if [[ ! "~{aggregate_type}" = "" ]]
 		then
 			if [[ ! "allele" = "~{aggregate_type}" ]]
 			then
@@ -37,10 +37,30 @@ task wdl_validate_inputs {
 					echo "Invalid input for aggregate_type. Must be allele or position."
 					exit 1
 				else
-					$(valid_aggregate_type) = aggregate_type
+					echo "~{aggregate_type} seems valid"
 				fi
 			fi
 		fi
+
+		if [[ ! "~{test}" = "" ]]
+		then
+			in_array=0
+			for thing in "${acceptable_test_values[@]}"
+			do
+				if [[ "^$thing$" = "^~{test}$" ]]
+				then
+					in_array=1
+				fi
+			done
+			if [[ $in_array = 0 ]]
+			then
+				echo "Invalid input for test. Must be burden, skat, smmat, fastskat, or skato."
+				exit 1
+			else
+				echo "~{test} seems valid"
+			fi
+		fi
+	>>>
 
 	runtime {
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
@@ -352,24 +372,25 @@ workflow assoc_agg {
 			test = test
 	}
 
-#	scatter(gds_file in input_gds_files) {
-#		call sbg_gds_renamer {
-#			input:
-#				in_variant = gds_file
-#		}
-#	}
-#	call define_segments_r {
-#		input:
-#			segment_length = segment_length,
-#			n_segments = n_segments,
-#			genome_build = genome_build
-#	}
+	scatter(gds_file in input_gds_files) {
+		call sbg_gds_renamer {
+			input:
+				in_variant = gds_file
+		}
+	}
+	
+	call define_segments_r {
+		input:
+			segment_length = segment_length,
+			n_segments = n_segments,
+			genome_build = wdl_validate_inputs.valid_genome_build
+	}
 
 #	scatter(variant_group_file in variant_group_files) {
 #		call aggregate_list {
 #			input:
 #				variant_group_file = variant_group_file,
-#				aggregate_type = aggregate_type,
+#				aggregate_type = wdl_validate_inputs.valid_aggregate_type,
 #				group_id = group_id
 #		}
 #	}
@@ -392,16 +413,16 @@ workflow assoc_agg {
 #			out_prefix = out_prefix,
 #			rho = rho,
 #			segment_file = define_segments_r.define_segments_output,
-#			test = test,
+#			test = wdl_validate_inputs.valid_test,
 #			variant_include_file = sbg_prepare_segments_1.variant_include_output,
 #			weight_beta = weight_beta,
 #			segment = sbg_prepare_segments_1.segments,
-#			aggregate_type = aggregate_type,
+#			aggregate_type = wdl_validate_inputs.valid_aggregate_type,
 #			alt_freq_max = alt_freq_max,
 #			pass_only = pass_only,
 #			variant_weight_file = variant_weight_file,
 #			weight_user = weight_user,
-#			genome_build = genome_build
+#			genome_build = wdl_validate_inputs.valid_genome_build
 #
 #	}
 
