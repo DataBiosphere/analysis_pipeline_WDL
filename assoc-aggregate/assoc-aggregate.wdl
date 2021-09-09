@@ -158,6 +158,7 @@ task define_segments_r {
 		CODE
 
 		# this could be improved
+		# this also should be tested a bit more
 		if [[ ! "~{segment_length}" = "" ]]
 		then
 			if [[ ! "~{n_segments}" = "" ]]
@@ -201,7 +202,8 @@ task sbg_flatten_lists {
 	}
 
 	command {
-		pass
+		python << CODE
+		flat_list = 
 	}
 
 	output {
@@ -422,14 +424,14 @@ workflow assoc_agg {
 			genome_build = wdl_validate_inputs.valid_genome_build
 	}
 
-#	scatter(variant_group_file in variant_group_files) {
-#		call aggregate_list {
-#			input:
-#				variant_group_file = variant_group_file,
-#				aggregate_type = wdl_validate_inputs.valid_aggregate_type,
-#				group_id = group_id
-#		}
-#	}
+	scatter(variant_group_file in variant_group_files) {
+		call aggregate_list {
+			input:
+				variant_group_file = variant_group_file,
+				aggregate_type = wdl_validate_inputs.valid_aggregate_type,
+				group_id = group_id
+		}
+	}
 
 #	call sbg_prepare_segments_1 {
 #		input:
