@@ -194,22 +194,6 @@ task define_segments_r {
 	}
 }
 
-# This task is probably not strictly necessary in WDL, as WDL can handle lists of lists better than CWL.
-# Nevertheless, it is in this WDL to ensure compatiability with the CWL version.
-task sbg_flatten_lists {
-	input {
-		Array[File] input_list
-	}
-
-	command {
-		python << CODE
-		flat_list = 
-	}
-
-	output {
-		Array[File] output_list = input_list
-	}
-}
 # comes after define segs and gds renamer
 task sbg_group_segments_1 {
 	input {
@@ -314,6 +298,29 @@ task assoc_aggregate {
 	}
 	output {
 		Array[File] assoc_aggregate = ["foo.txt", "bar.txt"]
+	}
+}
+
+# This task is probably not strictly necessary in WDL, as WDL can handle lists of lists better than CWL.
+# Nevertheless, it is in this WDL to ensure compatiability with the CWL version.
+task sbg_flatten_lists {
+	input {
+		Array[File] input_list
+	}
+
+	command {
+		python << CODE
+		# Untested and probably not excellent!
+		flat = []
+		for minilist in ['~{sep="','" input_list}']:
+			for component in minilist:
+				flat.append(component)
+		CODE
+
+	}
+
+	output {
+		Array[File] output_list = input_list
 	}
 }
 
