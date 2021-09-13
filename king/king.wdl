@@ -245,9 +245,7 @@ task king_to_matrix {
 		f.write('king_file "~{king_file}"\n')
 
 		if "~{defSampleInclude}" == "true":
-			f.write('sample_include_file ""~{sample_include_file}""\n')
-
-		#f.write('sample_include_file "~{sample_include_file}"\n')
+			f.write('sample_include_file "~{sample_include_file}"\n')
 
 		if "~{sparse_threshold}" != "":
 			f.write('sparse_threshold "~{sparse_threshold}"\n')
@@ -357,7 +355,7 @@ task kinship_plots {
 			f.write('study ""~{group}""\n')		
 
 		if "~{defSampleInclude}" == "true":
-			f.write('sample_include_file ""~{sample_include_file}""\n')
+			f.write('sample_include_file "~{sample_include_file}"\n')
 
 
 		f.close()
@@ -424,10 +422,13 @@ workflow king {
 			phenotype_file = phenotype_file,
 			sample_include_file = sample_include_file
 	}
-
 	output {
 		File king_ibdseg_matrix = king_to_matrix.king_matrix
 		File king_ibdseg_plots = kinship_plots.kinship_plots
 		File king_ibdseg_output = king_ibdseg.king_ibdseg_output
+	}
+	meta {
+		author: "Avani Khadilkar"
+		email: "akhadilk@ucsc.edu"
 	}
 }
