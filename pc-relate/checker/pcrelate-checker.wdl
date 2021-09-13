@@ -1,6 +1,6 @@
 version 1.0
 import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/pc-relate/pc-relate/pcrelate.wdl" as pcrelate
-import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/test-pcrelate-oddity/checker_tasks/filecheck_task.wdl" as verify_file
+import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v0.100.0/checker_tasks/filecheck_task.wdl" as verify_file
 
 workflow checker_pcrelate {
 	input {
