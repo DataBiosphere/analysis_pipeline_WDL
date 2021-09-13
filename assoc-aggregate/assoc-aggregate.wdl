@@ -194,24 +194,24 @@ task define_segments_r {
 	}
 }
 
-# comes after define segs and gds renamer
-task sbg_group_segments_1 {
-	input {
-		Array[File] assoc_files
-	}
-
-	command {
-		touch foo.txt
-		touch bar.txt
-		touch bizz.txt
-	}
-
-	output {
-		Array[File] grouped_assoc_files = ["foo.txt", "bar.txt"]
-		Array[String] chromosome = ["foo", "bar"]
-		File gds_output = "bizz.txt"
-	}
-}
+## comes after define segs and gds renamer
+#task sbg_group_segments_1 {
+#	input {
+#		Array[File] assoc_files
+#	}
+#
+#	command {
+#		touch foo.txt
+#		touch bar.txt
+#		touch bizz.txt
+#	}
+#
+#	output {
+#		Array[File] grouped_assoc_files = ["foo.txt", "bar.txt"]
+#		Array[String] chromosome = ["foo", "bar"]
+#		File gds_output = "bizz.txt"
+#	}
+#}
 
 task aggregate_list {
 	input {
@@ -236,7 +236,81 @@ task aggregate_list {
 
 		cp ~{variant_group_file} ~{basename_vargroup}
 
-		#Rscript /usr/local/analysis_pipeline/R/aggregate_list.R aggregate_list.config
+		python << CODE
+		import os
+		def find_chromosome(file):
+			chr_array = []
+			chrom_num = split_on_chromosome(file)
+			if len(chrom_num) == 1:
+				acceptable_chrs = [str(integer) for integer in list(range(1,22))]
+				acceptable_chrs.extend(["X","Y","M"])
+				print(acceptable_chrs)
+				print(type(chrom_num))
+				if chrom_num in acceptable_chrs:
+					return chrom_num
+				else:
+					print("%s appears to be an invalid chromosome number." % chrom_num)
+					exit(1)
+			elif (unicode(str(chrom_num[1])).isnumeric()):
+				# two digit number
+				chr_array.append(chrom_num[0])
+				chr_array.append(chrom_num[1])
+			else:
+				# one digit number or Y/X/M
+				chr_array.append(chrom_num[0])
+			return "".join(chr_array)
+
+		def split_on_chromosome(file):
+			chrom_num = file.split("chr")[1]
+			return chrom_num
+
+		f = open("aggregate_list.config", "a")
+		if "chr" in "~{basename_vargroup}": #if (inputs.variant_group_file.basename.includes('chr'))
+			chr = find_chromosome("~{variant_group_file") #var chr = find_chromosome(inputs.variant_group_file.path);
+			#chromosomes_basename = inputs.variant_group_file.path.slice(0,-6).replace(/\/.+\//g,"");
+			#for(i = chromosomes_basename.length - 1; i > 0; i--)
+			#	if(chromosomes_basename[i] != 'X' && chromosomes_basename[i] != "Y" && isNaN(chromosomes_basename[i]))
+			#		break;
+			#chromosomes_basename = inputs.variant_group_file.basename.split('chr'+chr)[0]+"chr "+ inputs.variant_group_file.basename.split('chr'+chr)[1]
+			#argument.push('variant_group_file "' + chromosomes_basename + '"')
+		else:
+			f.write('variant_group_file "~{basename_vargroup}"')
+
+		if "~{out_file}" != "":
+			if "chr" in "~{out_file}":
+				f.write('out_file "~{out_file} .RData')
+			else:
+				f.write('out_file "~{out_file}.RData')
+		else:
+			if "chr" in "~{basename_vargroup}":
+				f.write('out_file "aggregate_list_chr .RData"')
+			else:
+				f.write('out_file "aggregate_list.RData"')
+
+		if "~{aggregate_type}" != "":
+			f.write('aggregate_type "~{aggregate_type}"')
+
+		if "~{group_id}" != "":
+			f.write('group_id "~{group_id}"')
+
+		f.write("") # newline
+		f.close()
+
+		# line 195 of CWL
+		if "chr" in "~{basename_vargroup}":
+			chromosome = find_chromosome("~{variant_group_file}")
+			g = open("chromosome", "a"):
+			g.write("--chromosome %s" % chromosome)
+			g.close()
+		CODE
+
+		BASH_CHR=./chromosome
+		if test -f "$BASH_CHR"
+		then
+    		Rscript /usr/local/analysis_pipeline/R/aggregate_list.R aggregate_list.config $(cat ./chromosome)
+    	else
+    		Rscript /usr/local/analysis_pipeline/R/aggregate_list.R aggregate_list.config
+		fi
 	>>>
 
 	runtime {
@@ -248,136 +322,136 @@ task aggregate_list {
 	}
 	output {
 		File aggregate_list = glob("*.RData")[0]
-		File config_file = "unique_variant_ids.config"
+		File config_file = "aggregate_list.config"
 	}
 }
 
-task assoc_aggregate {
-	input {
-		File gds_file
-		File null_model_file
-		File phenotype_file
-		File aggregate_variant_file
-		String? out_prefix
-		Array[Float]? rho
-		File? segment_file
-		String? test # acts as enum
-		File? variant_include_file
-		String? weight_beta
-		Int? segment
-		String? aggregate_type # acts as enum
-		Float? alt_freq_max
-		Boolean? pass_only
-		File? variant_weight_file
-		String? weight_user
-		String? genome_build # acts as enum
-
-		# runtime attr
-		Int addldisk = 1
-		Int cpu = 1
-		Int memory = 8
-		Int preempt = 0
-	}
-	# Estimate disk size required
-	Int varweight_size = select_first([ceil(size(variant_weight_file, "GB")), 0])
-	Int gds_size = ceil(size(gds_file, "GB"))
-	Int finalDiskSize = gds_size + varweight_size
-
-	command <<<
-		touch foo.txt
-		touch bar.txt
-	>>>
-
-	runtime {
-		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-		disks: "local-disk " + finalDiskSize + " SSD"
-		bootDiskSizeGb: 6
-		memory: "${memory} GB"
-		preemptibles: "${preempt}"
-	}
-	output {
-		Array[File] assoc_aggregate = ["foo.txt", "bar.txt"]
-	}
-}
-
-# This task is probably not strictly necessary in WDL, as WDL can handle lists of lists better than CWL.
-# Nevertheless, it is in this WDL to ensure compatiability with the CWL version.
-task sbg_flatten_lists {
-	input {
-		Array[File] input_list
-	}
-
-	command {
-		python << CODE
-		# Untested and probably not excellent!
-		flat = []
-		for minilist in ['~{sep="','" input_list}']:
-			for component in minilist:
-				flat.append(component)
-		CODE
-
-	}
-
-	output {
-		Array[File] output_list = input_list
-	}
-}
-
-task sbg_prepare_segments_1 {
-	input {
-		Array[File] input_gds_files
-		File segments_file
-		Array[File] aggregate_files
-		Array[File]? variant_include_files
-	}
-	command {
-		touch foo.txt
-	}
-
-	output {
-		File gds_output = "foo.txt"
-		Array[Int]? segments = [1,2]
-		File aggregate_output = "foo.txt" # seems optional in CWL but WDL is pickier
-		File variant_include_output = "foo.txt" # again, may be optional
-	}
-}
-
-task assoc_combine_r {
-	input {
-		Pair[String, File] chr_n_assocfiles
-		String? assoc_type
-		String? out_prefix
-		File? conditional_variant_file
-	}
-
-	command <<<
-		touch foo.txt
-		touch bar.txt
-	>>>
-
-	output {
-		File assoc_combined = glob("*.RData")[0]
-	}
-}
-
-task assoc_plots_r {
-	input {
-		Array[File] assoc_files
-		String assoc_type
-		String? plots_prefix
-		Boolean? disable_thin
-		File? known_hits_file
-		Int? thin_npoints
-		Int? thin_nbins
-		Int? plot_mac_threshold
-		Float? truncate_pval_threshold
-	}
-
-	command {
-		pass
-	}
-}
+#task assoc_aggregate {
+#	input {
+#		File gds_file
+#		File null_model_file
+#		File phenotype_file
+#		File aggregate_variant_file
+#		String? out_prefix
+#		Array[Float]? rho
+#		File? segment_file
+#		String? test # acts as enum
+#		File? variant_include_file
+#		String? weight_beta
+#		Int? segment
+#		String? aggregate_type # acts as enum
+#		Float? alt_freq_max
+#		Boolean? pass_only
+#		File? variant_weight_file
+#		String? weight_user
+#		String? genome_build # acts as enum
+#
+#		# runtime attr
+#		Int addldisk = 1
+#		Int cpu = 1
+#		Int memory = 8
+#		Int preempt = 0
+#	}
+#	# Estimate disk size required
+#	Int varweight_size = select_first([ceil(size(variant_weight_file, "GB")), 0])
+#	Int gds_size = ceil(size(gds_file, "GB"))
+#	Int finalDiskSize = gds_size + varweight_size
+#
+#	command <<<
+#		touch foo.txt
+#		touch bar.txt
+#	>>>
+#
+#	runtime {
+#		cpu: cpu
+#		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+#		disks: "local-disk " + finalDiskSize + " SSD"
+#		bootDiskSizeGb: 6
+#		memory: "${memory} GB"
+#		preemptibles: "${preempt}"
+#	}
+#	output {
+#		Array[File] assoc_aggregate = ["foo.txt", "bar.txt"]
+#	}
+#}
+#
+## This task is probably not strictly necessary in WDL, as WDL can handle lists of lists better than CWL.
+## Nevertheless, it is in this WDL to ensure compatiability with the CWL version.
+#task sbg_flatten_lists {
+#	input {
+#		Array[File] input_list
+#	}
+#
+#	command {
+#		python << CODE
+#		# Untested and probably not excellent!
+#		flat = []
+#		for minilist in ['~{sep="','" input_list}']:
+#			for component in minilist:
+#				flat.append(component)
+#		CODE
+#
+#	}
+#
+#	output {
+#		Array[File] output_list = input_list
+#	}
+#}
+#
+#task sbg_prepare_segments_1 {
+#	input {
+#		Array[File] input_gds_files
+#		File segments_file
+#		Array[File] aggregate_files
+#		Array[File]? variant_include_files
+#	}
+#	command {
+#		touch foo.txt
+#	}
+#
+#	output {
+#		File gds_output = "foo.txt"
+#		Array[Int]? segments = [1,2]
+#		File aggregate_output = "foo.txt" # seems optional in CWL but WDL is pickier
+#		File variant_include_output = "foo.txt" # again, may be optional
+#	}
+#}
+#
+#task assoc_combine_r {
+#	input {
+#		Pair[String, File] chr_n_assocfiles
+#		String? assoc_type
+#		String? out_prefix
+#		File? conditional_variant_file
+#	}
+#
+#	command <<<
+#		touch foo.txt
+#		touch bar.txt
+#	>>>
+#
+#	output {
+#		File assoc_combined = glob("*.RData")[0]
+#	}
+#}
+#
+#task assoc_plots_r {
+#	input {
+#		Array[File] assoc_files
+#		String assoc_type
+#		String? plots_prefix
+#		Boolean? disable_thin
+#		File? known_hits_file
+#		Int? thin_npoints
+#		Int? thin_nbins
+#		Int? plot_mac_threshold
+#		Float? truncate_pval_threshold
+#	}
+#
+#	command {
+#		pass
+#	}
+#}
 
 
 workflow assoc_agg {
