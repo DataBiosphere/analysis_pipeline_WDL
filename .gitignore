@@ -5,3 +5,5 @@ Cromwell.stderr.txt
 Cromwell.stdout.txt
 .Rproj.user
 _test-data-and-truths_/null_model/truth_outputs/.Rhistory
+cromwell-executions/*
+assoc-aggregate/cromwell-68.1.jar
