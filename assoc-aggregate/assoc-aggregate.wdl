@@ -266,8 +266,16 @@ task aggregate_list {
 
 		f = open("aggregate_list.config", "a")
 		if "chr" in "~{basename_vargroup}": #if (inputs.variant_group_file.basename.includes('chr'))
-			chr = find_chromosome("~{variant_group_file") #var chr = find_chromosome(inputs.variant_group_file.path);
-			#chromosomes_basename = inputs.variant_group_file.path.slice(0,-6).replace(/\/.+\//g,"");
+			chr = find_chromosome("~{variant_group_file}") #var chr = find_chromosome(inputs.variant_group_file.path);
+
+			# CWL has:
+			# chromosomes_basename = inputs.variant_group_file.path.slice(0,-6).replace(/\/.+\//g,"");
+			# This seems that it would turn inputs/304343024/mygroupfile.txt into inputs/304343024/mygroupfi (slice) then into inputsmygroupfi (replace)
+			# Surely that cannot be it...? Is this specific to SB's input scheme?
+			# All we know is it's probably not equivalent to basename_vargroup because that can just be done with basename, so what is this?
+			# Even if we assume nameroot should end in chrW where W is 1-23|X|Y, this would only result in mygroupfilechr for double digit chromosomes
+
+
 			#for(i = chromosomes_basename.length - 1; i > 0; i--)
 			#	if(chromosomes_basename[i] != 'X' && chromosomes_basename[i] != "Y" && isNaN(chromosomes_basename[i]))
 			#		break;
