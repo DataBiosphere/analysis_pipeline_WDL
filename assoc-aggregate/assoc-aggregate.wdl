@@ -275,12 +275,19 @@ task aggregate_list {
 			# All we know is it's probably not equivalent to basename_vargroup because that can just be done with basename, so what is this?
 			# Even if we assume nameroot should end in chrW where W is 1-23|X|Y, this would only result in mygroupfilechr for double digit chromosomes
 
-
-			#for(i = chromosomes_basename.length - 1; i > 0; i--)
-			#	if(chromosomes_basename[i] != 'X' && chromosomes_basename[i] != "Y" && isNaN(chromosomes_basename[i]))
-			#		break;
-			#chromosomes_basename = inputs.variant_group_file.basename.split('chr'+chr)[0]+"chr "+ inputs.variant_group_file.basename.split('chr'+chr)[1]
-			#argument.push('variant_group_file "' + chromosomes_basename + '"')
+			# This section doesn't seem to do anything? Why iterate through this at all? The next part isn't part of the for loop.
+			#for i in range(0, len(chromosomes_basename)): #for(i = chromosomes_basename.length - 1; i > 0; i--)
+			#	if chromosomes_basename[i] not in ["X", "Y"]: #	if(chromosomes_basename[i] != 'X' && chromosomes_basename[i] != "Y" && isNaN(chromosomes_basename[i]))
+			#		break #	break;
+			
+			# Then chromosomes_basename gets overwritten anyway?
+			chromosomes_basename_1 = "~{basename_vargroup}".split('chr'+chr)[0]
+			chromosomes_basename_2 = "chr "
+			chromosomes_basename_3 = "~{basename_vargroup}".split('chr'+chr)[1]
+			chromosomes_basename = chromosomes_basename_1 + chromosomes_basename_2 + chromosomes_basename_3
+			
+			f.write('variant_group_file "%s"' % chromosomes_basename)
+		
 		else:
 			f.write('variant_group_file "~{basename_vargroup}"')
 
