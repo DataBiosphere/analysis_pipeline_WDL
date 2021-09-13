@@ -1,6 +1,6 @@
 {
   "checker.gds_file": "gs://topmed_workflow_testing/UWGAC_WDL/ALL.pruned.gds",
-  "checker.sample_include_file": "gs://topmed_workflow_testing/UWGAC_WDL/sample_include.RData",
+  "checker.sample_include_file": "gs://topmed_workflow_testing/UWGAC_WDL/checker/king/sample_include.RData",
   "checker.truth_king_ibdseg_output": "gs://topmed_workflow_testing/UWGAC_WDL/checker/king/king.seg",
   "checker.truth_king_matrix": "gs://topmed_workflow_testing/UWGAC_WDL/checker/king/null_king_ibdseg_matrix.RData",
   "checker.truth_kinship_plots": "gs://topmed_workflow_testing/UWGAC_WDL/checker/king/null_king_ibdseg_all.pdf"  
