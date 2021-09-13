@@ -1,4 +1,4 @@
 {
   "king.gds_file": "gs://topmed_workflow_testing/UWGAC_WDL/ALL.pruned.gds",
-  "king.sample_include_file": "gs://topmed_workflow_testing/UWGAC_WDL/sample_include.RData"
+  "king.sample_include_file": "gs://topmed_workflow_testing/UWGAC_WDL/checker/king/sample_include.RData"
 }
