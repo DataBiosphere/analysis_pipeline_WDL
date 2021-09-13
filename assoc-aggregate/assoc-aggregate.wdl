@@ -322,9 +322,9 @@ task aggregate_list {
 		BASH_CHR=./chromosome
 		if test -f "$BASH_CHR"
 		then
-    		Rscript /usr/local/analysis_pipeline/R/aggregate_list.R aggregate_list.config $(cat ./chromosome)
-    	else
-    		Rscript /usr/local/analysis_pipeline/R/aggregate_list.R aggregate_list.config
+			Rscript /usr/local/analysis_pipeline/R/aggregate_list.R aggregate_list.config $(cat ./chromosome)
+		else
+			Rscript /usr/local/analysis_pipeline/R/aggregate_list.R aggregate_list.config
 		fi
 	>>>
 
