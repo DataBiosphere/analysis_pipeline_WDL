@@ -15,6 +15,9 @@ Unless otherwise noted, all files here were generated with default settings for 
 ⠀   
 † chrX is among the files in `gds/a_vcf2gds`, but was not used to generate the files in `gds/b_ldpruning` due to [#8](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/8).
 
+## assoc/
+Test files pulled from [UWGAC Github](https://github.com/UW-GAC/analysis_pipeline/tree/master/testdata). The "coding variant" files are considered variant group files for the allele case, while the "gene" files serve that role for the position case. The null model file in here should **not** be used as a truth file for the actual null model task.
+
 ## gds/
 GDS files included in the gds/ folder are NOT mirrors of the files included in the original UWGAC repo. They were instead created using an up-to-date version of the pipeline.
 
@@ -24,7 +27,7 @@ GDS files created as the output of the unique_variant_IDs task. They were instea
 #### gds/b_ldpruning
 The merged GDS file as the output of the merge_gds task, which also underwent LD pruning on the default settings.
 
-## null_model
+## null_model/
 Test files pulled from [UWGAC Github](https://github.com/UW-GAC/analysis_pipeline/tree/master/testdata), with the exception of the two *Null_model_mixed* files which came from the GENESIS Null Model sample workspace, based upon Revision 17 of the CWL null model workflow, on Seven Bridges. All files are based upon older versions of 1000 Genomes data but may have undergone additional processing, the details of which are unknown due to the age of the files. *It is not recommended to use any of these for real analysis, as they are made for a specific test data set.*
 
 ## vcfs/

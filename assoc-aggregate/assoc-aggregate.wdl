@@ -227,7 +227,7 @@ task aggregate_list {
 		Int preempt = 2
 	}
 	# Basenames
-	File basename_vargroup = basename(variant_group_file)
+	String basename_vargroup = basename(variant_group_file)
 	# Estimate disk size required
 	Int vargroup_size = ceil(size(variant_group_file, "GB"))
 	Int finalDiskSize = vargroup_size + addldisk
@@ -286,35 +286,35 @@ task aggregate_list {
 			chromosomes_basename_3 = "~{basename_vargroup}".split('chr'+chr)[1]
 			chromosomes_basename = chromosomes_basename_1 + chromosomes_basename_2 + chromosomes_basename_3
 			
-			f.write('variant_group_file "%s"' % chromosomes_basename)
+			f.write('variant_group_file "%s"\n' % chromosomes_basename)
 		
 		else:
-			f.write('variant_group_file "~{basename_vargroup}"')
+			f.write('variant_group_file "~{basename_vargroup}"\n')
 
 		if "~{out_file}" != "":
 			if "chr" in "~{out_file}":
-				f.write('out_file "~{out_file} .RData')
+				f.write('out_file "~{out_file} .RData"\n')
 			else:
-				f.write('out_file "~{out_file}.RData')
+				f.write('out_file "~{out_file}.RData"\n')
 		else:
 			if "chr" in "~{basename_vargroup}":
-				f.write('out_file "aggregate_list_chr .RData"')
+				f.write('out_file "aggregate_list_chr .RData"\n')
 			else:
-				f.write('out_file "aggregate_list.RData"')
+				f.write('out_file "aggregate_list.RData"\n')
 
 		if "~{aggregate_type}" != "":
-			f.write('aggregate_type "~{aggregate_type}"')
+			f.write('aggregate_type "~{aggregate_type}"\n')
 
 		if "~{group_id}" != "":
-			f.write('group_id "~{group_id}"')
+			f.write('group_id "~{group_id}"\n')
 
-		f.write("") # newline
+		f.write("\n")
 		f.close()
 
 		# line 195 of CWL
 		if "chr" in "~{basename_vargroup}":
 			chromosome = find_chromosome("~{variant_group_file}")
-			g = open("chromosome", "a"):
+			g = open("chromosome", "a")
 			g.write("--chromosome %s" % chromosome)
 			g.close()
 		CODE
