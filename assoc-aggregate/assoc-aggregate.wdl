@@ -194,25 +194,6 @@ task define_segments_r {
 	}
 }
 
-## comes after define segs and gds renamer
-#task sbg_group_segments_1 {
-#	input {
-#		Array[File] assoc_files
-#	}
-#
-#	command {
-#		touch foo.txt
-#		touch bar.txt
-#		touch bizz.txt
-#	}
-#
-#	output {
-#		Array[File] grouped_assoc_files = ["foo.txt", "bar.txt"]
-#		Array[String] chromosome = ["foo", "bar"]
-#		File gds_output = "bizz.txt"
-#	}
-#}
-
 task aggregate_list {
 	input {
 		File variant_group_file
@@ -341,6 +322,130 @@ task aggregate_list {
 	}
 }
 
+task sbg_prepare_segments_1 {
+	input {
+		Array[File] input_gds_files
+		File segments_file
+		Array[File] aggregate_files
+		Array[File]? variant_include_files
+
+		# runtime attr
+		Int addldisk = 1
+		Int cpu = 2
+		Int memory = 4
+		Int preempt = 2
+	}
+
+	# disk size calculation goes here
+	
+	command {
+		cp ~{segments_file} .
+
+		python << CODE
+
+		def find_chromosome(file):
+			chr_array = []
+			chrom_num = split_on_chromosome(file)
+			if len(chrom_num) == 1:
+				acceptable_chrs = [str(integer) for integer in list(range(1,22))]
+				acceptable_chrs.extend(["X","Y","M"])
+				print(acceptable_chrs)
+				print(type(chrom_num))
+				if chrom_num in acceptable_chrs:
+					return chrom_num
+				else:
+					print("%s appears to be an invalid chromosome number." % chrom_num)
+					exit(1)
+			elif (unicode(str(chrom_num[1])).isnumeric()):
+				# two digit number
+				chr_array.append(chrom_num[0])
+				chr_array.append(chrom_num[1])
+			else:
+				# one digit number or Y/X/M
+				chr_array.append(chrom_num[0])
+			return "".join(chr_array)
+
+		def split_on_chromosome(file):
+			chrom_num = file.split("chr")[1]
+			return chrom_num
+
+		def pair_chromosome_gds(file_array):
+			# For some reason I'm struggling to get the array to initialize with
+			# empty values properly. Thusly, instead of using append (which would
+			# not set the indecies to where expected) or the CWL's method, I'm going
+			# to pair the chromosomes with the gds files with a Python dictionary.
+			# Old attempt:
+			#gdss = []*len(file_array) # doesn't seem to work
+			#for i in range(0, len(file_array)):
+			#	gdss[int(find_chromosome(file_array[i]))] = file_array[i]
+			#	i += 1
+			#return gdss
+			# New attempt:
+			gds = {}
+
+
+		# This part of CWL may be a little hard to understand, but I think I figured it out.
+		# This region is an output evaulation wherein the output binding is *.txt, even though
+		# that doesn't actually match the final output of this task.
+		# Belwo the outputEval we see loadContents has been set to true. loadContents works like this:
+		# For each file matched in glob, read up to the first 64 KiB of text from the file 
+		# and place it in the contents field of the file object for manipulation by outputEval.
+		# So, the CWL's call for self[0].contents would be the first 64 KiB of the 0th file to match *.txt
+		# Presumably, that would be segments.txt
+		# Therefore, we will mimic that in the WDL by just reading segments.txt
+
+		input_gdss = pair_chromosome_gds(['~{sep="','" input_gds_files}'])
+		output_gdss = []
+		segfile = open("~{segments_file}", 'rb')
+		segments = segfile.read(64000) # var segments = self[0].contents.split('\n');
+		segfile.close()
+		print(segments)
+		segments = segments[1:] # segments = segments.slice(1)
+		for i in range(0, len(segments)):
+			chr = segments[i].split('\t')[0]
+			if(chr in input_gdss):
+				output_gdss.append(input_gdss[chr])
+		print(output_gdss)
+
+		CODE
+
+	}
+
+	runtime {
+		cpu: cpu
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		disks: "local-disk " + 50 + " HDD" # fix this
+		memory: "${memory} GB"
+		preemptibles: "${preempt}"
+	}
+
+	output {
+		File gds_output = "foo.txt" # optional in CWL
+		Array[Int]? segments = [1,2]
+		File aggregate_output = "foo.txt" # seems optional in CWL but WDL is pickier
+		File variant_include_output = "foo.txt" # again, may be optional
+	}
+}
+
+## comes after define segs and gds renamer
+#task sbg_group_segments_1 {
+#	input {
+#		Array[File] assoc_files
+#	}
+#
+#	command {
+#		touch foo.txt
+#		touch bar.txt
+#		touch bizz.txt
+#	}
+#
+#	output {
+#		Array[File] grouped_assoc_files = ["foo.txt", "bar.txt"]
+#		Array[String] chromosome = ["foo", "bar"]
+#		File gds_output = "bizz.txt"
+#	}
+#}
+
 #task assoc_aggregate {
 #	input {
 #		File gds_file
@@ -413,24 +518,6 @@ task aggregate_list {
 #	}
 #}
 #
-#task sbg_prepare_segments_1 {
-#	input {
-#		Array[File] input_gds_files
-#		File segments_file
-#		Array[File] aggregate_files
-#		Array[File]? variant_include_files
-#	}
-#	command {
-#		touch foo.txt
-#	}
-#
-#	output {
-#		File gds_output = "foo.txt"
-#		Array[Int]? segments = [1,2]
-#		File aggregate_output = "foo.txt" # seems optional in CWL but WDL is pickier
-#		File variant_include_output = "foo.txt" # again, may be optional
-#	}
-#}
 #
 #task assoc_combine_r {
 #	input {
@@ -529,13 +616,13 @@ workflow assoc_agg {
 		}
 	}
 
-#	call sbg_prepare_segments_1 {
-#		input:
-#			input_gds_files = sbg_gds_renamer.renamed_variants,
-#			segments_file = define_segments_r.define_segments_output,
-#			aggregate_files = aggregate_list.aggregate_list,
-#			variant_include_files = variant_include_files
-#	}
+	call sbg_prepare_segments_1 {
+		input:
+			input_gds_files = sbg_gds_renamer.renamed_variants,
+			segments_file = define_segments_r.define_segments_output,
+			aggregate_files = aggregate_list.aggregate_list,
+			variant_include_files = variant_include_files
+	}
 
 	# CWL has this as a four way dot product scatter... not sure how to do this in WDL!
 #	call assoc_aggregate {
