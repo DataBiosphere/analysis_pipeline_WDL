@@ -370,42 +370,63 @@ task sbg_prepare_segments_1 {
 			return chrom_num
 
 		def pair_chromosome_gds(file_array):
-			# For some reason I'm struggling to get the array to initialize with
-			# empty values properly. Thusly, instead of using append (which would
-			# not set the indecies to where expected) or the CWL's method, I'm going
-			# to pair the chromosomes with the gds files with a Python dictionary.
-			# Old attempt:
-			#gdss = []*len(file_array) # doesn't seem to work
-			#for i in range(0, len(file_array)):
-			#	gdss[int(find_chromosome(file_array[i]))] = file_array[i]
-			#	i += 1
-			#return gdss
-			# New attempt:
-			gds = {}
-
+			gdss = dict() # forced to use constructor due to WDL syntax issues
+			for i in range(0, len(file_array)):
+				# Key is chr number, value is associated GDS file
+				gdss[int(find_chromosome(file_array[i]))] = file_array[i]
+				i += 1
+			return gdss
 
 		# This part of CWL may be a little hard to understand, but I think I figured it out.
 		# This region is an output evaulation wherein the output binding is *.txt, even though
 		# that doesn't actually match the final output of this task.
-		# Belwo the outputEval we see loadContents has been set to true. loadContents works like this:
+		# Below the outputEval we see loadContents has been set to true. loadContents works like this:
 		# For each file matched in glob, read up to the first 64 KiB of text from the file 
 		# and place it in the contents field of the file object for manipulation by outputEval.
 		# So, the CWL's call for self[0].contents would be the first 64 KiB of the 0th file to match *.txt
 		# Presumably, that would be segments.txt
 		# Therefore, we will mimic that in the WDL by just reading segments.txt
 
+		def wdl_get_segments():
+			segfile = open("~{segments_file}", 'rb')
+			segments = (segfile.read(64000)).split('\n') # var segments = self[0].contents.split('\n');
+			segfile.close()
+			segments = segments[1:] # segments = segments.slice(1) # cut off the first line
+			return segments
+
+		pass 
+		# Prepare GDS output
 		input_gdss = pair_chromosome_gds(['~{sep="','" input_gds_files}'])
 		output_gdss = []
-		segfile = open("~{segments_file}", 'rb')
-		segments = segfile.read(64000) # var segments = self[0].contents.split('\n');
-		segfile.close()
-		print(segments)
-		segments = segments[1:] # segments = segments.slice(1)
-		for i in range(0, len(segments)):
-			chr = segments[i].split('\t')[0]
+		gds_segments = wdl_get_segments()
+		for i in range(0, len(gds_segments)):
+			chr = gds_segments[i].split('\t')[0]
 			if(chr in input_gdss):
 				output_gdss.append(input_gdss[chr])
-		print(output_gdss)
+		gds_output_hack = open("gds_output_hack.txt", "a")
+		gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
+		gds_output_hack.close()
+
+		# Prepare segment output
+		input_gdss = pair_chromosome_gds(['~{sep="','" input_gds_files}'])
+		print("input gdss is %s" % input_gdss)
+		output_segments = []
+		actual_segments = wdl_get_segments()
+		for i in range(0, len(actual_segments)):
+			print("i is %s" % i)
+			chr = actual_segments[i].split('\t')[0]
+			print("chr is %s" % chr)
+			#if(chr in input_gdss): # somehow, if keys are "1" and "2" strings this will match when chr = '20' (also string)
+			if(chr in input_gdss.keys()) # can't get the alternative to consistently work even if not strings
+				print("chr is in input_gdss, adding...")
+				output_gdss.append(input_gdss[i+1])
+		segs_output_hack = open("segs_output_hack.txt", "a")
+		segs_output_hack.writelines(["%s " % thing for thing in output_segments])
+		segs_output_hack.close()
+
+		# Prepare aggregate output
+
+		# Prepare variant include output
 
 		CODE
 
@@ -420,8 +441,8 @@ task sbg_prepare_segments_1 {
 	}
 
 	output {
-		File gds_output = "foo.txt" # optional in CWL
-		Array[Int]? segments = [1,2]
+		Array[File] gds_output = read_lines("gds_output_hack.txt") # optional in CWL
+		Array[Int]? segments = read_int("segs_output_hack.txt")
 		File aggregate_output = "foo.txt" # seems optional in CWL but WDL is pickier
 		File variant_include_output = "foo.txt" # again, may be optional
 	}
