@@ -394,7 +394,6 @@ task sbg_prepare_segments_1 {
 			segments = segments[1:] # segments = segments.slice(1) # cut off the first line
 			return segments
 
-		pass 
 		# Prepare GDS output
 		input_gdss = pair_chromosome_gds(['~{sep="','" input_gds_files}'])
 		output_gdss = []
@@ -416,8 +415,10 @@ task sbg_prepare_segments_1 {
 			print("i is %s" % i)
 			chr = actual_segments[i].split('\t')[0]
 			print("chr is %s" % chr)
+			print(input_gdss.keys())
+			print(input_gdss.values())
 			#if(chr in input_gdss): # somehow, if keys are "1" and "2" strings this will match when chr = '20' (also string)
-			if(chr in input_gdss.keys()) # can't get the alternative to consistently work even if not strings
+			if chr in input_gdss.keys(): # can't get the alternative to consistently work even if not strings
 				print("chr is in input_gdss, adding...")
 				output_gdss.append(input_gdss[i+1])
 		segs_output_hack = open("segs_output_hack.txt", "a")
@@ -427,7 +428,11 @@ task sbg_prepare_segments_1 {
 		# Prepare aggregate output
 
 		# Prepare variant include output
-
+		input_gdss = pair_chromosome_gds(['~{sep="','" input_gds_files}'])
+		var_segments = wdl_get_segments()
+		if "~{variant_include_files}" != 0:
+			input_include_files = pair_chromosome_gds("~{variant_include_files}")
+			output_variant_files = []
 		CODE
 
 	}
