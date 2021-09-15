@@ -411,6 +411,8 @@ task sbg_prepare_segments_1 {
 		gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
 		gds_output_hack.close()
 
+		# I'm genuinely not sure how to return the Array[File] that we need here
+
 		# Prepare segment output
 		input_gdss = pair_chromosome_gds(['~{sep="','" input_gds_files}'])
 		output_segments = []
@@ -422,28 +424,28 @@ task sbg_prepare_segments_1 {
 				chr = actual_segments[i].split('\t')[0]
 			if(chr in input_gdss):
 				output_segments.append(i+1)
-		
-		# Assuming (hoping!) that len(output_segments) = max(output_segments), we
-		# can use this workaround to get around WDL's harsh limits on read_int().
-		# See wdl_read_int_workaround task for why we have to do this.
-		if max(output_segments) != len(output_segments):
+		if max(output_segments) != len(output_segments): # I don't know if this case is actually problematic but I suspect it will be.
 			print("ERROR: Subsequent code relies on output_segments being a list of consecutive integers.")
 			print("Debug information: Max of list is %s, len of list is %s" % [max(output_segments), len(output_segments)])
 			print("Debug information: List is as follows:\n\t%s" % output_segments)
 			exit(1)
-		for j in range(1, max(output_segments)):
-			this_integer = open("%s.integer", "a" % j)
-			this_integer.write("%s" % output_segments[j])
-			this_integer.close()
+		integers = open("integers.wdlhack", "a")
+		for j in range(0, max(output_segments)):
+			integers.write("%s\n" % output_segments[j])
+		integers.close()
 
 		# Prepare aggregate output
 
-		# Prepare variant include output
-		input_gdss = pair_chromosome_gds(['~{sep="','" input_gds_files}'])
-		var_segments = wdl_get_segments()
-		if "~{variant_include_files}" != 0:
-			input_include_files = pair_chromosome_gds("~{variant_include_files}")
-			output_variant_files = []
+		# Prepare variant include output...
+
+		# ...but is this actually necessary? Splitting the variant include file just seems to be
+		# asking for trouble in the context of WDL. If it has variant IDs 1-1000 and is running against
+		# a GDS file that only has variants 1-20, it should be fine, right?
+		# And maybe this logic applies to aggregate output too...
+		# We have to be really careful with the logic, but afaik, it's the only way for this to approach
+		# something possible since WDL cannot dot-product scatter (much less across four items) and returning
+		# an array of files based upon strings might be kind of impossible in WDL.
+
 		CODE
 
 		touch foo.txt
@@ -461,27 +463,14 @@ task sbg_prepare_segments_1 {
 
 	output {
 		# This varies considerably from the CWL output due to WDL limitations
-		# gds_output in the CWL is an optional Array[File], while here it's a required Array[String]
-		# segments is an Array[Int] in the CWL; see wdl_read_int_workaround task why WDL can't do that
-		# aggregate_output and variant_include_output are optional in the CWL but required here
+		# gds_output is an optional Array[File] in the CWL
+		# segments is an optional Array[Int] in the CWL
 		Array[String] gds_output = read_lines("gds_output_hack.txt")
-		Array[String] segments = read_int(glob("*.integer"))
+		Array[String] segments = read_lines("integers.wdlhack")
 		File aggregate_output = "foo.txt"
 		File variant_include_output = "bar.txt"
 	}
 }
-
-#task wdl_read_int_workaround {
-	# I don’t know why it was designed this way, but read_int() is limited to reading a file of just 19 bytes. 
-	# Any larger and it errors out. This is problematic because a file that simply contains “1 2 3 4 5” etc up
-	# to 50 clocks in at 282 bytes. Going to the absolute minimum of 23 is 59 bytes. Therefore we cannot actually
-	# return an array of integers for segments in that task. Instead, we generate a bunch of files in a loop in 
-	# that task, then scatter on the resulting Array[File]. 
-	# If you're aware of a better workaround, please open a PR,
-	# because this is inefficient not just here but also slows down
-	# the pipeline overall due to resulting in a scattered task
-
-#}
 
 ## comes after define segs and gds renamer
 #task sbg_group_segments_1 {
