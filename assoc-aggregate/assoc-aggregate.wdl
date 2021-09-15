@@ -341,6 +341,8 @@ task sbg_prepare_segments_1 {
 	command {
 		cp ~{segments_file} .
 
+		python --version
+
 		python << CODE
 
 		def find_chromosome(file):

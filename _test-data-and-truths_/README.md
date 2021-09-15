@@ -16,7 +16,7 @@ Unless otherwise noted, all files here were generated with default settings for 
 † chrX is among the files in `gds/a_vcf2gds`, but was not used to generate the files in `gds/b_ldpruning` due to [#8](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/8).
 
 ## assoc/
-Test files pulled from [UWGAC Github](https://github.com/UW-GAC/analysis_pipeline/tree/master/testdata). The "coding variant" files are considered variant group files for the allele case, while the "gene" files serve that role for the position case. The null model file in here should **not** be used as a truth file for the actual null model task.
+Test files pulled from [UWGAC Github](https://github.com/UW-GAC/analysis_pipeline/tree/master/testdata). Currently, they are all related to aggregate association testing. The "coding variant" files are considered variant group files for the allele case, while the "gene" files serve that role for the position case. The null model file in here should **not** be used as a truth file for the actual null model task. The segments file likewise should not be used as a truth; it is a test file which is only valid if chr1 and chr2 of the sample data are piped in.
 
 ## gds/
 GDS files included in the gds/ folder are NOT mirrors of the files included in the original UWGAC repo. They were instead created using an up-to-date version of the pipeline.
