@@ -64,7 +64,10 @@ input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 output_gdss = []
 gds_segments = wdl_get_segments()
 for i in range(0, len(gds_segments)):
-	chr = gds_segments[i].split('\t')[0]
+	try:
+		chr = int(gds_segments[i].split('\t')[0])
+	except ValueError: # chr X, Y, M
+		chr = gds_segments[i].split('\t')[0]
 	if(chr in input_gdss):
 		output_gdss.append(input_gdss[chr])
 gds_output_hack = open("gds_output_hack.txt", "a")
@@ -73,24 +76,22 @@ gds_output_hack.close()
 
 # Prepare segment output
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
-print("input gdss is %s" % input_gdss)
 output_segments = []
 actual_segments = wdl_get_segments()
 for i in range(0, len(actual_segments)):
-	print("i is %s" % i)
-	chr = actual_segments[i].split('\t')[0]
-	print("chr is %s" % chr)
-	print(input_gdss.keys())
-	print(input_gdss.values())
-	#if(chr in input_gdss): # somehow, if keys are "1" and "2" strings this will match when chr = '20' (also string)
-	if chr in input_gdss.keys(): # can't get the alternative to consistently work even if not strings
-		print("chr is in input_gdss, adding...")
-		output_gdss.append(input_gdss[i+1])
+	try:
+		chr = int(actual_segments[i].split('\t')[0])
+	except ValueError: # chr X, Y, M
+		chr = actual_segments[i].split('\t')[0]
+	if(chr in input_gdss):
+		output_segments.append(i+1)
 segs_output_hack = open("segs_output_hack.txt", "a")
 segs_output_hack.writelines(["%s " % thing for thing in output_segments])
 segs_output_hack.close()
 
 # Prepare aggregate output
+input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
+agg_segments = wdl_get_segments()
 
 # Prepare variant include output
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
