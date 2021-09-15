@@ -97,5 +97,36 @@ agg_segments = wdl_get_segments()
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 var_segments = wdl_get_segments()
 if IIvariant_include_filesII != [""]:
-	input_include_files = pair_chromosome_gds(IIvariant_include_filesII)
+	input_variant_files = pair_chromosome_gds(IIvariant_include_filesII)
 	output_variant_files = []
+	for i in range(0, len(var_segments)):
+		try:
+			chr = int(var_segments[i].split('\t')[0])
+		except ValueError: # chr X, Y, M
+			chr = var_segments[i].split('\t')[0]
+		if(chr in input_variant_files):
+			output_variant_files.append(input_variant_files[chr])
+		elif(chr in input_gdss):
+			output_variant_files.append(None)
+		else:
+			pass
+else:
+	null_outputs = []
+	for i in range(0, len(var_segments)):
+		try:
+			chr = int(var_segments[i].split('\t')[0])
+		except ValueError: # chr X, Y, M
+			chr = var_segments[i].split('\t')[0]
+		if(chr in input_gdss):
+			null_outputs.append(None)
+	output_variant_files = null_outputs # need the same name as if/else for outputs is iffy in wdl, although file hack may make this unneeded
+
+# WDL appears to be much pickier about null outputs than CWL, but I'm not sure if there is a case wherein
+# some but not all of the output could be null. The code seems to indicate that this can happen.
+# And maybe those nulls are needed.
+# I considered returning an array of strings with filenames+nulls instead of an array of files, but this would
+# not help, as WDL needs to localize files before a task executes and cannot pull files from another task that
+# isn't an output.
+var_output_hack = open("variant_output_hack.txt", "a")
+var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
+var_output_hack.close()

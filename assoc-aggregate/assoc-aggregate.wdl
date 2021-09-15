@@ -391,9 +391,9 @@ task sbg_prepare_segments_1 {
 
 		def wdl_get_segments():
 			segfile = open("~{segments_file}", 'rb')
-			segments = (segfile.read(64000)).split('\n') # var segments = self[0].contents.split('\n');
+			segments = str((segfile.read(64000))).split('\n') # var segments = self[0].contents.split('\n');
 			segfile.close()
-			segments = segments[1:] # segments = segments.slice(1) # cut off the first line
+			segments = segments[1:] # segments = segments.slice(1) # cut off the first lineF
 			return segments
 
 		# Prepare GDS output
@@ -401,7 +401,10 @@ task sbg_prepare_segments_1 {
 		output_gdss = []
 		gds_segments = wdl_get_segments()
 		for i in range(0, len(gds_segments)):
-			chr = gds_segments[i].split('\t')[0]
+			try:
+				chr = int(gds_segments[i].split('\t')[0])
+			except ValueError: # chr X, Y, M
+				chr = gds_segments[i].split('\t')[0]
 			if(chr in input_gdss):
 				output_gdss.append(input_gdss[chr])
 		gds_output_hack = open("gds_output_hack.txt", "a")
@@ -410,22 +413,28 @@ task sbg_prepare_segments_1 {
 
 		# Prepare segment output
 		input_gdss = pair_chromosome_gds(['~{sep="','" input_gds_files}'])
-		print("input gdss is %s" % input_gdss)
 		output_segments = []
 		actual_segments = wdl_get_segments()
 		for i in range(0, len(actual_segments)):
-			print("i is %s" % i)
-			chr = actual_segments[i].split('\t')[0]
-			print("chr is %s" % chr)
-			print(input_gdss.keys())
-			print(input_gdss.values())
-			#if(chr in input_gdss): # somehow, if keys are "1" and "2" strings this will match when chr = '20' (also string)
-			if chr in input_gdss.keys(): # can't get the alternative to consistently work even if not strings
-				print("chr is in input_gdss, adding...")
-				output_gdss.append(input_gdss[i+1])
-		segs_output_hack = open("segs_output_hack.txt", "a")
-		segs_output_hack.writelines(["%s " % thing for thing in output_segments])
-		segs_output_hack.close()
+			try:
+				chr = int(actual_segments[i].split('\t')[0])
+			except ValueError: # chr X, Y, M
+				chr = actual_segments[i].split('\t')[0]
+			if(chr in input_gdss):
+				output_segments.append(i+1)
+		
+		# Assuming (hoping!) that len(output_segments) = max(output_segments), we
+		# can use this workaround to get around WDL's harsh limits on read_int().
+		# See wdl_read_int_workaround task for why we have to do this.
+		if max(output_segments) != len(output_segments):
+			print("ERROR: Subsequent code relies on output_segments being a list of consecutive integers.")
+			print("Debug information: Max of list is %s, len of list is %s" % [max(output_segments), len(output_segments)])
+			print("Debug information: List is as follows:\n\t%s" % output_segments)
+			exit(1)
+		for j in range(1, max(output_segments)):
+			this_integer = open("%s.integer", "a" % j)
+			this_integer.write("%s" % output_segments[j])
+			this_integer.close()
 
 		# Prepare aggregate output
 
@@ -436,6 +445,9 @@ task sbg_prepare_segments_1 {
 			input_include_files = pair_chromosome_gds("~{variant_include_files}")
 			output_variant_files = []
 		CODE
+
+		touch foo.txt
+		touch bar.txt
 
 	}
 
@@ -448,12 +460,28 @@ task sbg_prepare_segments_1 {
 	}
 
 	output {
-		Array[File] gds_output = read_lines("gds_output_hack.txt") # optional in CWL
-		Array[Int]? segments = read_int("segs_output_hack.txt")
-		File aggregate_output = "foo.txt" # seems optional in CWL but WDL is pickier
-		File variant_include_output = "foo.txt" # again, may be optional
+		# This varies considerably from the CWL output due to WDL limitations
+		# gds_output in the CWL is an optional Array[File], while here it's a required Array[String]
+		# segments is an Array[Int] in the CWL; see wdl_read_int_workaround task why WDL can't do that
+		# aggregate_output and variant_include_output are optional in the CWL but required here
+		Array[String] gds_output = read_lines("gds_output_hack.txt")
+		Array[String] segments = read_int(glob("*.integer"))
+		File aggregate_output = "foo.txt"
+		File variant_include_output = "bar.txt"
 	}
 }
+
+#task wdl_read_int_workaround {
+	# I don’t know why it was designed this way, but read_int() is limited to reading a file of just 19 bytes. 
+	# Any larger and it errors out. This is problematic because a file that simply contains “1 2 3 4 5” etc up
+	# to 50 clocks in at 282 bytes. Going to the absolute minimum of 23 is 59 bytes. Therefore we cannot actually
+	# return an array of integers for segments in that task. Instead, we generate a bunch of files in a loop in 
+	# that task, then scatter on the resulting Array[File]. 
+	# If you're aware of a better workaround, please open a PR,
+	# because this is inefficient not just here but also slows down
+	# the pipeline overall due to resulting in a scattered task
+
+#}
 
 ## comes after define segs and gds renamer
 #task sbg_group_segments_1 {
