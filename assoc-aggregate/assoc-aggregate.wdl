@@ -393,7 +393,7 @@ task sbg_prepare_segments_1 {
 			segfile = open("~{segments_file}", 'rb')
 			segments = str((segfile.read(64000))).split('\n') # var segments = self[0].contents.split('\n');
 			segfile.close()
-			segments = segments[1:] # segments = segments.slice(1) # cut off the first lineF
+			segments = segments[1:] # segments = segments.slice(1) # cut off the first line
 			return segments
 
 		# Prepare GDS output
@@ -410,8 +410,20 @@ task sbg_prepare_segments_1 {
 		gds_output_hack = open("gds_output_hack.txt", "a")
 		gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
 		gds_output_hack.close()
+		# It doesn't seem possible to return an array of files this way, but
+		# unlike with the intgers in segment output below, we need these to be
+		# of type file or else localization will fail in next task.
+		# (We cannot manually localize in command section due to DRS permissions).
 
-		# I'm genuinely not sure how to return the Array[File] that we need here
+		#####################################################################################
+		# Maybe return a map/pair, with keys being the files as strings and values being
+		# segments as strings, and in the task that actually uses them, localize ALL gds
+		# files once but then only use the relevent one as indicated by the keys.
+		# This would also potentially allow us to deal with the dot product scatter, although
+		# I'm not sure if aggregate_files and variant_include_files work as politely as we're
+		# hoping (ie we just localize the lot and hope it sorts itself out)...
+		# And this of course destroys the purpose of the segmentation being efficient, but too bad!
+		#####################################################################################
 
 		# Prepare segment output
 		input_gdss = pair_chromosome_gds(['~{sep="','" input_gds_files}'])
