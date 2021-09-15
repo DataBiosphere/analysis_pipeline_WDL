@@ -21,8 +21,7 @@ def find_chromosome(file):
 		else:
 			print("%s appears to be an invalid chromosome number." % chrom_num)
 			exit(1)
-	#elif (unicode(str(chrom_num[1])).isnumeric()):
-	elif (str(chrom_num[1])).isnumeric():
+	elif (unicode(str(chrom_num[1])).isnumeric()):
 		# two digit number
 		chr_array.append(chrom_num[0])
 		chr_array.append(chrom_num[1])
@@ -96,6 +95,6 @@ segs_output_hack.close()
 # Prepare variant include output
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 var_segments = wdl_get_segments()
-if IIvariant_include_filesII != 0:
+if IIvariant_include_filesII != [""]:
 	input_include_files = pair_chromosome_gds(IIvariant_include_filesII)
 	output_variant_files = []
