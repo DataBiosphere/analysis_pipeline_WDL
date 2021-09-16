@@ -11,6 +11,7 @@ IIvariant_include_filesII = [""]
 IIaggregate_filesII = ["_test-data-and-truths_/assoc/aggregate_list_chr1.RData", "_test-data-and-truths_/assoc/aggregate_list_chr2.RData"]
 
 from zipfile import ZipFile
+import os
 
 def find_chromosome(file):
 	chr_array = []
@@ -63,7 +64,7 @@ def wdl_get_segments():
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 output_gdss = []
 gds_segments = wdl_get_segments()
-for i in range(0, len(gds_segments)):
+for i in range(0, len(gds_segments)): # for(var i=0;i<segments.length;i++){
 	try:
 		chr = int(gds_segments[i].split('\t')[0])
 	except ValueError: # chr X, Y, M
@@ -78,7 +79,7 @@ gds_output_hack.close()
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 output_segments = []
 actual_segments = wdl_get_segments()
-for i in range(0, len(actual_segments)):
+for i in range(0, len(actual_segments)-1): # for(var i=0;i<segments.length;i++){
 	try:
 		chr = int(actual_segments[i].split('\t')[0])
 	except ValueError: # chr X, Y, M
@@ -104,12 +105,16 @@ if 'chr' in os.path.basename(IIaggregate_filesII[0]):
 else:
 	input_aggregate_files = pair_chromosome_gds_special(IIinput_gds_filesII, IIaggregate_filesII[0])
 output_aggregate_files = []
-for i in range(0, len(segments)-1):
-	chr = segments[i].split('\t')[0]
+for i in range(0, len(agg_segments)-1): # for(var i=0;i<segments.length;i++){
+	try:
+		chr = int(agg_segments[i].split('\t')[0])
+	except ValueError: # chr X, Y, M
+		chr = agg_segments[i].split('\t')[0]
 	if(chr in input_aggregate_files):
 		output_aggregate_files.append(input_aggregate_files[chr])
-	else if (chr in input_gdss):
+	elif (chr in input_gdss):
 		output_aggregate_files.append(None)
+print(output_aggregate_files)
 
 # Prepare variant include output
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
