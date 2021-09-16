@@ -323,6 +323,7 @@ task aggregate_list {
 }
 
 task sbg_prepare_segments_1 {
+	# If this actually works, I'm going to be extremely proud of myself
 	input {
 		Array[File] input_gds_files
 		File segments_file
@@ -344,6 +345,7 @@ task sbg_prepare_segments_1 {
 		python --version
 
 		python << CODE
+		from zipfile import Zipfile
 
 		def find_chromosome(file):
 			chr_array = []
@@ -379,21 +381,11 @@ task sbg_prepare_segments_1 {
 				i += 1
 			return gdss
 
-		# This part of CWL may be a little hard to understand, but I think I figured it out.
-		# This region is an output evaulation wherein the output binding is *.txt, even though
-		# that doesn't actually match the final output of this task.
-		# Below the outputEval we see loadContents has been set to true. loadContents works like this:
-		# For each file matched in glob, read up to the first 64 KiB of text from the file 
-		# and place it in the contents field of the file object for manipulation by outputEval.
-		# So, the CWL's call for self[0].contents would be the first 64 KiB of the 0th file to match *.txt
-		# Presumably, that would be segments.txt
-		# Therefore, we will mimic that in the WDL by just reading segments.txt
-
-		def wdl_get_segments():
+		def wdl_get_segments(): # mimics the loadContents part of the CWL
 			segfile = open("~{segments_file}", 'rb')
 			segments = str((segfile.read(64000))).split('\n') # var segments = self[0].contents.split('\n');
 			segfile.close()
-			segments = segments[1:] # segments = segments.slice(1) # cut off the first line
+			segments = segments[1:] # segments = segments.slice(1) # cut off the first line which just has the column names
 			return segments
 
 		# Prepare GDS output
@@ -410,20 +402,6 @@ task sbg_prepare_segments_1 {
 		gds_output_hack = open("gds_output_hack.txt", "a")
 		gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
 		gds_output_hack.close()
-		# It doesn't seem possible to return an array of files this way, but
-		# unlike with the intgers in segment output below, we need these to be
-		# of type file or else localization will fail in next task.
-		# (We cannot manually localize in command section due to DRS permissions).
-
-		#####################################################################################
-		# Maybe return a map/pair, with keys being the files as strings and values being
-		# segments as strings, and in the task that actually uses them, localize ALL gds
-		# files once but then only use the relevent one as indicated by the keys.
-		# This would also potentially allow us to deal with the dot product scatter, although
-		# I'm not sure if aggregate_files and variant_include_files work as politely as we're
-		# hoping (ie we just localize the lot and hope it sorts itself out)...
-		# And this of course destroys the purpose of the segmentation being efficient, but too bad!
-		#####################################################################################
 
 		# Prepare segment output
 		input_gdss = pair_chromosome_gds(['~{sep="','" input_gds_files}'])
@@ -443,25 +421,23 @@ task sbg_prepare_segments_1 {
 			exit(1)
 		integers = open("integers.wdlhack", "a")
 		for j in range(0, max(output_segments)):
-			integers.write("%s\n" % output_segments[j])
+			integers.writelines("%s\n" % output_segments[j])
 		integers.close()
 
 		# Prepare aggregate output
 
 		# Prepare variant include output...
 
-		# ...but is this actually necessary? Splitting the variant include file just seems to be
-		# asking for trouble in the context of WDL. If it has variant IDs 1-1000 and is running against
-		# a GDS file that only has variants 1-20, it should be fine, right?
-		# And maybe this logic applies to aggregate output too...
-		# We have to be really careful with the logic, but afaik, it's the only way for this to approach
-		# something possible since WDL cannot dot-product scatter (much less across four items) and returning
-		# an array of files based upon strings might be kind of impossible in WDL.
+		# Prepare for a dot-product scatter by zipping related files together
+		for i in range(0, max(output_segments)):
+			this_zip = ZipFile("dotprod%s.zip" % i, "w")
+			this_zip.write("%s" % output_gdss[i])
+			this_zip.write("")
+
+			# zip file containing segment number
+			pass
 
 		CODE
-
-		touch foo.txt
-		touch bar.txt
 
 	}
 
@@ -474,13 +450,9 @@ task sbg_prepare_segments_1 {
 	}
 
 	output {
-		# This varies considerably from the CWL output due to WDL limitations
-		# gds_output is an optional Array[File] in the CWL
-		# segments is an optional Array[Int] in the CWL
-		Array[String] gds_output = read_lines("gds_output_hack.txt")
-		Array[String] segments = read_lines("integers.wdlhack")
-		File aggregate_output = "foo.txt"
-		File variant_include_output = "bar.txt"
+		# This varies heavily from the CWL due to limitations on WDL outputs and dotproduct scatters -- afaik, this is the only way!
+		# Each zip contains one GDS, one file with an integer representing seg number, one aggregate RData, and maybe a var include
+		Array[File] dotproduct = glob("*.zip")
 	}
 }
 

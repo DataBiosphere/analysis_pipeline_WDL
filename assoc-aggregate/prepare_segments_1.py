@@ -7,6 +7,8 @@ IIinput_gds_filesII = ["_test-data-and-truths_/assoc/1KG_phase3_subset_chr1.gds"
 #['~{sep="','" variant_include_files}']
 IIvariant_include_filesII = [""]
 
+from zipfile import ZipFile
+
 
 def find_chromosome(file):
 	chr_array = []
@@ -70,7 +72,7 @@ for i in range(0, len(gds_segments)):
 		chr = gds_segments[i].split('\t')[0]
 	if(chr in input_gdss):
 		output_gdss.append(input_gdss[chr])
-gds_output_hack = open("gds_output_hack.txt", "a")
+gds_output_hack = open("gds_output_debug.txt", "a")
 gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
 gds_output_hack.close()
 
@@ -85,7 +87,12 @@ for i in range(0, len(actual_segments)):
 		chr = actual_segments[i].split('\t')[0]
 	if(chr in input_gdss):
 		output_segments.append(i+1)
-segs_output_hack = open("segs_output_hack.txt", "a")
+if max(output_segments) != len(output_segments): # I don't know if this case is actually problematic but I suspect it will be.
+	print("ERROR: Subsequent code relies on output_segments being a list of consecutive integers.")
+	print("Debug information: Max of list is %s, len of list is %s" % [max(output_segments), len(output_segments)])
+	print("Debug information: List is as follows:\n\t%s" % output_segments)
+	exit(1)
+segs_output_hack = open("segs_output_debug.txt", "a")
 segs_output_hack.writelines(["%s " % thing for thing in output_segments])
 segs_output_hack.close()
 
@@ -120,13 +127,13 @@ else:
 		if(chr in input_gdss):
 			null_outputs.append(None)
 	output_variant_files = null_outputs # need the same name as if/else for outputs is iffy in wdl, although file hack may make this unneeded
-
-# WDL appears to be much pickier about null outputs than CWL, but I'm not sure if there is a case wherein
-# some but not all of the output could be null. The code seems to indicate that this can happen.
-# And maybe those nulls are needed.
-# I considered returning an array of strings with filenames+nulls instead of an array of files, but this would
-# not help, as WDL needs to localize files before a task executes and cannot pull files from another task that
-# isn't an output.
-var_output_hack = open("variant_output_hack.txt", "a")
+var_output_hack = open("variant_output_debug.txt", "a")
 var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
 var_output_hack.close()
+
+# Make a bunch of zip files
+for i in range(0, max(output_segments)):
+	this_zip = ZipFile("dotprod%s.zip" % i, "w")
+	this_zip.write("%s" % output_gdss[i])
+	this_zip.write("%s" % output_segments[i])
+	this_zip.close()
