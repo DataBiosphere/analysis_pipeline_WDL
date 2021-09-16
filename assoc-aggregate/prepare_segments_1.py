@@ -41,14 +41,14 @@ def pair_chromosome_gds(file_array):
 	gdss = dict() # forced to use constructor due to WDL syntax issues
 	for i in range(0, len(file_array)): 
 		# Key is chr number, value is associated GDS file
-		gdss[int(find_chromosome(file_array[i]))] = file_array[i]
+		gdss[int(find_chromosome(file_array[i]))] = os.path.basename(file_array[i])
 		i += 1
 	return gdss
 
 def pair_chromosome_gds_special(file_array, agg_file):
 	gdss = dict()
 	for i in range(0, len(file_array)):
-		gdss[int(find_chromosome(file_array[i]))] = agg_file
+		gdss[int(find_chromosome(file_array[i]))] = os.path.basename(agg_file)
 	return gdss
 
 def wdl_get_segments():
@@ -150,7 +150,7 @@ var_output_hack.close()
 
 # Make a bunch of zip files
 for i in range(0, max(output_segments)):
-	this_zip = ZipFile("dotprod%s.zip" % i, "w")
+	this_zip = ZipFile("dotprod%s.zip" % i+1, "w")
 	this_zip.write("%s" % output_gdss[i])
 	this_zip.write("%s.integer" % output_segments[i])
 	this_zip.write("%s" % output_aggregate_files[i])
