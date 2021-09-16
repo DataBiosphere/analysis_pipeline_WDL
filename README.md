@@ -22,6 +22,7 @@ Cromwell does not manage resources well on local executions -- parameters such a
 ## Further reading
 * [checker workflows](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/_documentation_/for%20users/checker.md)
 * [ld-pruning](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/ld-pruning/README.md)
+* [king-ibdseg](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/king/README.md)
 * [null-model](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/null-model/README.md)
 * [vcf-to-gds](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/vcf-to-gds/README.md)
 
