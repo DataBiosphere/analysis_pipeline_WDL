@@ -317,7 +317,7 @@ task aggregate_list {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File aggregate_list = glob("*.RData")[0]
+		File aggregate_list = glob("aggregate_list*.RData")[0]
 		File config_file = "aggregate_list.config"
 	}
 }
@@ -339,13 +339,27 @@ task sbg_prepare_segments_1 {
 
 	# disk size calculation goes here
 	
-	command {
+	command <<<
 		cp ~{segments_file} .
 
-		python --version
+		# The CWL only copies the segments file, but copying everything else
+		# will allow us to zip them without the zip having subfolders. I think
+		# this is also required to get drs and gs working correctly.
+
+		GDS_FILES=(~{sep=" " input_gds_files})
+		for GDS_FILE in ${GDS_FILES[@]};
+		do
+			cp ${GDS_FILE} .
+		done
+		
+		AGG_FILES=(~{sep=" " aggregate_files})
+		for AGG_FILE in ${AGG_FILES[@]};
+		do
+			cp ${AGG_FILE} .
+		done
 
 		python << CODE
-		from zipfile import Zipfile
+		from zipfile import ZipFile
 
 		def find_chromosome(file):
 			chr_array = []
@@ -426,20 +440,18 @@ task sbg_prepare_segments_1 {
 
 		# Prepare aggregate output
 
-		# Prepare variant include output...
+		# Prepare variant include output
 
 		# Prepare for a dot-product scatter by zipping related files together
 		for i in range(0, max(output_segments)):
 			this_zip = ZipFile("dotprod%s.zip" % i, "w")
 			this_zip.write("%s" % output_gdss[i])
-			this_zip.write("")
-
-			# zip file containing segment number
-			pass
+			this_zip.write("%s.integer" % output_segments[i])
+			this_zip.close()
 
 		CODE
 
-	}
+	>>>
 
 	runtime {
 		cpu: cpu

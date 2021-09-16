@@ -7,8 +7,10 @@ IIinput_gds_filesII = ["_test-data-and-truths_/assoc/1KG_phase3_subset_chr1.gds"
 #['~{sep="','" variant_include_files}']
 IIvariant_include_filesII = [""]
 
-from zipfile import ZipFile
+#['~{sep="','" aggregate_files}']
+IIaggregate_filesII = ["_test-data-and-truths_/assoc/aggregate_list_chr1.RData", "_test-data-and-truths_/assoc/aggregate_list_chr2.RData"]
 
+from zipfile import ZipFile
 
 def find_chromosome(file):
 	chr_array = []
@@ -38,21 +40,17 @@ def split_on_chromosome(file):
 
 def pair_chromosome_gds(file_array):
 	gdss = dict() # forced to use constructor due to WDL syntax issues
-	for i in range(0, len(file_array)):
+	for i in range(0, len(file_array)-1):
 		# Key is chr number, value is associated GDS file
 		gdss[int(find_chromosome(file_array[i]))] = file_array[i]
 		i += 1
 	return gdss
 
-# This part of CWL may be a little hard to understand, but I think I figured it out.
-# This region is an output evaulation wherein the output binding is *.txt, even though
-# that doesn't actually match the final output of this task.
-# Below the outputEval we see loadContents has been set to true. loadContents works like this:
-# For each file matched in glob, read up to the first 64 KiB of text from the file 
-# and place it in the contents field of the file object for manipulation by outputEval.
-# So, the CWL's call for self[0].contents would be the first 64 KiB of the 0th file to match *.txt
-# Presumably, that would be segments.txt
-# Therefore, we will mimic that in the WDL by just reading segments.txt
+def pair_chromosome_gds_special(file_array, agg_file):
+	gdss = dict()
+	for i in range(0, len(file_array)-1):
+		gdss[int(find_chromosome(file_array[i]))] = agg_file
+	return gdss
 
 def wdl_get_segments():
 	segfile = open(IIsegments_fileII, 'rb')
@@ -101,6 +99,17 @@ segs_output_hack.close()
 # Prepare aggregate output
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 agg_segments = wdl_get_segments()
+if 'chr' in os.path.basename(IIaggregate_filesII[0]):
+	input_aggregate_files = pair_chromosome_gds(IIaggregate_filesII)
+else:
+	input_aggregate_files = pair_chromosome_gds_special(IIinput_gds_filesII, IIaggregate_filesII[0])
+output_aggregate_files = []
+for i in range(0, len(segments)-1):
+	chr = segments[i].split('\t')[0]
+	if(chr in input_aggregate_files):
+		output_aggregate_files.append(input_aggregate_files[chr])
+	else if (chr in input_gdss):
+		output_aggregate_files.append(None)
 
 # Prepare variant include output
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
@@ -138,4 +147,5 @@ for i in range(0, max(output_segments)):
 	this_zip = ZipFile("dotprod%s.zip" % i, "w")
 	this_zip.write("%s" % output_gdss[i])
 	this_zip.write("%s.integer" % output_segments[i])
+	this_zip.write("%s" % output_aggregate_files[i])
 	this_zip.close()
