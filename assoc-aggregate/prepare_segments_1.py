@@ -19,8 +19,6 @@ def find_chromosome(file):
 	if len(chrom_num) == 1:
 		acceptable_chrs = [str(integer) for integer in list(range(1,22))]
 		acceptable_chrs.extend(["X","Y","M"])
-		print(acceptable_chrs)
-		print(type(chrom_num))
 		if chrom_num in acceptable_chrs:
 			return chrom_num
 		else:
@@ -41,7 +39,7 @@ def split_on_chromosome(file):
 
 def pair_chromosome_gds(file_array):
 	gdss = dict() # forced to use constructor due to WDL syntax issues
-	for i in range(0, len(file_array)-1):
+	for i in range(0, len(file_array)): 
 		# Key is chr number, value is associated GDS file
 		gdss[int(find_chromosome(file_array[i]))] = file_array[i]
 		i += 1
@@ -49,7 +47,7 @@ def pair_chromosome_gds(file_array):
 
 def pair_chromosome_gds_special(file_array, agg_file):
 	gdss = dict()
-	for i in range(0, len(file_array)-1):
+	for i in range(0, len(file_array)):
 		gdss[int(find_chromosome(file_array[i]))] = agg_file
 	return gdss
 
@@ -57,7 +55,7 @@ def wdl_get_segments():
 	segfile = open(IIsegments_fileII, 'rb')
 	segments = str((segfile.read(64000))).split('\n') # var segments = self[0].contents.split('\n');
 	segfile.close()
-	segments = segments[1:] # segments = segments.slice(1) # cut off the first lineF
+	segments = segments[1:] # segments = segments.slice(1) # cut off the first line
 	return segments
 
 # Prepare GDS output
@@ -71,7 +69,7 @@ for i in range(0, len(gds_segments)): # for(var i=0;i<segments.length;i++){
 		chr = gds_segments[i].split('\t')[0]
 	if(chr in input_gdss):
 		output_gdss.append(input_gdss[chr])
-gds_output_hack = open("gds_output_debug.txt", "a")
+gds_output_hack = open("gds_output_debug.txt", "w")
 gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
 gds_output_hack.close()
 
@@ -79,21 +77,21 @@ gds_output_hack.close()
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 output_segments = []
 actual_segments = wdl_get_segments()
-for i in range(0, len(actual_segments)-1): # for(var i=0;i<segments.length;i++){
+for i in range(0, len(actual_segments)): # for(var i=0;i<segments.length;i++){
 	try:
 		chr = int(actual_segments[i].split('\t')[0])
 	except ValueError: # chr X, Y, M
 		chr = actual_segments[i].split('\t')[0]
 	if(chr in input_gdss):
-		output_segments.append(i+1)
+		seg_num = i+1
+		output_segments.append(seg_num)
+		output_seg_as_file = open("%s.integer" % seg_num, "w")
 if max(output_segments) != len(output_segments): # I don't know if this case is actually problematic but I suspect it will be.
 	print("ERROR: Subsequent code relies on output_segments being a list of consecutive integers.")
 	print("Debug information: Max of list is %s, len of list is %s" % [max(output_segments), len(output_segments)])
 	print("Debug information: List is as follows:\n\t%s" % output_segments)
 	exit(1)
-for j in range(0, len(output_segments)):
-	dummy = open("%s.integer" % j, "a")
-segs_output_hack = open("segs_output_debug.txt", "a")
+segs_output_hack = open("segs_output_debug.txt", "w")
 segs_output_hack.writelines(["%s " % thing for thing in output_segments])
 segs_output_hack.close()
 
@@ -105,8 +103,8 @@ if 'chr' in os.path.basename(IIaggregate_filesII[0]):
 else:
 	input_aggregate_files = pair_chromosome_gds_special(IIinput_gds_filesII, IIaggregate_filesII[0])
 output_aggregate_files = []
-for i in range(0, len(agg_segments)-1): # for(var i=0;i<segments.length;i++){
-	try:
+for i in range(0, len(agg_segments)): # for(var i=0;i<segments.length;i++){
+	try: 
 		chr = int(agg_segments[i].split('\t')[0])
 	except ValueError: # chr X, Y, M
 		chr = agg_segments[i].split('\t')[0]
@@ -114,7 +112,10 @@ for i in range(0, len(agg_segments)-1): # for(var i=0;i<segments.length;i++){
 		output_aggregate_files.append(input_aggregate_files[chr])
 	elif (chr in input_gdss):
 		output_aggregate_files.append(None)
-print(output_aggregate_files)
+# The CWL accounts for there being no aggregate files, as the CWL considers them an optional
+# input. We don't need to account for that because the way WDL works means it they are a
+# required output of a previous task and a required input of this task. That said, if this
+# code is reused for other WDLs, it may need some adjustments right around here.
 
 # Prepare variant include output
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
@@ -142,8 +143,8 @@ else:
 			chr = var_segments[i].split('\t')[0]
 		if(chr in input_gdss):
 			null_outputs.append(None)
-	output_variant_files = null_outputs # need the same name as if/else for outputs is iffy in wdl, although file hack may make this unneeded
-var_output_hack = open("variant_output_debug.txt", "a")
+	output_variant_files = null_outputs
+var_output_hack = open("variant_output_debug.txt", "w")
 var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
 var_output_hack.close()
 
@@ -153,4 +154,6 @@ for i in range(0, max(output_segments)):
 	this_zip.write("%s" % output_gdss[i])
 	this_zip.write("%s.integer" % output_segments[i])
 	this_zip.write("%s" % output_aggregate_files[i])
+	if IIvariant_include_filesII != [""]: # not sure if this is robust
+		this_zip.write("%s" % output_variant_files)
 	this_zip.close()
