@@ -6,6 +6,8 @@ Cromwell.stdout.txt
 .Rproj.user
 _test-data-and-truths_/null_model/truth_outputs/.Rhistory
 cromwell-executions/*
+# debug
 assoc-aggregate/cromwell-68.1.jar
-gds_output_hack.txt
-segs_output_hack.txt
+*_debug.txt
+*.integer
+*.zip

@@ -92,6 +92,8 @@ if max(output_segments) != len(output_segments): # I don't know if this case is 
 	print("Debug information: Max of list is %s, len of list is %s" % [max(output_segments), len(output_segments)])
 	print("Debug information: List is as follows:\n\t%s" % output_segments)
 	exit(1)
+for j in range(0, len(output_segments)):
+	dummy = open("%s.integer" % j, "a")
 segs_output_hack = open("segs_output_debug.txt", "a")
 segs_output_hack.writelines(["%s " % thing for thing in output_segments])
 segs_output_hack.close()
@@ -135,5 +137,5 @@ var_output_hack.close()
 for i in range(0, max(output_segments)):
 	this_zip = ZipFile("dotprod%s.zip" % i, "w")
 	this_zip.write("%s" % output_gdss[i])
-	this_zip.write("%s" % output_segments[i])
+	this_zip.write("%s.integer" % output_segments[i])
 	this_zip.close()
