@@ -86,7 +86,6 @@ task wdl_terra_permissions_workaround {
 	# And even then, doing that does not work on DRS URIs due to a known bug that hasn't been fixed yet.
 	# So what can we do?
 	# We break their file extension in an entirely different task.
-	# Please, if anyone knows of a better workaround, let me know.
 
 	input {
 		File gds_to_mess_with
@@ -582,7 +581,14 @@ task sbg_prepare_segments_1 {
 			this_zip.write("%s.integer" % output_segments[i])
 			this_zip.write("%s" % output_aggregate_files[i])
 			if IIvariant_include_filesII != [""]: # not sure if this is robust
-				this_zip.write("%s" % output_variant_files[i])
+				# We can only consistently tell zipped files apart by their
+				# extension. var include and agg will share the RData ext.
+				# Therefore we use the same workaround as before and break
+				# this file's extension too.
+				nameroot = os.path.basename(output_variant_files[i]).rsplit(".", 1)[0]
+				newname = nameroot + ".ofarrell"
+				os.rename(output_variant_files[i], newname)
+				this_zip.write("%s" % newname)
 			this_zip.close()
 		CODE
 
@@ -638,8 +644,64 @@ task assoc_aggregate {
 	Int finalDiskSize = zipped_size + segment_size + null_size + pheno_size + varweight_size + addldisk
 
 	command <<<
-		touch foo.txt
-		touch bar.txt
+		cp ~{zipped} . # copy because I don't want to deal with finding what directory files unzip into
+		unzip ./*.zip
+		ls
+		
+		python << CODE
+		import os
+
+		def wdl_find_file(extension):
+			ls = os.listdir(os.getcwd())
+			print("ls is %s" % ls)
+			for i in range(0, len(ls)):
+				if ls[i].rsplit(".", 1)[0] == extension:
+					return ls[i].rsplit(".", 1)[0]
+				i += 1
+			return None
+			
+		def find_chromosome(file):
+			chr_array = []
+			chrom_num = split_on_chromosome(file)
+			if len(chrom_num) == 1:
+				acceptable_chrs = [str(integer) for integer in list(range(1,22))]
+				acceptable_chrs.extend(["X","Y","M"])
+				if chrom_num in acceptable_chrs:
+					return chrom_num
+				else:
+					print("%s appears to be an invalid chromosome number." % chrom_num)
+					exit(1)
+			elif (unicode(str(chrom_num[1])).isnumeric()):
+				# two digit number
+				chr_array.append(chrom_num[0])
+				chr_array.append(chrom_num[1])
+			else:
+				# one digit number or Y/X/M
+				chr_array.append(chrom_num[0])
+			return "".join(chr_array)
+
+		gds = wdl_find_file("gds")
+		print(gds)
+		agg = wdl_find_file("RData")
+		print(agg)
+		seg = int(wdl_find_file("integer").rsplit(".", 1)[0])
+		var = wdl_find_file("ofarrell")
+		if type(var) != None:
+			newname = [var.rsplit(".", 1)[0], ".RData"].join
+			os.rename(var, newname)
+
+		chr = find_chromosome(gds)
+		f = open("assoc_aggregate.config", "a")
+		if "~{out_prefix}" != "":
+			f.write("out_prefix '~{out_prefix}_chr%s'\n" % chr)
+		else:
+			pass # todo
+
+		f.write("gds_file '%s'\n" % gds_file)
+		
+		pass
+		CODE
+
 	>>>
 
 	runtime {
