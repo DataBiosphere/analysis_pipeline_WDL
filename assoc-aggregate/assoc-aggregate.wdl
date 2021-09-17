@@ -75,22 +75,61 @@ task wdl_validate_inputs {
 
 }
 
+task wdl_terra_permissions_workaround {
+	# Terra breaks upon os.rename() and seemingly other attempts to rename or move the file. chmod 777 doesn't help.
+	# I can copy it and rename the duplicate, but look at how we get the output... we glob on (*.gds)[0]. 
+	# That might match the original or the renamed duplicate.
+	# To get this working on Terra, we might be forced to basically remake the entire task as a single regex command,
+	# and then have that in a sub() as an input private variable.
+	# That's the only way to grab a specific filename in the output section; WDL cannot read variables from the task
+	# section, and Terra doesn't allow basing outputs upon other outputs (the Spec will lead you astray on this).
+	# And even then, doing that does not work on DRS URIs due to a known bug that hasn't been fixed yet.
+	# So what can we do?
+	# We break their file extension in an entirely different task.
+	# Please, if anyone knows of a better workaround, let me know.
+
+	input {
+		File gds_to_mess_with
+	}
+
+	command {
+		cp ~{gds_to_mess_with} .
+		python << CODE
+		import os
+		nameroot = os.path.basename("~{gds_to_mess_with}").rsplit(".", 1)[0]
+		oldname = nameroot + ".gds"
+		newname = nameroot + ".ofarrell"
+		os.rename(oldname, newname)
+		CODE
+	}
+
+	output {
+		File gds_with_bad_extension = glob("*.ofarrell")[0]
+	}
+
+}
+
 task sbg_gds_renamer {
 	# This tool renames GDS file in GENESIS pipelines if they contain suffixes after chromosome (chr##) in the filename.
  	# For example: If GDS file has name data_chr1_subset.gds the tool will rename GDS file to data_chr1.gds.
+
 	input {
 		File in_variant
 	}
 	Int gds_size= ceil(size(in_variant, "GB"))
 	
 	command <<<
+
+		# workaround attempt 1
 		set -eux -o pipefail
-		sudo chmod 777 ~{in_variant}
+		sudo chmod 777 ~{in_variant} # doesn't work on Terra
 
 		# debugging
 		whoami | tee -a "debug-terra.txt"
-		ls -lha topmed_workflow_testing/* | tee -a "debug-terra.txt" # Terra-only, has a diff name when run locally
 		ls -lha ~{in_variant} | tee -a "debug-terra.txt"
+
+		# workaround attempt 2
+		cp ~{in_variant} . 
 
 		python << CODE
 		import os
@@ -125,7 +164,9 @@ task sbg_gds_renamer {
 		newname = base+'chr'+chr+".gds"
 
 		print("Debug: Renaming file")
-		os.rename("~{in_variant}", newname)
+		#os.rename("~{in_variant}", newname)
+		oldname = nameroot + ".ofarrell"
+		os.rename(oldname, newname)
 		CODE
 
 	>>>
@@ -717,7 +758,16 @@ workflow assoc_agg {
 			test = test
 	}
 
+	# Workaround for Terra permissions issue -- this should be deleted if we find a better option
 	scatter(gds_file in input_gds_files) {
+		call wdl_terra_permissions_workaround {
+			input:
+				gds_to_mess_with = gds_file
+		}
+	}
+
+	#scatter(gds_file in input_gds_files) {
+	scatter(gds_file in wdl_terra_permissions_workaround.gds_with_bad_extension) {
 		call sbg_gds_renamer {
 			input:
 				in_variant = gds_file
@@ -748,28 +798,32 @@ workflow assoc_agg {
 			variant_include_files = variant_include_files
 	}
 
-	# CWL has this as a four way dot product scatter... not sure how to do this in WDL!
-#	call assoc_aggregate {
-#		input:
-#			gds_file = sbg_prepare_segments_1.gds_output, # CWL has linkMerge: merge_flattened for all inputs from other tasks
-#			null_model_file = null_model_file,
-#			phenotype_file = phenotype_file,
-#			aggregate_variant_file = sbg_prepare_segments_1.aggregate_output,
-#			out_prefix = out_prefix,
-#			rho = rho,
-#			segment_file = define_segments_r.define_segments_output,
-#			test = wdl_validate_inputs.valid_test,
-#			variant_include_file = sbg_prepare_segments_1.variant_include_output,
-#			weight_beta = weight_beta,
-#			segment = sbg_prepare_segments_1.segments,
-#			aggregate_type = wdl_validate_inputs.valid_aggregate_type,
-#			alt_freq_max = alt_freq_max,
-#			pass_only = pass_only,
-#			variant_weight_file = variant_weight_file,
-#			weight_user = weight_user,
-#			genome_build = wdl_validate_inputs.valid_genome_build
-#
-#	}
+# gds, aggregate, segments, and variant include are represented as a zip file here
+# CWL has linkMerge: merge_flattened for all inputs from other tasks, I thiiiiink we're okay here?
+	#scatter(gdsegregatevar in sbg_prepare_segments_1.dotproduct) {
+	#	call assoc_aggregate {
+	#		input:
+	#			gdsegatevar = sbg_prepare_segments_1.dotproduct
+	#			#gds_file = sbg_prepare_segments_1.gds_output, 
+	#			null_model_file = null_model_file,
+	#			phenotype_file = phenotype_file,
+	#			#aggregate_variant_file = sbg_prepare_segments_1.aggregate_output,
+	#			out_prefix = out_prefix,
+	#			rho = rho,
+	#			#segment_file = define_segments_r.define_segments_output, ## is this even copied right?
+	#			test = wdl_validate_inputs.valid_test,
+	#			#variant_include_file = sbg_prepare_segments_1.variant_include_output,
+	#			weight_beta = weight_beta,
+	#			segment = sbg_prepare_segments_1.segments,
+	#			aggregate_type = wdl_validate_inputs.valid_aggregate_type,
+	#			alt_freq_max = alt_freq_max,
+	#			pass_only = pass_only,
+	#			variant_weight_file = variant_weight_file,
+	#			weight_user = weight_user,
+	#			genome_build = wdl_validate_inputs.valid_genome_build
+	#
+	#	}
+	#}
 
 	#call sbg_flatten_lists {
 	#	input:
