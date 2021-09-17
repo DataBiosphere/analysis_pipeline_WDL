@@ -85,9 +85,13 @@ task sbg_gds_renamer {
 	
 	command <<<
 		set -eux -o pipefail
-		sudo chmod 777 ~{in_variant} | tee -a "debug-terra.txt"
+		sudo chmod 777 ~{in_variant}
+
+		# debugging
 		whoami | tee -a "debug-terra.txt"
-		ls -lha | tee -a "debug-terra.txt"
+		ls -lha topmed_workflow_testing/* | tee -a "debug-terra.txt" # Terra-only, has a diff name when run locally
+		ls -lha ~{in_variant} | tee -a "debug-terra.txt"
+
 		python << CODE
 		import os
 		def find_chromosome(file):
