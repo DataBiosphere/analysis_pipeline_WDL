@@ -653,9 +653,9 @@ task assoc_aggregate {
 
 		def wdl_find_file(extension):
 			ls = os.listdir(os.getcwd())
-			print("ls is %s" % ls)
 			for i in range(0, len(ls)):
-				if ls[i].rsplit(".", 1)[0] == extension:
+				print("i is , ls[i] is "% [i, ls[i]])
+				if ls[i].rsplit(".", 1)[1] == extension:
 					return ls[i].rsplit(".", 1)[0]
 				i += 1
 			return None
@@ -698,7 +698,14 @@ task assoc_aggregate {
 			pass # todo
 
 		f.write("gds_file '%s'\n" % gds_file)
+		f.write("phenotype_file '~{phenotype_file}'\n")
+		f.write("aggregate_variant_file '%s'\n" % agg)
+		f.write("null_model_file '~{null_model_file}'\n")
+		# CWL accounts for null_model_params but this does not exist in WDL in aggregate
+		#if "~{rho}" != "":
+			#f.write("rho %s" % i for i in ~{rho}) # probably won't work, need space between numers
 		
+		f.close()
 		pass
 		CODE
 
