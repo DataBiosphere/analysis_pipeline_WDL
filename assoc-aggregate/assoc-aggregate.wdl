@@ -84,6 +84,8 @@ task sbg_gds_renamer {
 	Int gds_size= ceil(size(in_variant, "GB"))
 	
 	command <<<
+
+		sudo chmod 777 ~{in_variant}
 		python << CODE
 		import os
 		def find_chromosome(file):
