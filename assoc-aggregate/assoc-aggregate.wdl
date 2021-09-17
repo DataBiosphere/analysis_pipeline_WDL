@@ -100,8 +100,6 @@ task sbg_gds_renamer {
 			if len(chrom_num) == 1:
 				acceptable_chrs = [str(integer) for integer in list(range(1,22))]
 				acceptable_chrs.extend(["X","Y","M"])
-				print(acceptable_chrs)
-				print(type(chrom_num))
 				if chrom_num in acceptable_chrs:
 					return chrom_num
 				else:
@@ -120,11 +118,13 @@ task sbg_gds_renamer {
 			chrom_num = file.split("chr")[1]
 			return chrom_num
 
+		print("Debug: Getting nameroot")
 		nameroot = os.path.basename("~{in_variant}").rsplit(".", 1)[0]
 		chr = find_chromosome(nameroot)
 		base = nameroot.split('chr'+chr)[0]
 		newname = base+'chr'+chr+".gds"
 
+		print("Debug: Renaming file")
 		os.rename("~{in_variant}", newname)
 		CODE
 
