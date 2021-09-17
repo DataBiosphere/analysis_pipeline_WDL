@@ -84,8 +84,10 @@ task sbg_gds_renamer {
 	Int gds_size= ceil(size(in_variant, "GB"))
 	
 	command <<<
-
-		sudo chmod 777 ~{in_variant}
+		set -eux -o pipefail
+		sudo chmod 777 ~{in_variant} | tee -a "debug-terra.txt"
+		whoami | tee -a "debug-terra.txt"
+		ls -lha | tee -a "debug-terra.txt"
 		python << CODE
 		import os
 		def find_chromosome(file):
