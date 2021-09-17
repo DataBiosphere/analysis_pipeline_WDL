@@ -91,6 +91,8 @@ task wdl_terra_permissions_workaround {
 	input {
 		File gds_to_mess_with
 	}
+	Int gds_size= ceil(size(gds_to_mess_with, "GB"))
+	Int finalDiskSize = gds_size*2 + 3
 
 	command {
 		cp ~{gds_to_mess_with} .
@@ -102,7 +104,13 @@ task wdl_terra_permissions_workaround {
 		os.rename(oldname, newname)
 		CODE
 	}
-
+	runtime {
+		cpu: 2
+		disks: "local-disk " + finalDiskSize + " HDD"
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		memory: "4 GB"
+		preemptibles: "3"
+	}
 	output {
 		File gds_with_bad_extension = glob("*.ofarrell")[0]
 	}
@@ -117,6 +125,7 @@ task sbg_gds_renamer {
 		File in_variant
 	}
 	Int gds_size= ceil(size(in_variant, "GB"))
+	Int finalDiskSize = gds_size*2 + 3
 	
 	command <<<
 
@@ -174,7 +183,7 @@ task sbg_gds_renamer {
 	runtime {
 		cpu: 2
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-		disks: "local-disk " + gds_size + " HDD"
+		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "4 GB"
 		preemptibles: 2
 	}
@@ -195,6 +204,7 @@ task define_segments_r {
 		Int memory = 4
 		Int preempt = 3
 	}
+	Int finalDiskSize = addldisk
 	
 	command <<<
 		python << CODE
@@ -233,6 +243,7 @@ task define_segments_r {
 	
 	runtime {
 		cpu: cpu
+		disks: "local-disk " + finalDiskSize + " HDD"
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -592,6 +603,58 @@ task sbg_prepare_segments_1 {
 	}
 }
 
+task assoc_aggregate {
+	input {
+		File zipped
+
+		# other inputs
+		File segment_file # NOT the same as segment
+		File null_model_file
+		File phenotype_file
+		String? out_prefix
+		Array[Float]? rho
+		String? test # acts as enum
+		String? weight_beta
+		Int? segment
+		String? aggregate_type # acts as enum
+		Float? alt_freq_max
+		Boolean? pass_only
+		File? variant_weight_file
+		String? weight_user
+		String? genome_build # acts as enum
+
+		# runtime attr
+		Int addldisk = 1
+		Int cpu = 1
+		Int memory = 8
+		Int preempt = 0
+	}
+	# Estimate disk size required
+	Int zipped_size = ceil(size(zipped, "GB"))*5 # not sure how much zip compresses them if at all
+	Int segment_size = ceil(size(segment_file, "GB"))
+	Int null_size = ceil(size(null_model_file, "GB"))
+	Int pheno_size = ceil(size(phenotype_file, "GB"))
+	Int varweight_size = select_first([ceil(size(variant_weight_file, "GB")), 0])
+	Int finalDiskSize = zipped_size + segment_size + null_size + pheno_size + varweight_size + addldisk
+
+	command <<<
+		touch foo.txt
+		touch bar.txt
+	>>>
+
+	runtime {
+		cpu: cpu
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		disks: "local-disk " + finalDiskSize + " SSD"
+		bootDiskSizeGb: 6
+		memory: "${memory} GB"
+		preemptibles: "${preempt}"
+	}
+	output {
+		Array[File] assoc_aggregate = ["foo.txt", "bar.txt"]
+	}
+}
+
 ## comes after define segs and gds renamer
 #task sbg_group_segments_1 {
 #	input {
@@ -608,55 +671,6 @@ task sbg_prepare_segments_1 {
 #		Array[File] grouped_assoc_files = ["foo.txt", "bar.txt"]
 #		Array[String] chromosome = ["foo", "bar"]
 #		File gds_output = "bizz.txt"
-#	}
-#}
-
-#task assoc_aggregate {
-#	input {
-#		File gds_file
-#		File null_model_file
-#		File phenotype_file
-#		File aggregate_variant_file
-#		String? out_prefix
-#		Array[Float]? rho
-#		File? segment_file
-#		String? test # acts as enum
-#		File? variant_include_file
-#		String? weight_beta
-#		Int? segment
-#		String? aggregate_type # acts as enum
-#		Float? alt_freq_max
-#		Boolean? pass_only
-#		File? variant_weight_file
-#		String? weight_user
-#		String? genome_build # acts as enum
-#
-#		# runtime attr
-#		Int addldisk = 1
-#		Int cpu = 1
-#		Int memory = 8
-#		Int preempt = 0
-#	}
-#	# Estimate disk size required
-#	Int varweight_size = select_first([ceil(size(variant_weight_file, "GB")), 0])
-#	Int gds_size = ceil(size(gds_file, "GB"))
-#	Int finalDiskSize = gds_size + varweight_size
-#
-#	command <<<
-#		touch foo.txt
-#		touch bar.txt
-#	>>>
-#
-#	runtime {
-#		cpu: cpu
-#		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-#		disks: "local-disk " + finalDiskSize + " SSD"
-#		bootDiskSizeGb: 6
-#		memory: "${memory} GB"
-#		preemptibles: "${preempt}"
-#	}
-#	output {
-#		Array[File] assoc_aggregate = ["foo.txt", "bar.txt"]
 #	}
 #}
 #
@@ -800,30 +814,26 @@ workflow assoc_agg {
 
 # gds, aggregate, segments, and variant include are represented as a zip file here
 # CWL has linkMerge: merge_flattened for all inputs from other tasks, I thiiiiink we're okay here?
-	#scatter(gdsegregatevar in sbg_prepare_segments_1.dotproduct) {
-	#	call assoc_aggregate {
-	#		input:
-	#			gdsegatevar = sbg_prepare_segments_1.dotproduct
-	#			#gds_file = sbg_prepare_segments_1.gds_output, 
-	#			null_model_file = null_model_file,
-	#			phenotype_file = phenotype_file,
-	#			#aggregate_variant_file = sbg_prepare_segments_1.aggregate_output,
-	#			out_prefix = out_prefix,
-	#			rho = rho,
-	#			#segment_file = define_segments_r.define_segments_output, ## is this even copied right?
-	#			test = wdl_validate_inputs.valid_test,
-	#			#variant_include_file = sbg_prepare_segments_1.variant_include_output,
-	#			weight_beta = weight_beta,
-	#			segment = sbg_prepare_segments_1.segments,
-	#			aggregate_type = wdl_validate_inputs.valid_aggregate_type,
-	#			alt_freq_max = alt_freq_max,
-	#			pass_only = pass_only,
-	#			variant_weight_file = variant_weight_file,
-	#			weight_user = weight_user,
-	#			genome_build = wdl_validate_inputs.valid_genome_build
-	#
-	#	}
-	#}
+	scatter(gdsegregatevar in sbg_prepare_segments_1.dotproduct) {
+		call assoc_aggregate {
+			input:
+				zipped = gdsegregatevar,
+				null_model_file = null_model_file,
+				phenotype_file = phenotype_file,
+				out_prefix = out_prefix,
+				rho = rho,
+				segment_file = define_segments_r.define_segments_output, # NOT THE SAME AS SEGMENT IN ZIP
+				test = wdl_validate_inputs.valid_test,
+				weight_beta = weight_beta,
+				aggregate_type = wdl_validate_inputs.valid_aggregate_type,
+				alt_freq_max = alt_freq_max,
+				pass_only = pass_only,
+				variant_weight_file = variant_weight_file,
+				weight_user = weight_user,
+				genome_build = wdl_validate_inputs.valid_genome_build
+	
+		}
+	}
 
 	#call sbg_flatten_lists {
 	#	input:
