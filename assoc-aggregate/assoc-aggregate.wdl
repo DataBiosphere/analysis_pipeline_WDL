@@ -64,7 +64,7 @@ task wdl_validate_inputs {
 
 	runtime {
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-		preemptibles: 2
+		preemptibles: 3
 	}
 
 	output {
@@ -75,66 +75,32 @@ task wdl_validate_inputs {
 
 }
 
-task wdl_terra_permissions_workaround {
-	# Terra breaks upon os.rename() and seemingly other attempts to rename or move the file. chmod 777 doesn't help.
-	# I can copy it and rename the duplicate, but look at how we get the output... we glob on (*.gds)[0]. 
-	# That might match the original or the renamed duplicate.
-	# To get this working on Terra, we might be forced to basically remake the entire task as a single regex command,
-	# and then have that in a sub() as an input private variable.
-	# That's the only way to grab a specific filename in the output section; WDL cannot read variables from the task
-	# section, and Terra doesn't allow basing outputs upon other outputs (the Spec will lead you astray on this).
-	# And even then, doing that does not work on DRS URIs due to a known bug that hasn't been fixed yet.
-	# So what can we do?
-	# We break their file extension in an entirely different task.
-
-	input {
-		File gds_to_mess_with
-	}
-	Int gds_size= ceil(size(gds_to_mess_with, "GB"))
-	Int finalDiskSize = gds_size*2 + 3
-
-	command {
-		cp ~{gds_to_mess_with} .
-		python << CODE
-		import os
-		nameroot = os.path.basename("~{gds_to_mess_with}").rsplit(".", 1)[0]
-		oldname = nameroot + ".gds"
-		newname = nameroot + ".ofarrell"
-		os.rename(oldname, newname)
-		CODE
-	}
-	runtime {
-		cpu: 2
-		disks: "local-disk " + finalDiskSize + " HDD"
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-		memory: "4 GB"
-		preemptibles: "3"
-	}
-	output {
-		File gds_with_bad_extension = glob("*.ofarrell")[0]
-	}
-
-}
-
 task sbg_gds_renamer {
 	# This tool renames GDS file in GENESIS pipelines if they contain suffixes after chromosome (chr##) in the filename.
  	# For example: If GDS file has name data_chr1_subset.gds the tool will rename GDS file to data_chr1.gds.
 
 	input {
 		File in_variant
+
+		# runtime attributes, which you shouldn't need
+		Int addldisk = 3
+		Int cpu = 2
+		Int memory = 4
+		Int preempt = 3
 	}
-	Int gds_size= ceil(size(in_variant, "GB"))
-	Int finalDiskSize = gds_size*2 + 3
+	
+	Int gds_size = ceil(size(in_variant, "GB"))
+	Int finalDiskSize = gds_size*2 + addldisk
 	
 	command <<<
 
 		# workaround attempt 1
-		set -eux -o pipefail
-		sudo chmod 777 ~{in_variant} # doesn't work on Terra
+		#set -eux -o pipefail
+		#sudo chmod 777 ~{in_variant} # doesn't work on Terra
 
 		# debugging
-		whoami | tee -a "debug-terra.txt"
-		ls -lha ~{in_variant} | tee -a "debug-terra.txt"
+		#whoami | tee -a "debug-terra.txt"
+		#ls -lha ~{in_variant} | tee -a "debug-terra.txt"
 
 		# workaround attempt 2
 		cp ~{in_variant} . 
@@ -170,24 +136,24 @@ task sbg_gds_renamer {
 		chr = find_chromosome(nameroot)
 		base = nameroot.split('chr'+chr)[0]
 		newname = base+'chr'+chr+".gds"
-
-		print("Debug: Renaming file")
-		#os.rename("~{in_variant}", newname)
-		oldname = nameroot + ".ofarrell"
+		#os.rename("~{in_variant}", newname) # doesn't work in Terra
+		oldname = nameroot + ".gds"
 		os.rename(oldname, newname)
 		CODE
 
 	>>>
 
 	runtime {
-		cpu: 2
+		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		disks: "local-disk " + finalDiskSize + " HDD"
-		memory: "4 GB"
-		preemptibles: 2
+		memory: "${memory} GB"
+		preemptibles: "${preempt}"
 	}
 	output {
 		File renamed_variants = glob("*.gds")[0]
+		# Although there are two gds files lying around, only the one that's in the parent directory
+		# should get matched here according to my testing.
 	}
 }
 
@@ -198,12 +164,12 @@ task define_segments_r {
 		String? genome_build
 
 		# runtime attributes, which you shouldn't need
-		Int addldisk = 1
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 3
 	}
-	Int finalDiskSize = addldisk
+	
+	Int finalDiskSize = 10
 	
 	command <<<
 		python << CODE
@@ -215,8 +181,7 @@ task define_segments_r {
 		f.close()
 		CODE
 
-		# this could be improved
-		# this also should be tested a bit more
+		# this could probably be improved
 		if [[ ! "~{segment_length}" = "" ]]
 		then
 			if [[ ! "~{n_segments}" = "" ]]
@@ -257,8 +222,12 @@ task aggregate_list {
 	input {
 		File variant_group_file
 		String? aggregate_type
-		String? out_file
 		String? group_id
+
+		# The parent CWL does not have out_file, but it does have out_prefix
+		# The task CWL does not have out_prefix, but it does have out_file
+		# Leaving this as an input is a bit dangerous as it has different requirements than out_prefix and it's easy to mess up
+		String? out_file
 
 		# runtime attr
 		Int addldisk = 1
@@ -274,7 +243,7 @@ task aggregate_list {
 	command <<<
 		set -eux -o pipefail
 
-		cp ~{variant_group_file} ~{basename_vargroup}
+		cp ~{variant_group_file} ~{basename_vargroup} # check if should be .
 
 		python << CODE
 		import os
@@ -305,22 +274,27 @@ task aggregate_list {
 			return chrom_num
 
 		f = open("aggregate_list.config", "a")
+
+		# This part of the CWL is a bit confusing and I'd like some extra eyes on it
 		if "chr" in "~{basename_vargroup}": #if (inputs.variant_group_file.basename.includes('chr'))
 			chr = find_chromosome("~{variant_group_file}") #var chr = find_chromosome(inputs.variant_group_file.path);
-
-			# CWL has:
-			# chromosomes_basename = inputs.variant_group_file.path.slice(0,-6).replace(/\/.+\//g,"");
-			# This seems that it would turn inputs/304343024/mygroupfile.txt into inputs/304343024/mygroupfi (slice) then into inputsmygroupfi (replace)
-			# Surely that cannot be it...? Is this specific to SB's input scheme?
-			# All we know is it's probably not equivalent to basename_vargroup because that can just be done with basename, so what is this?
-			# Even if we assume nameroot should end in chrW where W is 1-23|X|Y, this would only result in mygroupfilechr for double digit chromosomes
-
-			# This section doesn't seem to do anything? Why iterate through this at all? The next part isn't part of the for loop.
-			#for i in range(0, len(chromosomes_basename)): #for(i = chromosomes_basename.length - 1; i > 0; i--)
-			#	if chromosomes_basename[i] not in ["X", "Y"]: #	if(chromosomes_basename[i] != 'X' && chromosomes_basename[i] != "Y" && isNaN(chromosomes_basename[i]))
-			#		break #	break;
 			
-			# Then chromosomes_basename gets overwritten anyway?
+			# CWL then has:
+			# chromosomes_basename = inputs.variant_group_file.path.slice(0,-6).replace(/\/.+\//g,"");
+			# We know that this file is expected to be RData so I assume slice(0,6) is to remove ".RData" leaving a path with no extension.
+			# If given inputs/304343024/mygroupfile the regex would return inputsmygroupfile.RData which obviously isn't correct.
+			# If given /inputs/304343024/mygroupfile the regex would return mygroupfile which seems to be the intention.
+			# This ought to be equivalent to the CWL nameroot function, which these CWLs use extensively, so I'm not sure why they get fancy here.
+			chromosomes_basename = os.path.basename("~{variant_group_file}"[:-6])
+
+			# The CWL is then followed by a section that doesn't seem to do anything...
+			# This would iterate through the string character-by-character. If it comes across a non-number that isn't X or Y, it stops
+			# iterating. But... why iterate in the first place?
+			for i in range(0, len(chromosomes_basename)): #for(i = chromosomes_basename.length - 1; i > 0; i--)
+				if chromosomes_basename[i] not in ["X","Y","1","2","3","4","5","6","7","8","9","0"]: #	if(chromosomes_basename[i] != 'X' && chromosomes_basename[i] != "Y" && isNaN(chromosomes_basename[i]))
+					break #	break;
+			
+			# Finally, after all that, chromosomes_basename gets overwritten anyway
 			chromosomes_basename_1 = "~{basename_vargroup}".split('chr'+chr)[0]
 			chromosomes_basename_2 = "chr "
 			chromosomes_basename_3 = "~{basename_vargroup}".split('chr'+chr)[1]
@@ -331,6 +305,7 @@ task aggregate_list {
 		else:
 			f.write('variant_group_file "~{basename_vargroup}"\n')
 
+		# If there is a chr in the variant group file, a chr must be present in the output file
 		if "~{out_file}" != "":
 			if "chr" in "~{out_file}":
 				f.write('out_file "~{out_file} .RData"\n')
@@ -351,7 +326,7 @@ task aggregate_list {
 		f.write("\n")
 		f.close()
 
-		# line 195 of CWL
+		# this corresponds to line 195 of CWL
 		if "chr" in "~{basename_vargroup}":
 			chromosome = find_chromosome("~{variant_group_file}")
 			g = open("chromosome", "a")
@@ -376,6 +351,7 @@ task aggregate_list {
 		preemptibles: "${preempt}"
 	}
 	output {
+		# https://github.com/UW-GAC/analysis_pipeline_cwl/blob/c2eb59b17fac96412961106be1749692bba12bbb/association/tools/aggregate_list.cwl#L118
 		File aggregate_list = glob("aggregate_list*.RData")[0]
 		File config_file = "aggregate_list.config"
 	}
@@ -583,15 +559,16 @@ task sbg_prepare_segments_1 {
 			if IIvariant_include_filesII != [""]: # not sure if this is robust
 				# We can only consistently tell zipped files apart by their
 				# extension. var include and agg will share the RData ext.
-				# Therefore we use the same workaround as before and break
-				# this file's extension too.
-				nameroot = os.path.basename(output_variant_files[i]).rsplit(".", 1)[0]
-				newname = nameroot + ".ofarrell"
-				os.rename(output_variant_files[i], newname)
-				this_zip.write("%s" % newname)
+				# Therefore we put varinat include files in a subdirectory.
+				os.mkdir("varinclude")
+				os.rename(output_variant_files[i], "varinclude/%s" % output_variant_files[i])
+				this_zip.write("varinclude/%s" % output_variant_files[i])
+				#nameroot = os.path.basename(output_variant_files[i]).rsplit(".", 1)[0]
+				#newname = nameroot + ".ofarrell"
+				#os.rename(output_variant_files[i], newname)
+				#this_zip.write("%s" % newname)
 			this_zip.close()
 		CODE
-
 	>>>
 
 	runtime {
@@ -646,6 +623,7 @@ task assoc_aggregate {
 	command <<<
 		cp ~{zipped} . # copy because I don't want to deal with finding what directory files unzip into
 		unzip ./*.zip
+		echo "Current contents of directory:"
 		ls
 		
 		python << CODE
@@ -654,11 +632,14 @@ task assoc_aggregate {
 		def wdl_find_file(extension):
 			ls = os.listdir(os.getcwd())
 			for i in range(0, len(ls)):
-				print("i is , ls[i] is "% [i, ls[i]])
 				if ls[i].rsplit(".", 1)[1] == extension:
 					return ls[i].rsplit(".", 1)[0]
 				i += 1
 			return None
+
+		def split_on_chromosome(file):
+			chrom_num = file.split("chr")[1]
+			return chrom_num
 			
 		def find_chromosome(file):
 			chr_array = []
@@ -680,34 +661,68 @@ task assoc_aggregate {
 				chr_array.append(chrom_num[0])
 			return "".join(chr_array)
 
-		gds = wdl_find_file("gds")
-		print(gds)
-		agg = wdl_find_file("RData")
-		print(agg)
+		gds = wdl_find_file("gds") + ".gds"
+		agg = wdl_find_file("RData") + ".RData"
 		seg = int(wdl_find_file("integer").rsplit(".", 1)[0])
-		var = wdl_find_file("ofarrell")
-		if type(var) != None:
-			newname = [var.rsplit(".", 1)[0], ".RData"].join
-			os.rename(var, newname)
+		if os.path.isdir("varinclude"):
+			os.chdir("varinclude") # not sure if that's the right syntax
+			var = "/varinclude/" + wdl_find_file("RData") + ".RData"
+			if type(var) != None:
+				newname = [var.rsplit(".", 1)[0], ".RData"].join
+				os.rename(var, newname)
+			os.chrdir("..") # not sure if that's the right syntax
 
-		chr = find_chromosome(gds)
+		chr = find_chromosome(gds) # runs on FULL PATH in the CWL
 		f = open("assoc_aggregate.config", "a")
+		
 		if "~{out_prefix}" != "":
 			f.write("out_prefix '~{out_prefix}_chr%s'\n" % chr)
 		else:
-			pass # todo
+			data_prefix = os.path.basename(gds).split('chr') # runs on BASENAME in the CWL
+			data_prefix2 = os.path.basename(gds).split('.chr')
+			if len(data_prefix) == len(data_prefix2):
+				f.write('out_prefix "' + data_prefix2[0] + '_aggregate_chr' + chr + os.path.basename(gds).split('chr'+chr)[1].split('.gds')[0] + '"'+ "\n")
+			else:
+				f.write('out_prefix "' + data_prefix[0]  + 'aggregate_chr'  + chr + os.path.basename(gds).split('chr'+chr)[1].split('.gds')[0] + '"' + "\n")
 
-		f.write("gds_file '%s'\n" % gds_file)
+		f.write("gds_file '%s'\n" % gds)
 		f.write("phenotype_file '~{phenotype_file}'\n")
 		f.write("aggregate_variant_file '%s'\n" % agg)
 		f.write("null_model_file '~{null_model_file}'\n")
-		# CWL accounts for null_model_params but this does not exist in WDL in aggregate
-		#if "~{rho}" != "":
-			#f.write("rho %s" % i for i in ~{rho}) # probably won't work, need space between numers
+		# CWL accounts for null_model_params but this does not exist in aggregate context
+		if "~{rho}" != "":
+			f.write("rho ")
+			for r in ['~{sep="','" rho}']:
+				f.write("%s " % r)
+			f.write("\n")
+		f.write("segment_file '~{segment_file}'\n") # never optional in WDL
+		if "~{test}" != "":
+			f.write("test '~{test}'\n")
+		# cwl has test type, not sure if needed here
+		# cwl has variant include file
+		if "~{weight_beta}" != "":
+			f.write("weight_beta '~{weight_beta}'\n")
+		if "~{aggregate_type}" != "":
+			f.write("aggregate_type '~{aggregate_type}'\n")
+		if "~{alt_freq_max}" != "":
+			f.write("alt_freq_max ~{alt_freq_max}\n")
 		
+		# pass_only is odd in the CWL. It only gets written to the config file
+		# if the user does not set the value at all.
+		if "~{pass_only}" == "":
+			f.write("pass_only FALSE\n")
+		
+		if "~{variant_weight_file}" != "":
+			f.write("variant_weight_file '~{variant_weight_file}'\n")
+		if "~{weight_user}" != "":
+			f.write("weight_user '~{weight_user}'\n")
+		if "~{genome_build}" != "":
+			f.write("genome_build '~{genome_build}'\n")
 		f.close()
-		pass
 		CODE
+
+		Rscript /usr/local/analysis_pipeline/R/assoc_aggregate.R assoc_aggregate.config
+		# The CWL has a commented out method for including --chromosome to this
 
 	>>>
 
@@ -720,7 +735,8 @@ task assoc_aggregate {
 		preemptibles: "${preempt}"
 	}
 	output {
-		Array[File] assoc_aggregate = ["foo.txt", "bar.txt"]
+		File assoc_aggregate = glob("*.RData")[0] # simpler than the CWL
+		File config = glob("*.config")[0]
 	}
 }
 
@@ -841,16 +857,7 @@ workflow assoc_agg {
 			test = test
 	}
 
-	# Workaround for Terra permissions issue -- this should be deleted if we find a better option
 	scatter(gds_file in input_gds_files) {
-		call wdl_terra_permissions_workaround {
-			input:
-				gds_to_mess_with = gds_file
-		}
-	}
-
-	#scatter(gds_file in input_gds_files) {
-	scatter(gds_file in wdl_terra_permissions_workaround.gds_with_bad_extension) {
 		call sbg_gds_renamer {
 			input:
 				in_variant = gds_file
@@ -880,9 +887,9 @@ workflow assoc_agg {
 			aggregate_files = aggregate_list.aggregate_list,
 			variant_include_files = variant_include_files
 	}
-
-# gds, aggregate, segments, and variant include are represented as a zip file here
-# CWL has linkMerge: merge_flattened for all inputs from other tasks, I thiiiiink we're okay here?
+ 
+ #gds, aggregate, segments, and variant include are represented as a zip file here
+ #CWL has linkMerge: merge_flattened for all inputs from other tasks, I thiiiiink we're okay here?
 	scatter(gdsegregatevar in sbg_prepare_segments_1.dotproduct) {
 		call assoc_aggregate {
 			input:
