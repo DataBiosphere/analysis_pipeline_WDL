@@ -740,26 +740,37 @@ task assoc_aggregate {
 	}
 }
 
-# This task is probably not strictly necessary in WDL, as WDL can handle lists of lists better than CWL.
-# Nevertheless, it is in this WDL to ensure compatiability with the CWL version.
-task sbg_flatten_lists {
+# CWL does not officially support arrays of arrays/lists of lists, so their engineers created a
+# generalizable task called sbg_flatten_lists which is used in several of their CWLs. This task is
+# designed to flatten inputs into a single list of files. There are many reasons why this does
+# not make sense in the context of this WDL:
+# 1. WDL can handle Array[Array[File]] just fine. It gets a little weird if anything in it is type
+#    File? instead of File, but that's not the case for these inputs in this workflow.
+# 2. The previous task which feeds into this one is a scattered task with an File output. The
+#    gathered output is therefore Array[File], not Array[Array[File]].
+# 3. WDL's limited ability to handle outputs means outputing an Array[File] or File that is not a
+#    WDL-compatiable function of its inputs nor following a specific regex pattern is painful.
+#
+# I have decided to keep this in purely as a debugging step. It is essentially a no-op.
+#
+task wdl_echo_lists {
 	input {
 		Array[File] input_list
 	}
 
-	command {
+	command <<<
 		python << CODE
-		# Untested and probably not excellent!
 		flat = []
 		for minilist in ['~{sep="','" input_list}']:
 			for component in minilist:
 				flat.append(component)
+		print(['~{sep="','" input_list}'])
+		print(flat)
 		CODE
-
-	}
+	>>>
 
 	output {
-		Array[File] output_list = input_list
+		Array[File] output_list = input_list # intentionally same as input
 	}
 }
 
@@ -769,18 +780,64 @@ task sbg_group_segments_1 {
 		Array[File] assoc_files
 	}
 
-	command {
-		touch foo.txt
-		touch bar.txt
-		touch bizz.txt
-	}
+	command <<<
+		python << CODE
+		def split_on_chromosome(file):
+			chrom_num = file.split("chr")[1]
+			return chrom_num
+			
+		def find_chromosome(file):
+			chr_array = []
+			chrom_num = split_on_chromosome(file)
+			if len(chrom_num) == 1:
+				acceptable_chrs = [str(integer) for integer in list(range(1,22))]
+				acceptable_chrs.extend(["X","Y","M"])
+				if chrom_num in acceptable_chrs:
+					return chrom_num
+				else:
+					print("%s appears to be an invalid chromosome number." % chrom_num)
+					exit(1)
+			elif (unicode(str(chrom_num[1])).isnumeric()):
+				# two digit number
+				chr_array.append(chrom_num[0])
+				chr_array.append(chrom_num[1])
+			else:
+				# one digit number or Y/X/M
+				chr_array.append(chrom_num[0])
+			return "".join(chr_array)
+
+		#print("Grouping...") # line 116 of CWL, skipped so we can get stdout as File output
+		python_assoc_files = ['~{sep="','" assoc_files}']
+		assoc_files_dict = dict() 
+		grouped_assoc_files = [] # line 53 of CWL
+		output_chromosomes = [] # line 96 of CWL
+
+		for i in range(0, len(python_assoc_files)):
+			chr = find_chromosome(python_assoc_files[i])
+			if chr in assoc_files_dict:
+				assoc_files_dict[chr].append(python_assoc_files[i])
+			else:
+				assoc_files_dict[chr] = [python_assoc_files[i]]
+
+		for key in assoc_files_dict.keys():
+			grouped_assoc_files.append(assoc_files_dict[key]) # line 65 in CWL
+			output_chromosomes.append(key) # line 108 in CWL
+
+		f = open("output_chromosomes.txt", "a")
+		for chrom in output_chromosomes:
+			f.write("%s\n" % chrom)
+		f.close()
+
+		print(grouped_assoc_files) # yoinked as stdout output
+		CODE
+	>>>
 
 	output {
-		Array[File] grouped_assoc_files = ["foo.txt", "bar.txt"]
-		Array[String] chromosome = ["foo", "bar"]
-		File gds_output = "bizz.txt"
+		Array[File] grouped_assoc_files = read_lines(stdout())
+		Array[String] chromosome = read_lines("output_chromosomes.txt")
 	}
 }
+
 #
 #
 #
@@ -912,14 +969,14 @@ workflow assoc_agg {
 		}
 	}
 
-	call sbg_flatten_lists {
+	call wdl_echo_lists {
 		input:
 			input_list = assoc_aggregate.assoc_aggregate
 	}
 
 	call sbg_group_segments_1 {
 		input:
-			assoc_files = sbg_flatten_lists.output_list
+			assoc_files = wdl_echo_lists.output_list
 	}
 
 	# CWL uses a dotproduct scatter; this is the closest WDL equivalent that I'm aware of
