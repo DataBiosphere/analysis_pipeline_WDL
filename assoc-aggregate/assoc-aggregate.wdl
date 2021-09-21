@@ -740,47 +740,48 @@ task assoc_aggregate {
 	}
 }
 
+# This task is probably not strictly necessary in WDL, as WDL can handle lists of lists better than CWL.
+# Nevertheless, it is in this WDL to ensure compatiability with the CWL version.
+task sbg_flatten_lists {
+	input {
+		Array[File] input_list
+	}
+
+	command {
+		python << CODE
+		# Untested and probably not excellent!
+		flat = []
+		for minilist in ['~{sep="','" input_list}']:
+			for component in minilist:
+				flat.append(component)
+		CODE
+
+	}
+
+	output {
+		Array[File] output_list = input_list
+	}
+}
+
 ## comes after define segs and gds renamer
-#task sbg_group_segments_1 {
-#	input {
-#		Array[File] assoc_files
-#	}
+task sbg_group_segments_1 {
+	input {
+		Array[File] assoc_files
+	}
+
+	command {
+		touch foo.txt
+		touch bar.txt
+		touch bizz.txt
+	}
+
+	output {
+		Array[File] grouped_assoc_files = ["foo.txt", "bar.txt"]
+		Array[String] chromosome = ["foo", "bar"]
+		File gds_output = "bizz.txt"
+	}
+}
 #
-#	command {
-#		touch foo.txt
-#		touch bar.txt
-#		touch bizz.txt
-#	}
-#
-#	output {
-#		Array[File] grouped_assoc_files = ["foo.txt", "bar.txt"]
-#		Array[String] chromosome = ["foo", "bar"]
-#		File gds_output = "bizz.txt"
-#	}
-#}
-#
-## This task is probably not strictly necessary in WDL, as WDL can handle lists of lists better than CWL.
-## Nevertheless, it is in this WDL to ensure compatiability with the CWL version.
-#task sbg_flatten_lists {
-#	input {
-#		Array[File] input_list
-#	}
-#
-#	command {
-#		python << CODE
-#		# Untested and probably not excellent!
-#		flat = []
-#		for minilist in ['~{sep="','" input_list}']:
-#			for component in minilist:
-#				flat.append(component)
-#		CODE
-#
-#	}
-#
-#	output {
-#		Array[File] output_list = input_list
-#	}
-#}
 #
 #
 #task assoc_combine_r {
@@ -911,15 +912,15 @@ workflow assoc_agg {
 		}
 	}
 
-	#call sbg_flatten_lists {
-	#	input:
-	#		input_list = assoc_aggregate.assoc_aggregate
-	#}
+	call sbg_flatten_lists {
+		input:
+			input_list = assoc_aggregate.assoc_aggregate
+	}
 
-	#call sbg_group_segments_1 {
-	#	input:
-	#		assoc_files = sbg_flatten_lists.output_list
-	#}
+	call sbg_group_segments_1 {
+		input:
+			assoc_files = sbg_flatten_lists.output_list
+	}
 
 	# CWL uses a dotproduct scatter; this is the closest WDL equivalent that I'm aware of
 	#scatter(chr_n_assocfiles in zip(sbg_group_segments_1.chromosome, sbg_group_segments_1.grouped_assoc_files)) {
