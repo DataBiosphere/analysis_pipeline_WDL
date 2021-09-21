@@ -109,7 +109,7 @@ task sample_blocks_to_segments {
 		preemptibles: "${preempt}"
 	}
 	output {
-		# not valid in WDL -- read_int can only read one integer
+		# read_int is extremely limited so we use read_lines instead
 		Array[Int] segments = read_lines("segs.txt")
 	}
 }
