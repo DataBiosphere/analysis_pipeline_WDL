@@ -6,5 +6,5 @@
   "assoc_agg.aggregate_type": "allele",
   "assoc_agg.test": "burden",
   "assoc_agg.genome_build": "hg19",
-  "assoc_agg.n_segments": 2
+  "assoc_agg.n_segments": 4
 }

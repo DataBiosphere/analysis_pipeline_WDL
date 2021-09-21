@@ -789,6 +789,7 @@ task sbg_group_segments_1 {
 		done
 
 		python << CODE
+		import os
 		def split_on_chromosome(file):
 			chrom_num = file.split("chr")[1]
 			return chrom_num
@@ -834,8 +835,10 @@ task sbg_group_segments_1 {
 			output_chromosomes.append(key) # line 108 in CWL
 
 		f = open("output_filenames.txt", "a")
-		for path in grouped_assoc_files:
-			f.write("%s\n" % path)
+		for list in grouped_assoc_files:
+			f.write("%s\n" % list)
+			#for entry in list:
+				#f.write("%s\n" % entry)
 		f.close()
 
 		g = open("output_chromosomes.txt", "a")
@@ -849,14 +852,14 @@ task sbg_group_segments_1 {
 	output {
 		# The CWL returns array(array(file)) and array(string) in order to dotproduct scatter in
 		# the next task, but we cannot do that in WDL, so we will use a custom struct instead
-		#Assoc_N_Chr group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_lines("output_chromosomes.txt")}
+		Array[Assoc_N_Chr] group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_lines("output_chromosomes.txt")}
 		Array[File] grouped_assoc_files = read_lines("output_filenames.txt")
 		Array[String] chromosome = read_lines("output_chromosomes.txt")
 	}
 }
 
 struct Assoc_N_Chr {
-	Array[File] grouped_assoc_files
+	Array[Array[File]] grouped_assoc_files
 	Array[String] chromosome
 }
 
