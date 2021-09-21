@@ -126,7 +126,7 @@ task pcrelate {
 		File? sample_include_file
 		Int n_sample_blocks = 1
 		Int segment = 1
-		Boolean ibd_probs = true
+		Boolean? ibd_probs = true
 		
 		# runtime attributes
 		Int addldisk = 1
@@ -248,7 +248,6 @@ task kinship_plots {
 		String? group
 		File? sample_include_file
 		String out_prefix_initial = ""
-		Boolean? run_plots
 		
 		# runtime attributes
 		Int addldisk = 1
@@ -327,7 +326,7 @@ workflow pcrel {
 		Float? kinship_plot_threshold
 		String? group
 		Float? sparse_threshold
-		Boolean? ibd_probs
+		Boolean ibd_probs = true
 	}
 
 	call pcrelate_beta {
@@ -370,15 +369,16 @@ workflow pcrel {
 			sparse_threshold = sparse_threshold
 	}
 
-	call kinship_plots {
-		input:
-			kinship_file = pcrelate_correct.pcrelate_output,
-			kinship_plot_threshold = kinship_plot_threshold,
-			phenotype_file = phenotype_file,
-			group = group,
-			sample_include_file = sample_include_file,
-			out_prefix_initial = out_prefix,
-			run_plots = ibd_probs
+	if (ibd_probs) { # this matches the run_plots = ibd_probs part of the CWL
+		call kinship_plots {
+			input:
+				kinship_file = pcrelate_correct.pcrelate_output,
+				kinship_plot_threshold = kinship_plot_threshold,
+				phenotype_file = phenotype_file,
+				group = group,
+				sample_include_file = sample_include_file,
+				out_prefix_initial = out_prefix
+		}
 	}
 	
 
