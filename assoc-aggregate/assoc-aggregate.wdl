@@ -774,7 +774,6 @@ task wdl_echo_lists {
 	}
 }
 
-## comes after define segs and gds renamer
 task sbg_group_segments_1 {
 	input {
 		Array[File] assoc_files
@@ -806,7 +805,7 @@ task sbg_group_segments_1 {
 				chr_array.append(chrom_num[0])
 			return "".join(chr_array)
 
-		#print("Grouping...") # line 116 of CWL, skipped so we can get stdout as File output
+		print("Grouping...") # line 116 of CWL
 		python_assoc_files = ['~{sep="','" assoc_files}']
 		assoc_files_dict = dict() 
 		grouped_assoc_files = [] # line 53 of CWL
@@ -833,7 +832,7 @@ task sbg_group_segments_1 {
 	>>>
 
 	output {
-		Array[File] grouped_assoc_files = read_lines(stdout())
+		#Array[File] grouped_assoc_files = read_lines(stdout())
 		Array[String] chromosome = read_lines("output_chromosomes.txt")
 	}
 }
@@ -906,7 +905,7 @@ workflow assoc_agg {
 		String?      weight_user
 	}
 
-	# In order to force this to run first, all other tasks that uses these psuedoenums
+	# In order to force this to run first, all other tasks that use these psuedoenums
 	# will take them in via outputs of this task
 	call wdl_validate_inputs {
 		input:
