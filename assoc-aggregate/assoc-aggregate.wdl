@@ -780,6 +780,14 @@ task sbg_group_segments_1 {
 	}
 
 	command <<<
+
+		# copy over because output struggles to find the files otherwise
+		ASSO_FILES=(~{sep=" " assoc_files})
+		for ASSO_FILE in ${ASSO_FILES[@]};
+		do
+			cp ${ASSO_FILE} .
+		done
+
 		python << CODE
 		def split_on_chromosome(file):
 			chrom_num = file.split("chr")[1]
@@ -807,6 +815,9 @@ task sbg_group_segments_1 {
 
 		print("Grouping...") # line 116 of CWL
 		python_assoc_files = ['~{sep="','" assoc_files}']
+		for file in python_assoc_files:
+			# point to the workdir copies instead
+			file = os.path.basename(file)
 		assoc_files_dict = dict() 
 		grouped_assoc_files = [] # line 53 of CWL
 		output_chromosomes = [] # line 96 of CWL
@@ -822,19 +833,31 @@ task sbg_group_segments_1 {
 			grouped_assoc_files.append(assoc_files_dict[key]) # line 65 in CWL
 			output_chromosomes.append(key) # line 108 in CWL
 
-		f = open("output_chromosomes.txt", "a")
-		for chrom in output_chromosomes:
-			f.write("%s\n" % chrom)
+		f = open("output_filenames.txt", "a")
+		for path in grouped_assoc_files:
+			f.write("%s\n" % path)
 		f.close()
 
-		print(grouped_assoc_files) # yoinked as stdout output
+		g = open("output_chromosomes.txt", "a")
+		for chrom in output_chromosomes:
+			g.write("%s\n" % chrom)
+		g.close()
+
 		CODE
 	>>>
 
 	output {
-		#Array[File] grouped_assoc_files = read_lines(stdout())
+		# The CWL returns array(array(file)) and array(string) in order to dotproduct scatter in
+		# the next task, but we cannot do that in WDL, so we will use a custom struct instead
+		#Assoc_N_Chr group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_lines("output_chromosomes.txt")}
+		Array[File] grouped_assoc_files = read_lines("output_filenames.txt")
 		Array[String] chromosome = read_lines("output_chromosomes.txt")
 	}
+}
+
+struct Assoc_N_Chr {
+	Array[File] grouped_assoc_files
+	Array[String] chromosome
 }
 
 #
