@@ -181,7 +181,7 @@ task pcrelate {
 	output {
 		# CWL seems to have inconsistency where this is marked an optional output
 		# but it also is a not-optional input elsewhere -- double check!
-		File block = glob("*.RData")[0]
+		File pcrelate = glob("*.RData")[0]
 	}
 }
 
@@ -350,7 +350,7 @@ workflow pcrel {
 			input:
 				gds_file = gds_file,
 				pca_file = pca_file,
-				beta_file =pcrelate_beta.beta,
+				beta_file = pcrelate_beta.beta,
 				n_pcs = n_pcs,
 				out_prefix = out_prefix,
 				variant_include_file = variant_include_file,
@@ -365,7 +365,7 @@ workflow pcrel {
 	call pcrelate_correct {
 		input:
 			n_sample_blocks = n_sample_blocks,
-			pcrelate_block_files = pcrelate.block,
+			pcrelate_block_files = pcrelate.pcrelate,
 			sparse_threshold = sparse_threshold
 	}
 
