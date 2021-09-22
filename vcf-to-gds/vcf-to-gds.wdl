@@ -4,7 +4,8 @@ version 1.0
 task vcf2gds {
 	input {
 		File vcf
-		String output_file_name = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
+		String debug_basename = basename(vcf)
+		String debug_basenamesub = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
 		Array[String] format # vcf formats to keep
 		# runtime attributes
 		Int addldisk = 1
@@ -15,15 +16,32 @@ task vcf2gds {
 	command {
 		set -eux -o pipefail
 
+		echo "Input vcf is: " | tee -a debug.txt
+		echo "~{vcf}" | tee debug.txt
+		echo "Basename of input vcf is: " | tee -a debug.txt
+		echo "~{debug_basename}" | tee -a debug.txt
+		echo "Basename of input vcf with a subsitution is: " | tee -a debug.txt
+		echo "~{debug_basenamesub}" | tee -a debug.txt
+
 		echo "Generating config file"
 		python << CODE
 		import os
+		import shutil
+		py_split = (os.path.basename("~{vcf}")).split(".vcf")
+		py_basename = py_split[0]
+		if len(py_split) != 1:
+			py_ext = py_split[1]
+		else:
+			py_ext = ""
+		shutil.copy2("~{vcf}", "./%s.vcf%s" % (py_basename, py_ext))
+		py_newname = "%s.gds" % py_basename
+
 		f = open("vcf2gds.config", "a")
 		f.write("vcf_file ~{vcf}\n")
 		f.write("format ")
 		for py_formattokeep in ['~{sep="','" format}']:
 			f.write(py_formattokeep)
-		f.write("\ngds_file '~{output_file_name}'\n")
+		f.write("\ngds_file "+"'"+py_newname+"'\n")
 		f.close()
 		exit()
 		CODE
@@ -34,7 +52,7 @@ task vcf2gds {
 	
 	# Estimate disk size required
 	Int vcf_size = ceil(size(vcf, "GB"))
-	Int finalDiskSize = 2*vcf_size + addldisk
+	Int finalDiskSize = 4*vcf_size + addldisk
 	
 	runtime {
 		cpu: cpu
@@ -44,8 +62,10 @@ task vcf2gds {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File gds_output = output_file_name
+		File vcf_output = glob("*.vcf*")[0]  # workaround for check_gds issues with drs URIs
+		File gds_output = glob("*.gds")[0]
 		File config_file = "vcf2gds.config"
+		File debug_basneames = "debug.txt"
 	}
 }
 
@@ -70,7 +90,7 @@ task unique_variant_id {
 
 		for BASH_FILE in ${BASH_FILES[@]};
 		do
-			ln -s ${BASH_FILE} .
+			cp ${BASH_FILE} .
 		done
 
 		echo "Generating config file"
@@ -120,7 +140,8 @@ task unique_variant_id {
 		exit()
 		CODE
 		
-		echo "Calling uniqueVariantIDs.R"
+		echo "Calling uniqueVariantIDs.R"		
+		#sudo su - root
 		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
 	>>>
 	# Estimate disk size required
@@ -136,6 +157,7 @@ task unique_variant_id {
 	}
 	output {
 		Array[File] unique_variant_id_gds_per_chr = glob("*.gds")
+		File config_file = "unique_variant_ids.config"
 	}
 }
 
@@ -154,6 +176,14 @@ task check_gds {
 	command <<<
 		# triple carrot syntax is required for this command section
 		set -eux -o pipefail
+
+		echo "Twice localized workaround"
+		BASH_FILES=(~{sep=" " vcfs})
+
+		for BASH_FILE in ${BASH_FILES[@]};
+		do
+			cp ${BASH_FILE} .
+		done
 
 		echo "Searching for VCF and generating config file"
 		python << CODE
@@ -202,12 +232,12 @@ task check_gds {
 		py_gds = "~{gds}"
 		py_vcf = py_vcfarray[0]
 		py_base = os.path.basename(py_vcf)
-		write_config(py_vcf, py_gds)
+		write_config(py_base, py_gds)
 		CODE
 
 		echo "Setting chromosome number"
 		BASH_CHR=$(<chr_number)
-		echo "Chromosme number is ${BASH_CHR}"
+		echo "Chromosome number is ${BASH_CHR}"
 
 		echo "Calling check_gds.R"
 		Rscript /usr/local/analysis_pipeline/R/check_gds.R check_gds.config --chromosome ${BASH_CHR}
@@ -216,7 +246,7 @@ task check_gds {
 	# Estimate disk size required
 	Int gds_size = ceil(size(gds, "GB"))
 	Int vcfs_size = ceil(size(vcfs, "GB"))
-	Int finalDiskSize = gds_size + vcfs_size + addldisk
+	Int finalDiskSize = gds_size + 2*vcfs_size + addldisk
 
 	runtime {
 		cpu: cpu
@@ -225,6 +255,9 @@ task check_gds {
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
+	}
+	output {
+		File config_file = "check_gds.config"
 	}
 }
 
@@ -253,7 +286,7 @@ workflow vcftogds {
 			call check_gds {
 				input:
 					gds = gds,
-					vcfs = vcf_files
+					vcfs = vcf2gds.vcf_output
 			}
 		}
 	}
