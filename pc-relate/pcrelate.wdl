@@ -242,7 +242,6 @@ task pcrelate_correct {
 task kinship_plots {
 	input {
 		File kinship_file
-		String? kinship_method = "pcrelate"  # hardcoded on CWL?
 		Float? kinship_plot_threshold
 		File? phenotype_file
 		String? group
@@ -255,6 +254,7 @@ task kinship_plots {
 		Int memory = 4
 		Int preempt = 3
 	}
+	String? kinship_method = "pcrelate"  # hardcoded on CWL
 	String out_prefix_final = out_prefix_initial + "_pcrelate"
 	
 	command {
