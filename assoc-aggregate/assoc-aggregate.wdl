@@ -787,7 +787,16 @@ task wdl_echo_lists {
 task sbg_group_segments_1 {
 	input {
 		Array[File] assoc_files
+
+		# runtime attr
+		Int addldisk = 3
+		Int cpu = 8
+		Int memory = 8
+		Int preempt = 2
 	}
+
+	Int assoc_size = ceil(size(assoc_files, "GB"))
+	Int finalDiskSize = 2*assoc_size + addldisk
 
 	command <<<
 
@@ -858,6 +867,14 @@ task sbg_group_segments_1 {
 
 		CODE
 	>>>
+	
+	runtime {
+		cpu: cpu
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		disks: "local-disk " + finalDiskSize + " HDD"
+		memory: "${memory} GB"
+		preemptibles: "${preempt}"
+	}
 
 	output {
 		# The CWL returns array(array(file)) and array(string) in order to dotproduct scatter in
@@ -880,7 +897,15 @@ task assoc_combine_r {
 		String? assoc_type
 		String? out_prefix
 		File? conditional_variant_file
+		
+		# runtime attr
+		Int addldisk = 3
+		Int cpu = 8
+		Int memory = 8
+		Int preempt = 2
 	}
+	Int assoc_size = ceil(size(chr_n_assocfiles.grouped_assoc_files, "GB"))
+	Int finalDiskSize = 2*assoc_size + addldisk
 
 	command <<<
 		FILES=(~{sep=" " chr_n_assocfiles.grouped_assoc_files})
@@ -889,6 +914,14 @@ task assoc_combine_r {
 			echo ${FILE}
 		done
 	>>>
+
+	runtime {
+		cpu: cpu
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		disks: "local-disk " + 50 + " HDD" # fix this
+		memory: "${memory} GB"
+		preemptibles: "${preempt}"
+	}
 
 	output {
 		File assoc_combined = glob("*.RData")[0]
