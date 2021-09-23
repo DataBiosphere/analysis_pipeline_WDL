@@ -1,0 +1,8 @@
+{
+  "checker_pcrelate.gds_file": "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/merged.gds",
+  "checker_pcrelate.pca_file": "gs://topmed_workflow_testing/UWGAC_WDL/null_model/pcair.RData",
+  "checker_pcrelate.n_sample_blocks": 1,
+  "checker_pcrelate.phenotype_file": "gs://topmed_workflow_testing/UWGAC_WDL/null_model/1KG_phase3_subset_annot.RData",
+  "checker_pcrelate.outTruth": "gs://topmed_workflow_testing/UWGAC_WDL/checker/pcrelate/gcp/pcrelate_pcrelate.RData",
+  "checker_pcrelate.matrixTruth": "gs://topmed_workflow_testing/UWGAC_WDL/checker/pcrelate/gcp/pcrelate_pcrelate_Matrix.RData"
+}

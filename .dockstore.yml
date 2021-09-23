@@ -31,3 +31,9 @@ workflows:
      testParameterFiles:
          - /king/king-terra.json
      name: king-wdl
+   - subclass: WDL
+     primaryDescriptorPath: /pc-relate/pcrelate.wdl
+     testParameterFiles:
+         - /pc-relate/pcrelate-terra.json
+         - /pc-relate/pcrelate-local.json
+     name: pc-relate-wdl

@@ -10,6 +10,10 @@ These differences are likely only of interest to maintainers of this repo or tho
 
 **The chromosome file workaround:** A few R scripts require chromosome numbers to be passed in on the command line rather than in the configuration file. In order to do this, chromosome number is written to a file (completely separate from the configuration file) in the task's inline Python section. Upon exiting the Python block, this extra file is read in BASH and then passed to the Rscript call as an argument (as opposed to being in the configuration file). Although the actual call to the R script is identical as the CWL also passes the chr number as an argument, the CWL is able to rely on its inline Javascript to do this, while the WDL must use this workaround to pass the chr number out of the Python scope. As this only involves writing a tiny file that doesn't scale with inputs, it does not have cost implications.
 
+## pcrelate.wdl
+* The kinship_plots task, in the CWL, takes in an out_prefix input via `valueFrom: ${ return inputs.out_prefix + "_pcrelated` } but WDL does not allow this sort of evaulation during a call task. As such the calculation of this string is instead made at runtime of the task.
+* The tasks pcrelate_beta and pcrelate both check each input variable is defined before writing that variable to the config file. Some of these inputs must always be defined, so the WDL skips checks for non-optional inputs.
+
 ## null-model.wdl
 The CWL technically has duplicated outputs. The WDL instead returns each file once. On SB, cwl.output.json sets the outputs as the following, where ! indicates a duplicated output, inverse norm transformation is applied, and the output_prefix is set to `test`:
 * configs:
