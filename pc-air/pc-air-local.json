@@ -2,6 +2,7 @@
   "pcair.kinship_file": "/Users/julianlucas/Desktop/github/analysis_pipeline_WDL/_test-data-and-truths_/pc-air/workflow_inputs/1KG_king_ibdseg_Matrix.RData",
   "pcair.gds_file": "/Users/julianlucas/Desktop/github/analysis_pipeline_WDL/_test-data-and-truths_/pc-air/workflow_inputs/gds/1KG_phase3_subset_pruned.gds",
   "pcair.run_correlation": true,
+  "pcair.out_prefix": "test",
   "pcair.gds_file_full": ["/Users/julianlucas/Desktop/github/analysis_pipeline_WDL/_test-data-and-truths_/pc-air/workflow_inputs/gds/1KG_phase3_subset_chr1.gds",
                           "/Users/julianlucas/Desktop/github/analysis_pipeline_WDL/_test-data-and-truths_/pc-air/workflow_inputs/gds/1KG_phase3_subset_chr2.gds",
                           "/Users/julianlucas/Desktop/github/analysis_pipeline_WDL/_test-data-and-truths_/pc-air/workflow_inputs/gds/1KG_phase3_subset_chr3.gds",
