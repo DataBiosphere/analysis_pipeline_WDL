@@ -3,7 +3,7 @@ version 1.0
 task pca_corr_vars {
     input {
         File gds_file
-        Int chromosome
+        String chromosome
 
         File? variant_include_file
         String? out_prefix
@@ -34,12 +34,10 @@ task pca_corr_vars {
 
         f = open("pca_corr_vars.config", "a")
 
-        outfile_temp = 'pca_corr_vars_chr .RData'
-
         if "~{out_prefix}" != "":
-            outfile_temp = "~{out_prefix}_{outfile_temp}"
-
-        f.write('out_file "${outfile_temp}"\n')
+            f.write('out_file "~{out_prefix}_pca_corr_vars_chr .RData"\n')
+        else:
+            f.write('out_file "pca_corr_vars_chr .RData"\n')
         
         if "~{defVariantInclude}" == "true":
             f.write('variant_include_file "~{variant_include_file}"\n') 
@@ -53,18 +51,18 @@ task pca_corr_vars {
         CODE
 
         echo "Calling R script pca_corr_vars.R"
-        Rscript /usr/local/analysis_pipeline/R/pca_corr_vars.R pca_corr_vars.config --chromosome ${chromosome}
+        Rscript /usr/local/analysis_pipeline/R/pca_corr_vars.R pca_corr_vars.config --chromosome ~{chromosome}
     >>>
 
     runtime {
         cpu: cpu
-        docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+        docker: "uwgac/topmed-master@sha256:060ba9b9958f20b0a55995e8eb9edb886616efae3b4e943101048a5924ba8cd5"
         disks: "local-disk " + final_disk_dize + " HDD"
         memory: "${memory} GB"
         preemptibles: "${preempt}"
     }
     output {
-        File pca_corr_vars  = glob("*.RData")
+        File pca_corr_vars  = glob("*.RData")[0]
         File config_file  = "pca_corr_vars.config"
     }
 
@@ -114,9 +112,9 @@ task pca_corr {
 
 
         if "~{out_prefix}" != "":
-            outfile_temp = "~{out_prefix}_{outfile_temp}"
+            outfile_temp = "~{out_prefix}_" + outfile_temp
 
-        f.write('out_file "${outfile_temp}"\n')
+        f.write('out_file "%s"\n'%(outfile_temp))
         
         if ~{n_pcs_corr} != 32:
             f.write("n_pcs_corr ~{n_pcs_corr}\n")
@@ -144,7 +142,7 @@ task pca_corr {
         preemptibles: "${preempt}"
     }
     output {
-        File pca_corr_gds  = glob("*.gds")
+        File pca_corr_gds  = glob("*.gds")[0]
         File config_file  = "pca_corr.config"
     }
 
@@ -205,14 +203,14 @@ task pca_corr_plots {
             return chrom_num
 
         corr_array_fullpath = ['~{sep="','" corr_file}']
-        
+
         corr_array_basenames = []
         for fullpath in corr_array_fullpath:
-        corr_array_basenames.append(os.path.basename(fullpath))
+            corr_array_basenames.append(os.path.basename(fullpath))
 
-        a_file = corr_file[0]
-        chr = find_chromosome(a_file.basename);
-        path = a_file.path.split('chr'+chr);
+        a_file = corr_array_basenames[0]
+        chr = find_chromosome(os.path.basename(a_file));
+        path = a_file.split('chr'+chr);
 
 
         # make list of all chromosomes found in input files

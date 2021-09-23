@@ -75,8 +75,8 @@ task find_unrelated {
         preemptibles: "${preempt}"
     }
     output {
-        File out_related_file   = glob("*[_|]related.RData")[0]
-        File out_unrelated_file = glob("*unrelated.RData")[0]
+        File out_related_file   = if defined(out_prefix) then "~{out_prefix}_related.RData" else "related.RData"
+        File out_unrelated_file = if defined(out_prefix) then "~{out_prefix}_unrelated.RData" else "unrelated.RData"
         File config_file        = "find_unrelated.config"
     }
 
@@ -158,8 +158,8 @@ task pca_byrel {
         preemptibles: "${preempt}"
     }
     output {
-        File pcair_output           = glob("*[_|]pca.RData")[0]
-        File pcair_output_unrelated = glob("*[_|]_pca_unrel.RData")[0]
+        File pcair_output           = if defined(out_prefix) then "~{out_prefix}_pca.RData" else "pca.RData"
+        File pcair_output_unrelated = if defined(out_prefix) then "~{out_prefix}_pca_unrel.RData" else "pca_unrel.RData"
         File config_file            = "pca_byrel.config"
     }
 
@@ -213,7 +213,7 @@ task pca_plots {
                 f.write('out_file_parcoord "~{out_prefix}"_pca_parcoord.pdf\n')
                 f.write('out_file_pairs "~{out_prefix}"_pca_pairs.png\n')
 
-        if ~{group} != "NA":
+        if "~{group}" != "NA":
             f.write("group ~{group}\n")
 
         if "~{defPhenotypeFile}" == "true":
@@ -263,7 +263,7 @@ task variant_id_from_gds {
 
         echo "Generating variant_id_from_gds.R w/ HereDoc"
         
-        cat << EOF > variant_id_from_gds.R
+        cat << 'EOF' > variant_id_from_gds.R
             library(argparser)
             library(SeqArray)
 
@@ -280,11 +280,11 @@ task variant_id_from_gds {
         EOF
 
         echo "Set out_file if neccesary"
-        if [[ -z "$out_file" ]]
+        if [[ -z "~{out_file}" ]]
         then
-            Rscript variant_id_from_gds.R ~{gds_file}
+            Rscript variant_id_from_gds.R --gds_file ~{gds_file}
         else
-            Rscript variant_id_from_gds.R ~{gds_file} ~{out_file}
+            Rscript variant_id_from_gds.R --gds_file ~{gds_file} --out_file ~{out_file}
         fi
     >>>
 
@@ -296,7 +296,7 @@ task variant_id_from_gds {
         preemptibles: "${preempt}"
     }
     output {
-        File output_file = glob("*.rds")
+        File output_file = glob("*.rds")[0]
     }
 
 }
