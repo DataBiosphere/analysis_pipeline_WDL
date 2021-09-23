@@ -97,13 +97,14 @@ task sbg_gds_renamer {
 		# workaround attempt 1
 		#set -eux -o pipefail
 		#sudo chmod 777 ~{in_variant} # doesn't work on Terra
+		find . -type d -exec sudo chmod -R 777 {} +
 
 		# debugging
 		#whoami | tee -a "debug-terra.txt"
 		#ls -lha ~{in_variant} | tee -a "debug-terra.txt"
 
 		# workaround attempt 2
-		cp ~{in_variant} . 
+		#cp ~{in_variant} . 
 
 		python << CODE
 		import os
@@ -136,9 +137,13 @@ task sbg_gds_renamer {
 		chr = find_chromosome(nameroot)
 		base = nameroot.split('chr'+chr)[0]
 		newname = base+'chr'+chr+".gds"
-		#os.rename("~{in_variant}", newname) # doesn't work in Terra
-		oldname = nameroot + ".gds"
-		os.rename(oldname, newname)
+
+		# workaround 1
+		os.rename("~{in_variant}", newname) # doesn't work in Terra
+
+		# workaround 2
+		#oldname = nameroot + ".gds"
+		#os.rename(oldname, newname)
 		CODE
 
 	>>>
