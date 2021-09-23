@@ -44,7 +44,7 @@ task pca_corr_vars {
 
         f.write('gds_file "~{gds_file}"\n')
 
-        f.write('segment_file /usr/local/analysis_pipeline/segments_hg38.txt\n')
+        f.write('segment_file "/usr/local/analysis_pipeline/segments_hg38.txt"\n')
 
         f.close()
 

@@ -53,8 +53,8 @@ task find_unrelated {
             f.write("divergence_threshold ~{divergence_threshold}\n")
 
         if "~{out_prefix}" != "":
-                f.write('out_related_file "~{out_prefix}"_related.RData\n')
-                f.write('out_unrelated_file "~{out_prefix}"_unrelated.RData\n')
+                f.write('out_related_file "~{out_prefix}_related.RData"\n')
+                f.write('out_unrelated_file "~{out_prefix}_unrelated.RData"\n')
 
         if "~{defSampleInclude}" == "true":
             f.write('sample_include_file "~{sample_include_file}"\n')
@@ -136,8 +136,8 @@ task pca_byrel {
             f.write("n_pcs ~{n_pcs}\n")
 
         if "~{out_prefix}" != "":
-                f.write('out_file "~{out_prefix}"_pca.RData\n')
-                f.write('out_file_unrel "~{out_prefix}"_pca_unrel.RData\n')
+                f.write('out_file "~{out_prefix}_pca.RData"\n')
+                f.write('out_file_unrel "~{out_prefix}_pca_unrel.RData"\n')
 
         if "~{defSampleInclude}" == "true":
             f.write('sample_include_file "~{sample_include_file}"\n')
@@ -208,10 +208,10 @@ task pca_plots {
             f.write("n_pairs ~{n_pairs}\n")
 
         if "~{out_prefix}" != "":
-                f.write('out_file_scree "~{out_prefix}"_pca_scree.pdf\n')
-                f.write('out_file_pc12 "~{out_prefix}"_pca_pc12.pdf\n')
-                f.write('out_file_parcoord "~{out_prefix}"_pca_parcoord.pdf\n')
-                f.write('out_file_pairs "~{out_prefix}"_pca_pairs.png\n')
+                f.write('out_file_scree "~{out_prefix}_pca_scree.pdf"\n')
+                f.write('out_file_pc12 "~{out_prefix}_pca_pc12.pdf"\n')
+                f.write('out_file_parcoord "~{out_prefix}_pca_parcoord.pdf"\n')
+                f.write('out_file_pairs "~{out_prefix}_pca_pairs.png"\n')
 
         if "~{group}" != "NA":
             f.write("group ~{group}\n")
