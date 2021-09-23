@@ -603,7 +603,7 @@ task assoc_aggregate {
 		Array[Float]? rho
 		String? test # acts as enum
 		String? weight_beta
-		Int? segment
+		Int? segment # not used in WDL
 		String? aggregate_type # acts as enum
 		Float? alt_freq_max
 		Boolean? pass_only
@@ -636,11 +636,11 @@ task assoc_aggregate {
 			print("Debug: Looking for %s" % extension)
 			ls = os.listdir(os.getcwd())
 			for i in range(0, len(ls)):
-				print("Debug: Iteration %s" % i)
 				debug = ls[i].rsplit(".", 1)
 				print("Debug: ls[i].rsplit('.', 1) is %s, we now check its value at index one" % debug)
-				if ls[i].rsplit(".", 1)[1] == extension:
-					return ls[i].rsplit(".", 1)[0]
+				if len(ls[i].rsplit('.', 1)) == 2: # avoid stderr and stdout giving IndexError
+					if ls[i].rsplit(".", 1)[1] == extension:
+						return ls[i].rsplit(".", 1)[0]
 				i += 1
 			return None
 
@@ -726,14 +726,19 @@ task assoc_aggregate {
 		if "~{genome_build}" != "":
 			f.write("genome_build '~{genome_build}'\n")
 		f.close()
+
 		CODE
 
 		echo "Current contents of directory:"
 		ls
-		cat assoc_aggregate.config
 
-		Rscript /usr/local/analysis_pipeline/R/assoc_aggregate.R assoc_aggregate.config
+		echo "Searching for the segment number..."
+		SEGMENT_NUM=$(find -name "*.integer" | sed -e 's/\.integer$//')
+
+		Rscript /usr/local/analysis_pipeline/R/assoc_aggregate.R assoc_aggregate.config --segment ${SEGMENT_NUM}
 		# The CWL has a commented out method for including --chromosome to this
+		# It's likely been replaced by the inputBinding for segment number, which we have to extract from
+		# a filename rather than an input variable
 
 	>>>
 
