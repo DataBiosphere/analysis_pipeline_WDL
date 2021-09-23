@@ -1020,7 +1020,7 @@ workflow assoc_agg {
 	scatter(file_set in sbg_group_segments_1.group_out) {
 		call assoc_combine_r {
 			input:
-				chr_n_assocfiles = chr_n_assocfiles,
+				chr_n_assocfiles = file_set,
 				assoc_type = "aggregate"
 		}
 	}
