@@ -769,6 +769,11 @@ task wdl_echo_lists {
 		CODE
 	>>>
 
+	runtime {
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		preemptibles: 3
+	}
+
 	output {
 		Array[File] output_list = input_list # intentionally same as input
 	}
@@ -863,27 +868,28 @@ struct Assoc_N_Chr {
 	Array[String] chromosome
 }
 
-#
-#
-#
-#task assoc_combine_r {
-#	input {
-#		Pair[String, File] chr_n_assocfiles
-#		String? assoc_type
-#		String? out_prefix
-#		File? conditional_variant_file
-#	}
-#
-#	command <<<
-#		touch foo.txt
-#		touch bar.txt
-#	>>>
-#
-#	output {
-#		File assoc_combined = glob("*.RData")[0]
-#	}
-#}
-#
+task assoc_combine_r {
+	input {
+		#Pair[String, File] chr_n_assocfiles
+		Assoc_N_Chr chr_n_assocfiles
+		String? assoc_type
+		String? out_prefix
+		File? conditional_variant_file
+	}
+
+	command <<<
+		FILES=(~{sep=" " chr_n_assocfiles.grouped_assoc_files})
+		for FILE in ${FILES[@]};
+		do
+			echo ${FILE}
+		done
+	>>>
+
+	output {
+		File assoc_combined = glob("*.RData")[0]
+	}
+}
+
 #task assoc_plots_r {
 #	input {
 #		Array[File] assoc_files
@@ -1011,12 +1017,13 @@ workflow assoc_agg {
 
 	# CWL uses a dotproduct scatter; this is the closest WDL equivalent that I'm aware of
 	#scatter(chr_n_assocfiles in zip(sbg_group_segments_1.chromosome, sbg_group_segments_1.grouped_assoc_files)) {
-	#	call assoc_combine_r {
-	#		input:
-	#			chr_n_assocfiles = chr_n_assocfiles,
-	#			assoc_type = "aggregate"
-	#	}
-	#}
+	scatter(file_set in sbg_group_segments_1.group_out) {
+		call assoc_combine_r {
+			input:
+				chr_n_assocfiles = chr_n_assocfiles,
+				assoc_type = "aggregate"
+		}
+	}
 
 #	call assoc_plots_r {
 #		input:
