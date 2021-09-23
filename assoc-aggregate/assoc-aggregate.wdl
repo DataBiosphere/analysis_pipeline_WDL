@@ -733,7 +733,8 @@ task assoc_aggregate {
 		ls
 
 		echo "Searching for the segment number..."
-		SEGMENT_NUM=$(find -name "*.integer" | sed -e 's/\.integer$//')
+		SEGMENT_NUM=$(find -name "*.integer" | sed -e 's/\.integer$//' | sed -e 's/.\///')
+		echo $SEGMENT_NUM
 
 		Rscript /usr/local/analysis_pipeline/R/assoc_aggregate.R assoc_aggregate.config --segment ${SEGMENT_NUM}
 		# The CWL has a commented out method for including --chromosome to this
