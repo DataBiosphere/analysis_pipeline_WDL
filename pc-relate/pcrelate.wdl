@@ -246,7 +246,8 @@ task kinship_plots {
 		File? phenotype_file
 		String? group
 		File? sample_include_file
-		String out_prefix_initial = ""
+		String? out_prefix
+		String? kinship_method
 		
 		# runtime attributes
 		Int addldisk = 1
@@ -254,9 +255,6 @@ task kinship_plots {
 		Int memory = 4
 		Int preempt = 3
 	}
-	String? kinship_method = "pcrelate"  # hardcoded on CWL
-	String out_prefix_final = out_prefix_initial + "_pcrelate"
-	
 	command {
 		set -eux -o pipefail
 
@@ -276,9 +274,10 @@ task kinship_plots {
 		if "~{kinship_plot_threshold}" is not "":
 			f.write('kinship_threshold "~{kinship_plot_threshold}"\n')
 
-		f.write('out_file_all "~{out_prefix_final}_all.pdf"\n')
-		f.write('out_file_cross "~{out_prefix_final}_cross_group.pdf"\n')
-		f.write('out_file_study "~{out_prefix_final}_within_group.pdf"\n')
+		if "~{out_prefix}" is not "": # should always be true due to workflow passing in "_pcrelate"
+			f.write('out_file_all "~{out_prefix}_all.pdf"\n')
+			f.write('out_file_cross "~{out_prefix}_cross_group.pdf"\n')
+			f.write('out_file_study "~{out_prefix}_within_group.pdf"\n')
 
 		if "~{phenotype_file}" is not "":
 			f.write('phenotype_file "~{phenotype_file}"\n')
@@ -369,6 +368,8 @@ workflow pcrel {
 			sparse_threshold = sparse_threshold
 	}
 
+	String out_prefix_final = select_first([out_prefix, ""]) + "_pcrelate" 
+
 	if (ibd_probs) { # this matches the run_plots = ibd_probs part of the CWL
 		call kinship_plots {
 			input:
@@ -377,7 +378,8 @@ workflow pcrel {
 				phenotype_file = phenotype_file,
 				group = group,
 				sample_include_file = sample_include_file,
-				out_prefix_initial = out_prefix
+				out_prefix = out_prefix_final,
+				kinship_method = "pcrelate" # hardcoded on CWL, see https://github.com/UW-GAC/analysis_pipeline_cwl/blob/8d9855ce949330d726cbc26341aaa1854089e02e/relatedness/pc-relate-wf.cwl#L259	
 		}
 	}
 	
