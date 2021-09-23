@@ -638,7 +638,7 @@ task assoc_aggregate {
 			for i in range(0, len(ls)):
 				print("Debug: Iteration %s" % i)
 				debug = ls[i].rsplit(".", 1)
-				print("Debug: ls[i].rsplit(".", 1) is %s, we now check its value at index one" % debug)
+				print("Debug: ls[i].rsplit('.', 1) is %s, we now check its value at index one" % debug)
 				if ls[i].rsplit(".", 1)[1] == extension:
 					return ls[i].rsplit(".", 1)[0]
 				i += 1
