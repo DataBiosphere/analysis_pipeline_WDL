@@ -628,15 +628,17 @@ task assoc_aggregate {
 	command <<<
 		cp ~{zipped} . # copy because I don't want to deal with finding what directory files unzip into
 		unzip ./*.zip
-		echo "Current contents of directory:"
-		ls
 		
 		python << CODE
 		import os
 
 		def wdl_find_file(extension):
+			print("Debug: Looking for %s" % extension)
 			ls = os.listdir(os.getcwd())
 			for i in range(0, len(ls)):
+				print("Debug: Iteration %s" % i)
+				debug = ls[i].rsplit(".", 1)
+				print("Debug: ls[i].rsplit(".", 1) is %s, we now check its value at index one" % debug)
 				if ls[i].rsplit(".", 1)[1] == extension:
 					return ls[i].rsplit(".", 1)[0]
 				i += 1
@@ -725,6 +727,10 @@ task assoc_aggregate {
 			f.write("genome_build '~{genome_build}'\n")
 		f.close()
 		CODE
+
+		echo "Current contents of directory:"
+		ls
+		cat assoc_aggregate.config
 
 		Rscript /usr/local/analysis_pipeline/R/assoc_aggregate.R assoc_aggregate.config
 		# The CWL has a commented out method for including --chromosome to this
@@ -885,6 +891,9 @@ task sbg_group_segments_1 {
 	}
 }
 
+# Another way to get array(array(file)) is via read_tsv in the output... although with drs it seems to actually need to be
+# array(array(string)) but if that is scattered it seems that can be coerced to array(file?) in the topmed var caller
+
 struct Assoc_N_Chr {
 	Array[File] grouped_assoc_files
 	Array[String] chromosome
@@ -913,38 +922,63 @@ task assoc_combine_r {
 		do
 			echo ${FILE}
 		done
+
+		touch foo.txt
 	>>>
 
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-		disks: "local-disk " + 50 + " HDD" # fix this
+		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
 
 	output {
-		File assoc_combined = glob("*.RData")[0]
+		#File assoc_combined = glob("*.RData")[0]
+		File assoc_combined = "foo.txt"
 	}
 }
 
-#task assoc_plots_r {
-#	input {
-#		Array[File] assoc_files
-#		String assoc_type
-#		String? plots_prefix
-#		Boolean? disable_thin
-#		File? known_hits_file
-#		Int? thin_npoints
-#		Int? thin_nbins
-#		Int? plot_mac_threshold
-#		Float? truncate_pval_threshold
-#	}
-#
-#	command {
-#		pass
-#	}
-#}
+task assoc_plots_r {
+	input {
+		Array[File] assoc_files
+		String assoc_type
+		String? plots_prefix
+		Boolean? disable_thin
+		File? known_hits_file
+		Int? thin_npoints
+		Int? thin_nbins
+		Int? plot_mac_threshold
+		Float? truncate_pval_threshold
+
+		# runtime attr
+		Int addldisk = 3
+		Int cpu = 8
+		Int memory = 8
+		Int preempt = 2
+	}
+	Int assoc_size = ceil(size(assoc_files, "GB"))
+	Int finalDiskSize = assoc_size + addldisk
+
+
+	command {
+		echo "foo"
+	}
+
+	runtime {
+		cpu: cpu
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		disks: "local-disk " + finalDiskSize + " HDD"
+		memory: "${memory} GB"
+		preemptibles: "${preempt}"
+	}
+
+	output {
+		#File assoc_combined = glob("*.RData")[0]
+		File assoc_combined = "foo.txt"
+	}
+}
 
 
 workflow assoc_agg {
