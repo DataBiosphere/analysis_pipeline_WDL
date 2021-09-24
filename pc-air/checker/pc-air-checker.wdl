@@ -68,7 +68,7 @@ workflow checker_pcair {
 task filecheck_array {
 	input {
 		Array[File] truth_files
-		Array[File]? test_files
+		Array[File] test_files
 		
 		# runtime attributes
 		Int addldisk = 5
