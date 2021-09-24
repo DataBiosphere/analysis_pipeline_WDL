@@ -847,9 +847,13 @@ task sbg_group_segments_1 {
 
 		print("Grouping...") # line 116 of CWL
 		python_assoc_files = ['~{sep="','" assoc_files}']
+		print("Debug: Input association files located at %s" % python_assoc_files)
+		python_assoc_files_wkdir = []
 		for file in python_assoc_files:
-			# point to the workdir copies instead
-			file = os.path.basename(file)
+			# point to the workdir copies instead to help Terra
+			#file = os.path.basename(file)
+			python_assoc_files_wkdir.append(os.path.basename(file))
+		print("Debug: We will instead work with the workdir duplicates at %s" % python_assoc_files_wkdir)
 		assoc_files_dict = dict() 
 		grouped_assoc_files = [] # line 53 of CWL
 		output_chromosomes = [] # line 96 of CWL
