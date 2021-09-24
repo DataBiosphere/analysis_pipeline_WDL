@@ -320,8 +320,6 @@ workflow pcair {
         Int? n_perpage
         String? group = "NA"
         Boolean run_correlation = false
-        
-#       Array[File] gds_files
     }
 
 
