@@ -626,9 +626,16 @@ task assoc_aggregate {
 	Int finalDiskSize = zipped_size + segment_size + null_size + pheno_size + varweight_size + addldisk
 
 	command <<<
-		cp ~{zipped} . # copy because I don't want to deal with finding what directory files unzip into
+
+		echo "Copying and unzipping inputs..."
+		cp ~{zipped} . # copy because I don't want to deal with finding what directory these files would otherwise unzip into
 		unzip ./*.zip
+
+		echo "\nGet the name of the RData input file in the workdir..."
+		DESTROY_THIS_FILE=$(find -name "*.RData")
+		echo $DESTROY_THIS_FILE
 		
+		echo "\nCalling Python...\n"
 		python << CODE
 		import os
 
@@ -729,17 +736,31 @@ task assoc_aggregate {
 
 		CODE
 
-		echo "Current contents of directory:"
+		echo "\nCurrent contents of working directory are:"
 		ls
 
-		echo "Searching for the segment number..."
+		echo "\nSearching for the segment number..."
 		SEGMENT_NUM=$(find -name "*.integer" | sed -e 's/\.integer$//' | sed -e 's/.\///')
 		echo $SEGMENT_NUM
 
+		echo "\nRunning Rscript..."
 		Rscript /usr/local/analysis_pipeline/R/assoc_aggregate.R assoc_aggregate.config --segment ${SEGMENT_NUM}
 		# The CWL has a commented out method for including --chromosome to this
 		# It's likely been replaced by the inputBinding for segment number, which we have to extract from
 		# a filename rather than an input variable
+
+		echo "\nDeleting input file to avoid globbing the wrong output..."
+		# The CWL globs on *.RData (the earlier stuff reliant on out_prefix is multiline commented out) as an output.
+		# But our input zip file unzips in the working directory, putting an *input* RData file into workdir.
+		# Since it's not in an input folder, this input RData file could get picked up in an output glob("*.RData").
+		# It is ornery to predict the output filename before runtime as WDL would require, but it's trivial to
+		# just delete the input RData file during runtime.
+		rm $DESTROY_THIS_FILE
+
+		echo "\nCurrent contents of working directory are:"
+		ls
+
+		echo "\n\nFinished. WDL will now attempt to evaluate its outputs."
 
 	>>>
 
@@ -752,7 +773,7 @@ task assoc_aggregate {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File assoc_aggregate = glob("*.RData")[0] # simpler than the CWL
+		File assoc_aggregate = glob("*.RData")[0]
 		File config = glob("*.config")[0]
 	}
 }
@@ -900,15 +921,31 @@ task sbg_group_segments_1 {
 		# The CWL returns array(array(file)) and array(string) in order to dotproduct scatter in
 		# the next task, but we cannot do that in WDL, so we will use a custom struct instead
 		Assoc_N_Chr group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_lines("output_chromosomes.txt")}
+		#Assoc_N_Chr_Neo group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_lines("output_chromosomes.txt")[0]} # doesn't work
 	}
 }
 
-# Another way to get array(array(file)) is via read_tsv in the output... although with drs it seems to actually need to be
-# array(array(string)) but if that is scattered it seems that can be coerced to array(file?) in the topmed var caller
+# TO CHECK:
+# * Right now, does Terra output of assoc_aggregate match that of SB? If NO, the problem is actually upstream
+# --> It's complicated. It seems that it happens to have gotten it right so far, but the way we are globbing might
+#.    pick up the input .RData file instead.
+#
+# PROBLEM: sbg_group_segments_1 has output that is tricky to put in WDL
+# OPTION A: Scatter sbg_group_segments_1 and have output as custom Array(File) and String struct
+# OPTION B: Scatter, or don't, sbg_group_segments_1 and use read_tsv() to get array(array(string)) which Walt has previously coerced
+#           into array(file?) in the topmed variant caller
+# OPTION C: Reuse the zip file hack on non-scattered sbg_group_segments_1
+
 
 struct Assoc_N_Chr {
 	Array[File] grouped_assoc_files
 	Array[String] chromosome
+}
+
+struct Assoc_N_Chr_Neo {
+	# Should be closer to what's actually in CWL but doesn't seem to work... are the inputs into the group task valid?
+	Array[File] grouped_assoc_files
+	String chromosome
 }
 
 task assoc_combine_r {
@@ -961,10 +998,10 @@ task assoc_combine_r {
 		# Position   5: Rscript call       (line 176 of CWL)
 		# Position  10: chromosome flag    (line  97 of CWL)
 		# Position 100: config file        (line 172 of CWL)
+
+		# TODO: properly implement the chromosome argument
 		Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome assoc_combine.config
 
-
-		touch foo.txt
 	>>>
 
 	runtime {
@@ -977,7 +1014,6 @@ task assoc_combine_r {
 
 	output {
 		#File assoc_combined = glob("*.RData")[0]
-		File assoc_combined = "foo.txt"
 		File config_file = glob("*.config")[0] # CWL considers this an array but there is always only one
 	}
 }
@@ -1121,7 +1157,8 @@ workflow assoc_agg {
 
 	# CWL has this non-scattered and returns arrays of array(file) paired with arrays of chromosomes.
 	# I cannot get that working properly in WDL even with maps and custom structs, so I've decided
-	# to take the easy route and just scatter this task
+	# to take the easy route and just scatter this task. In theory, a non-scattered array(array(file))
+	# plus array(string) should equal a scattered array(file) plus string once gathered.
 	scatter(assoc_file in wdl_echo_lists.output_list) {
 		call sbg_group_segments_1 {
 			input:
