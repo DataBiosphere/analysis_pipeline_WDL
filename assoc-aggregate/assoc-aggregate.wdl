@@ -892,8 +892,6 @@ task sbg_group_segments_1 {
 		# The CWL returns array(array(file)) and array(string) in order to dotproduct scatter in
 		# the next task, but we cannot do that in WDL, so we will use a custom struct instead
 		Assoc_N_Chr group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_lines("output_chromosomes.txt")}
-		Array[File] grouped_assoc_files = read_lines("output_filenames.txt")
-		Array[String] chromosome = read_lines("output_chromosomes.txt")
 	}
 }
 
