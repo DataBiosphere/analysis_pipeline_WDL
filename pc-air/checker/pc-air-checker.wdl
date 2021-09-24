@@ -86,17 +86,20 @@ task filecheck_array {
 	command <<<
 		set -eux -o pipefail
 
+		TEST_FILE_ARRAY=(~{sep=" " test_files})
+		TRUTH_FILE_ARRAY=(~{sep=" " truth_files})
+
 		## Pull last test file
-		last_test_file_pos=$((${#test_files[@]} - 1))
-		last_test_file_name="$(basename -- ${test_files[$last_test_file_pos]})"
+		last_test_file_pos=$((${#TEST_FILE_ARRAY[@]} - 1))
+		last_test_file_name="$(basename -- ${TEST_FILE_ARRAY[$last_test_file_pos]})"
 
 		## Check all test files
-		for truth_file in "${truth_files[@]}" 
+		for truth_file in "${TRUTH_FILE_ARRAY[@]}" 
 		do
 			truth_file_name="$(basename -- $truth_file)"
 
 			## Loop through test files
-			for test_file in "${test_files[@]}" 
+			for test_file in "${TEST_FILE_ARRAY[@]}" 
 			do
 				test_file_name="$(basename -- $test_file)"	
 				
