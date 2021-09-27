@@ -1105,7 +1105,7 @@ task assoc_combine_r {
 	}
 
 	output {
-		File assoc_combined = glob("*.RData")[0]
+		File assoc_combined = glob("*.RData")[0] # CWL considers this optional
 		File config_file = glob("*.config")[0] # CWL considers this an array but there is always only one
 	}
 }
@@ -1132,7 +1132,7 @@ task assoc_plots_r {
 	Int finalDiskSize = assoc_size + addldisk
 
 
-	command {
+	command <<<
 		touch foo.txt
 
 		python << CODE
@@ -1193,7 +1193,6 @@ task assoc_plots_r {
 			f.write('truncate_pval_threshold ~{truncate_pval_threshold}\n')
 		# plot qq, plot include file, signif type, signif fixed, qq mac bins, lambda, outfile lambadas, plot max, and maf threshold not used
 		f.close()
-
 		CODE
 
 		# considered prefix 1 in the CWL
@@ -1205,7 +1204,7 @@ task assoc_plots_r {
 
 		Rscript /usr/local/analysis_pipeline/R/assoc_plots.R assoc_file.config
 
-	}
+	>>>
 
 	runtime {
 		cpu: cpu
