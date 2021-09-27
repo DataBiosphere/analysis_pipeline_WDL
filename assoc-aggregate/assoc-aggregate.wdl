@@ -1051,6 +1051,7 @@ task assoc_combine_r {
 		done
 
 		python << CODE
+		import os
 		
 		python_assoc_files = ['~{sep="','" chr_n_assocfiles.grouped_assoc_files}']
 		
@@ -1084,7 +1085,14 @@ task assoc_combine_r {
 			ln -s ${FILE} .
 		done
 
-		Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome ~{chr_n_assocfiles.chromosome} assoc_combine.config
+		# chromosome has type Array[String] but only ever has one value
+		CHRS=(~{sep=" " chr_n_assocfiles.chromosome})
+		for CHR in ${CHRS[@]};
+		do
+			THIS_CHR=${CHR}
+		done
+
+		Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome $THIS_CHR assoc_combine.config
 
 	>>>
 
@@ -1097,7 +1105,7 @@ task assoc_combine_r {
 	}
 
 	output {
-		#File assoc_combined = glob("*.RData")[0]
+		File assoc_combined = glob("*.RData")[0]
 		File config_file = glob("*.config")[0] # CWL considers this an array but there is always only one
 	}
 }
@@ -1126,6 +1134,77 @@ task assoc_plots_r {
 
 	command {
 		touch foo.txt
+
+		python << CODE
+
+		def split_on_chromosome(file):
+			chrom_num = file.split("chr")[1]
+			return chrom_num
+			
+		def find_chromosome(file):
+			chr_array = []
+			chrom_num = split_on_chromosome(file)
+			if len(chrom_num) == 1:
+				acceptable_chrs = [str(integer) for integer in list(range(1,22))]
+				acceptable_chrs.extend(["X","Y","M"])
+				if chrom_num in acceptable_chrs:
+					return chrom_num
+				else:
+					print("%s appears to be an invalid chromosome number." % chrom_num)
+					exit(1)
+			elif (unicode(str(chrom_num[1])).isnumeric()):
+				# two digit number
+				chr_array.append(chrom_num[0])
+				chr_array.append(chrom_num[1])
+			else:
+				# one digit number or Y/X/M
+				chr_array.append(chrom_num[0])
+			return "".join(chr_array)
+
+		python_assoc_files = ['~{sep="','" assoc_files}']
+
+		f = open("assoc_file.config", "a")
+
+		# CWL has  argument.push('out_prefix "assoc_single"'); but that doesn't seem valid
+
+		a_file = python_assoc_files[0]
+		chr = find_chromosome(os.path.basename(a_file))
+		path = a+file.path.split('chr'+chr)
+		extension = path[1].rsplit('.')[-1] # note different logic from CWL
+		
+		f.write('assoc_type ~{assoc_type}\n')
+
+		assoc_file = path[0].split('/').pop() + 'chr ' + path[1]
+		f.write('assoc_file "%s"\n' % assoc_file)
+
+		# chromosomes will be a bit tricky
+
+		# CWL might have another boolean/defined bug at line 107, investigate
+
+		if "~{thin_npoints}" != "":
+			f.write('thin_npoints ~{thin_npoints}\n')
+		if "~{thin_nbins}" != "": # does not match apparent CWL bug
+			f.write('plot_mac_threshold ~{plot_mac_threshold}\n')
+		if "~{known_hits_file}" != "":
+			f.write('known_hits_file "~{known_hits_file}"\n')
+		if "~{plot_mac_threshold}" != "":
+			f.write('plot_mac_threshold ~{plot_mac_threshold}\n')
+		if "~{truncate_pval_threshold}" != "":
+			f.write('truncate_pval_threshold ~{truncate_pval_threshold}\n')
+		# plot qq, plot include file, signif type, signif fixed, qq mac bins, lambda, outfile lambadas, plot max, and maf threshold not used
+		f.close()
+
+		CODE
+
+		# considered prefix 1 in the CWL
+		FILES=(~{sep=" " assoc_files})
+		for FILE in ${FILES[@]};
+		do
+			ln -s ${FILE} .
+		done
+
+		Rscript /usr/local/analysis_pipeline/R/assoc_plots.R assoc_file.config
+
 	}
 
 	runtime {
@@ -1137,8 +1216,10 @@ task assoc_plots_r {
 	}
 
 	output {
-		#File assoc_combined = glob("*.RData")[0]
 		File assoc_combined = "foo.txt"
+		Array[File] assoc_plots = glob("*.png")
+		File config_file = "assoc_file.config" # array in CWL
+		Array[File?] lambdas = glob("*.txt") # non-array in CWL
 	}
 }
 
@@ -1243,36 +1324,36 @@ workflow assoc_agg {
 #	# I cannot get that working properly in WDL even with maps and custom structs, so I've decided
 #	# to take the easy route and just scatter this task. In theory, a non-scattered array(array(file))
 #	# plus array(string) should equal a scattered array(file) plus string once gathered.
-#	scatter(assoc_file in wdl_echo_lists.output_list) {
-#		call sbg_group_segments_1 {
-#			input:
-#				assoc_file = assoc_file # if scattered
-#				#assoc_files = wdl_echo_lists.output_list # if not scattered
-#		}
-#	}
+	scatter(assoc_file in wdl_echo_lists.output_list) {
+		call sbg_group_segments_1 {
+			input:
+				assoc_file = assoc_file # if scattered
+				#assoc_files = wdl_echo_lists.output_list # if not scattered
+		}
+	}
 #
 #	# CWL uses a dotproduct scatter; this is the closest WDL equivalent that I'm aware of
 #	#scatter(chr_n_assocfiles in zip(sbg_group_segments_1.chromosome, sbg_group_segments_1.grouped_assoc_files)) {
-#	scatter(file_set in sbg_group_segments_1.group_out) {
-#		call assoc_combine_r {
-#			input:
-#				chr_n_assocfiles = file_set,
-#				assoc_type = "aggregate"
-#		}
-#	}
+	scatter(file_set in sbg_group_segments_1.group_out) {
+		call assoc_combine_r {
+			input:
+				chr_n_assocfiles = file_set,
+				assoc_type = "aggregate"
+		}
+	}
 
-#	call assoc_plots_r {
-#		input:
-#			assoc_files = assoc_combine_r.assoc_combined,
-#			assoc_type = "aggregate",
-#			plots_prefix = out_prefix,
-#			disable_thin = disable_thin,
-#			known_hits_file = known_hits_file,
-#			thin_npoints = thin_npoints,
-#			thin_nbins = thin_nbins,
-#			plot_mac_threshold = plot_mac_threshold,
-#			truncate_pval_threshold = truncate_pval_threshold
-#	}
+	call assoc_plots_r {
+		input:
+			assoc_files = assoc_combine_r.assoc_combined,
+			assoc_type = "aggregate",
+			plots_prefix = out_prefix,
+			disable_thin = disable_thin,
+			known_hits_file = known_hits_file,
+			thin_npoints = thin_npoints,
+			thin_nbins = thin_nbins,
+			plot_mac_threshold = plot_mac_threshold,
+			truncate_pval_threshold = truncate_pval_threshold
+	}
 
 	meta {
 		author: "Ash O'Farrell"
