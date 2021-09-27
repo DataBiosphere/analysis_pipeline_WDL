@@ -631,11 +631,13 @@ task assoc_aggregate {
 		cp ~{zipped} . # copy because I don't want to deal with finding what directory these files would otherwise unzip into
 		unzip ./*.zip
 
-		echo "\nGet the name of the RData input file in the workdir..."
+		echo ""
+		echo "Get the name of the RData input file in the workdir..."
 		DESTROY_THIS_FILE=$(find -name "*.RData")
 		echo $DESTROY_THIS_FILE
 		
-		echo "\nCalling Python...\n"
+		echo ""
+		echo "Calling Python..."
 		python << CODE
 		import os
 
@@ -736,31 +738,53 @@ task assoc_aggregate {
 
 		CODE
 
-		echo "\nCurrent contents of working directory are:"
+		echo ""
+		echo "Current contents of working directory are:"
 		ls
 
-		echo "\nSearching for the segment number..."
+		echo ""
+		echo "Searching for the segment number..."
 		SEGMENT_NUM=$(find -name "*.integer" | sed -e 's/\.integer$//' | sed -e 's/.\///')
 		echo $SEGMENT_NUM
 
-		echo "\nRunning Rscript..."
+		echo ""
+		echo "Running Rscript..."
 		Rscript /usr/local/analysis_pipeline/R/assoc_aggregate.R assoc_aggregate.config --segment ${SEGMENT_NUM}
 		# The CWL has a commented out method for including --chromosome to this
 		# It's likely been replaced by the inputBinding for segment number, which we have to extract from
 		# a filename rather than an input variable
 
-		echo "\nDeleting input file to avoid globbing the wrong output..."
+		echo ""
+		echo "Deleting input file to avoid globbing the wrong output..."
 		# The CWL globs on *.RData (the earlier stuff reliant on out_prefix is multiline commented out) as an output.
 		# But our input zip file unzips in the working directory, putting an *input* RData file into workdir.
 		# Since it's not in an input folder, this input RData file could get picked up in an output glob("*.RData").
 		# It is ornery to predict the output filename before runtime as WDL would require, but it's trivial to
 		# just delete the input RData file during runtime.
+		# It should be noted that if you do NOT do this and run on the provided test data, it will be okay on local
+		# but will grab the wrong file on Terra.
 		rm $DESTROY_THIS_FILE
 
-		echo "\nCurrent contents of working directory are:"
+		echo ""
+		echo "Current contents of working directory are:"
 		ls
 
-		echo "\n\nFinished. WDL will now attempt to evaluate its outputs."
+		echo ""
+		echo "Checking if output exists..."
+		POSSIBLE_OUTPUT=(`find -name "*.RData"`)
+		if [ ${#POSSIBLE_OUTPUT[@]} -gt 0 ]; then 
+			echo "Output appears to exist."
+		else 
+			echo "There appears to be no output. You can verify by checking stdout of the Rscript to see if'exiting gracefully' appears."
+			echo "Due to WDL output limitations we will not create a bogus RData file that should NEVER be used for actual analysis."
+			echo "This file will be removed in subsequent tasks. As such we DO NOT recommend taking this task out of this WDL!"
+			echo "Please see comments in the output section of this task for further documentation."
+			touch BOGUS_FILE_DO_NOT_USE_EVER.RData
+		fi
+
+		echo ""
+		echo ""
+		echo "Finished. WDL will now attempt to evaluate its outputs."
 
 	>>>
 
@@ -773,40 +797,63 @@ task assoc_aggregate {
 		preemptibles: "${preempt}"
 	}
 	output {
+		# For some reason glob("*.RData")[0] fails if the array is empty, even though File? is optional
+		# But it is very difficult to work with Array[Array[File?]] in WDL.
+		#
+		# One might think that we can deal with Array[Array[File?]] using flatten to get a flat array.
+		# Array[File] flat = flatten(select_all(assoc_aggregate.assoc_aggregate)) doesn’t work because it
+		# considers that an illegal coercing of Array[File?] into Array[File].
+		#
+		# Array[File?] flat = flatten(select_all(assoc_aggregate.assoc_aggregate)) passes womtool but fails
+		# when actually used in the next task with "Cannot interpolate Array[File?] into a command string
+		# with attribute set [PlaceholderAttributeSet(None,None,None,Some(','))]" which is almost exactly the
+		# same error we get when trying to put Array[Array[File?]] in the next task.
+		#
+		# This is why we cheated in the command section by creating bogus output if necessary -- we want 
+		# this output to be File instead of Array[File?] so this scattered task's gathered output is 
+		# Array[File] instead of Array[Array[File?]].
+
 		File assoc_aggregate = glob("*.RData")[0]
 		File config = glob("*.config")[0]
 	}
 }
 
-# CWL does not officially support arrays of arrays/lists of lists, so their engineers created a
+# CWL does not officially support arrays of arrays/lists of lists, so SB engineers created a
 # generalizable task called sbg_flatten_lists which is used in several of their CWLs. This task is
-# designed to flatten inputs into a single list of files. There are many reasons why this does
-# not make sense in the context of this WDL:
-# 1. WDL can handle Array[Array[File]] just fine. It gets a little weird if anything in it is type
-#    File? instead of File, but that's not the case for these inputs in this workflow.
-# 2. The previous task which feeds into this one is a scattered task with an File output. The
-#    gathered output is therefore Array[File], not Array[Array[File]].
-# 3. WDL's limited ability to handle outputs means outputing an Array[File] or File that is not a
-#    WDL-compatiable function of its inputs nor following a specific regex pattern is painful.
+# designed to flatten inputs into a single list of files.
 #
-# I have decided to keep this in purely as a debugging step. It is essentially a no-op.
-#
+# The WDL works a bit differently -- the previous task does not output an array of arrays. But we 
+# have our own issues involving optional files, so we are still including a task to process the
+# previous task's output.
 task wdl_echo_lists {
 	input {
 		Array[File] input_list
+
+		# runtime attr
+		Int addldisk = 1
+		Int cpu = 2
+		Int memory = 4
+		Int preempt = 2
 	}
 
-	Int assoc_size = ceil(size(input_list, "GB"))
-	Int finalDiskSize = assoc_size
+	Int in_size = ceil(size(input_list, "GB"))
+	Int finalDiskSize = in_size + addldisk
 
 	command <<<
 		python << CODE
-		flat = []
-		for minilist in ['~{sep="','" input_list}']:
-			for component in minilist:
-				flat.append(component)
-		print(['~{sep="','" input_list}'])
-		print(flat)
+		assocouts = ['~{sep="','" input_list}']
+		print(assocouts)
+
+		for file in assocouts:
+			if "BOGUS_FILE_DO_NOT_USE_EVER.RData" in file:
+				print("Removing bogus output...")
+				assocouts.remove(file)
+
+		f = open("valid_outputs.txt", "a")
+		for list in assocouts:
+			f.write("%s\n" % list)
+		f.close()
+
 		CODE
 	>>>
 
@@ -817,13 +864,16 @@ task wdl_echo_lists {
 	}
 
 	output {
-		Array[File] output_list = input_list # intentionally same as input
+		Array[File] output_list = read_lines("valid_outputs.txt")
 	}
 }
 
 task sbg_group_segments_1 {
 	input {
-		Array[File] assoc_files
+		# if not scattered
+		#Array[File] assoc_files
+		# if scattered
+		File assoc_file
 
 		# runtime attr
 		Int addldisk = 3
@@ -832,17 +882,20 @@ task sbg_group_segments_1 {
 		Int preempt = 2
 	}
 
-	Int assoc_size = ceil(size(assoc_files, "GB"))
+	# if not scattered
+	#Int assoc_size = ceil(size(assoc_files, "GB"))
+	# if scattered
+	Int assoc_size = ceil(size(assoc_file, "GB"))
 	Int finalDiskSize = 2*assoc_size + addldisk
 
 	command <<<
 
 		# copy over because output struggles to find the files otherwise
-		ASSO_FILES=(~{sep=" " assoc_files})
-		for ASSO_FILE in ${ASSO_FILES[@]};
-		do
-			cp ${ASSO_FILE} .
-		done
+
+		# if not scattered
+		# see above runtime section as womtool cannot detect comments properly
+		# if scattered
+		cp ~{assoc_file} .
 
 		python << CODE
 		import os
@@ -871,12 +924,16 @@ task sbg_group_segments_1 {
 			return "".join(chr_array)
 
 		print("Grouping...") # line 116 of CWL
-		python_assoc_files = ['~{sep="','" assoc_files}']
+		
+		# if not scattered
+		# see above runtime block because womtool doesn't parse comments correctly
+		# if scattered
+		python_assoc_files = ["~{assoc_file}"]
+		
 		print("Debug: Input association files located at %s" % python_assoc_files)
 		python_assoc_files_wkdir = []
 		for file in python_assoc_files:
 			# point to the workdir copies instead to help Terra
-			#file = os.path.basename(file)
 			python_assoc_files_wkdir.append(os.path.basename(file))
 		print("Debug: We will instead work with the workdir duplicates at %s" % python_assoc_files_wkdir)
 		assoc_files_dict = dict() 
@@ -903,11 +960,18 @@ task sbg_group_segments_1 {
 
 		g = open("output_chromosomes.txt", "a")
 		for chrom in output_chromosomes:
-			g.write("%s\n" % chrom)
+			g.write("%s" % chrom)
 		g.close()
 
 		CODE
 	>>>
+	#ASSO_FILES=(~{sep=" " assoc_files})
+	#for ASSO_FILE in ${ASSO_FILES[@]};
+	#do
+	#	cp ${ASSO_FILE} .
+	#done
+
+	#python_assoc_files = ['~{sep="','" assoc_files}']
 	
 	runtime {
 		cpu: cpu
@@ -920,15 +984,18 @@ task sbg_group_segments_1 {
 	output {
 		# The CWL returns array(array(file)) and array(string) in order to dotproduct scatter in
 		# the next task, but we cannot do that in WDL, so we will use a custom struct instead
+		
+		# if not scattered:
 		Assoc_N_Chr group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_lines("output_chromosomes.txt")}
-		#Assoc_N_Chr_Neo group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_lines("output_chromosomes.txt")[0]} # doesn't work
+		# if scattered:
+		#Assoc_N_Chr_Neo group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_string("output_chromosomes.txt")}
 	}
 }
 
 # TO CHECK:
 # * Right now, does Terra output of assoc_aggregate match that of SB? If NO, the problem is actually upstream
 # --> It's complicated. It seems that it happens to have gotten it right so far, but the way we are globbing might
-#.    pick up the input .RData file instead.
+#     pick up the input .RData file instead. --> It turns out that is indeed what Terra was doing! Oops!
 #
 # PROBLEM: sbg_group_segments_1 has output that is tricky to put in WDL
 # OPTION A: Scatter sbg_group_segments_1 and have output as custom Array(File) and String struct
@@ -948,10 +1015,19 @@ struct Assoc_N_Chr_Neo {
 	String chromosome
 }
 
+struct Assoc_N_Chr_Single {
+	# Debug attempt to deal with 
+	# Cannot construct WomMapType(WomStringType,WomAnyType) with mixed types in map values: [["/call-sbg_group_segments_1/shard-1/inputs/-2084386719/1KG_phase3_subset_aggregate_chr2_seg2.RData"], WomString(2)]
+	# but it didn't work, just here to indicate not to use it again
+	File grouped_assoc_files
+	String chromosome
+}
+
 task assoc_combine_r {
 	input {
 		#Pair[String, File] chr_n_assocfiles
 		Assoc_N_Chr chr_n_assocfiles
+		#Assoc_N_Chr_Neo chr_n_assocfiles
 		String? assoc_type
 		String? out_prefix
 		File? conditional_variant_file
@@ -966,6 +1042,8 @@ task assoc_combine_r {
 	Int finalDiskSize = 2*assoc_size + addldisk
 
 	command <<<
+
+		# debugging step, delete later
 		FILES=(~{sep=" " chr_n_assocfiles.grouped_assoc_files})
 		for FILE in ${FILES[@]};
 		do
@@ -995,12 +1073,18 @@ task assoc_combine_r {
 
 		# CWL's commands are scattered in different places so let's break it down here
 		# Line numbers reference my fork's commit 196a734c2b40f9ab7183559f57d9824cffec20a1
+		# Position   1: softlink RData ins (line 185 of CWL)
 		# Position   5: Rscript call       (line 176 of CWL)
-		# Position  10: chromosome flag    (line  97 of CWL)
+		# Position  10: chromosome flag    (line  97 of CWL -- chromosome has type Array[String] in CWL, but always has just 1 value
 		# Position 100: config file        (line 172 of CWL)
 
-		# TODO: properly implement the chromosome argument
-		Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome assoc_combine.config
+		FILES=(~{sep=" " chr_n_assocfiles.grouped_assoc_files})
+		for FILE in ${FILES[@]};
+		do
+			ln -s ${FILE} .
+		done
+
+		Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome ~{chr_n_assocfiles.chromosome} assoc_combine.config
 
 	>>>
 
@@ -1154,27 +1238,28 @@ workflow assoc_agg {
 		input:
 			input_list = assoc_aggregate.assoc_aggregate
 	}
-
-	# CWL has this non-scattered and returns arrays of array(file) paired with arrays of chromosomes.
-	# I cannot get that working properly in WDL even with maps and custom structs, so I've decided
-	# to take the easy route and just scatter this task. In theory, a non-scattered array(array(file))
-	# plus array(string) should equal a scattered array(file) plus string once gathered.
-	scatter(assoc_file in wdl_echo_lists.output_list) {
-		call sbg_group_segments_1 {
-			input:
-				assoc_files = wdl_echo_lists.output_list
-		}
-	}
-
-	# CWL uses a dotproduct scatter; this is the closest WDL equivalent that I'm aware of
-	#scatter(chr_n_assocfiles in zip(sbg_group_segments_1.chromosome, sbg_group_segments_1.grouped_assoc_files)) {
-	scatter(file_set in sbg_group_segments_1.group_out) {
-		call assoc_combine_r {
-			input:
-				chr_n_assocfiles = file_set,
-				assoc_type = "aggregate"
-		}
-	}
+#
+#	# CWL has this non-scattered and returns arrays of array(file) paired with arrays of chromosomes.
+#	# I cannot get that working properly in WDL even with maps and custom structs, so I've decided
+#	# to take the easy route and just scatter this task. In theory, a non-scattered array(array(file))
+#	# plus array(string) should equal a scattered array(file) plus string once gathered.
+#	scatter(assoc_file in wdl_echo_lists.output_list) {
+#		call sbg_group_segments_1 {
+#			input:
+#				assoc_file = assoc_file # if scattered
+#				#assoc_files = wdl_echo_lists.output_list # if not scattered
+#		}
+#	}
+#
+#	# CWL uses a dotproduct scatter; this is the closest WDL equivalent that I'm aware of
+#	#scatter(chr_n_assocfiles in zip(sbg_group_segments_1.chromosome, sbg_group_segments_1.grouped_assoc_files)) {
+#	scatter(file_set in sbg_group_segments_1.group_out) {
+#		call assoc_combine_r {
+#			input:
+#				chr_n_assocfiles = file_set,
+#				assoc_type = "aggregate"
+#		}
+#	}
 
 #	call assoc_plots_r {
 #		input:
