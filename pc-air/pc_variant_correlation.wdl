@@ -116,8 +116,7 @@ task pca_corr {
 
         f.write('out_file "%s"\n'%(outfile_temp))
         
-        if ~{n_pcs_corr} != 32:
-            f.write("n_pcs_corr ~{n_pcs_corr}\n")
+        f.write("n_pcs_corr ~{n_pcs_corr}\n")
 
         if "~{defVariantInclude}" == "true":
             f.write('variant_include_file "~{variant_include_file}"\n') 
