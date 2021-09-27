@@ -106,8 +106,8 @@ task filecheck_array {
 				## If filenames match, compare MD5s
 				if [[ $truth_file_name == $test_file_name ]]; 
 				then
-					md5_truth=$(md5 $truth_file | awk '{print $4}')
-					md5_test=$(md5 $test_file | awk '{print $4}')
+					md5_truth=$(md5sum $truth_file | awk '{print $1}')
+					md5_test=$(md5sum $test_file | awk '{print $1}')
 
 					if [[ $md5_truth == $md5_test ]]; 
 					then
