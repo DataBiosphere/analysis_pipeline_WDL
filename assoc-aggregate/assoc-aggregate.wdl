@@ -6,6 +6,8 @@ task wdl_validate_inputs {
 		String? genome_build
 		String? aggregate_type
 		String? test
+
+		# no runtime attr because this is a trivial task that does not scale
 	}
 
 	command <<<
@@ -163,12 +165,17 @@ task sbg_gds_renamer {
 }
 
 task define_segments_r {
+	# This task divides the ENTIRE genome into segments, regardless of the number of chromosomes you are working with.
+	# For example, if you set n_segments to 100, but only run on chr1 and chr2, you can expect there to be about 15
+	# segments as chr1 and chr2 together represent about 15% of the entire genome.
+	# These segments exist in attempt to allow for parallel processing of different chunks of the genome in later steps.
+	# As an absolute minimum, you will end up with one segment per chromosome.
 	input {
 		Int? segment_length
 		Int? n_segments
 		String? genome_build
 
-		# runtime attributes, which you shouldn't need
+		# runtime attributes, which you shouldn't need, although in fairness hg38 might need more oomph than this
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 3
@@ -627,12 +634,16 @@ task assoc_aggregate {
 
 	command <<<
 
-		echo "Copying and unzipping inputs..."
+		echo "Copying and unzipping zipped inputs..."
 		cp ~{zipped} . # copy because I don't want to deal with finding what directory these files would otherwise unzip into
 		unzip ./*.zip
 
+		echo "Setting the never-been-zipped inputs to modifiable on Terra..."
+		# this is to prevent false positive later on when detecting if output RData file exists
+		find . -type d -exec sudo chmod -R 777 {} +
+
 		echo ""
-		echo "Get the name of the RData input file in the workdir..."
+		echo "Get the name of all RData input files in the workdir..."
 		DESTROY_THIS_FILE=$(find -name "*.RData")
 		echo $DESTROY_THIS_FILE
 		
@@ -755,7 +766,7 @@ task assoc_aggregate {
 		# a filename rather than an input variable
 
 		echo ""
-		echo "Deleting input file to avoid globbing the wrong output..."
+		echo "Deleting RData input files to avoid globbing the wrong output..."
 		# The CWL globs on *.RData (the earlier stuff reliant on out_prefix is multiline commented out) as an output.
 		# But our input zip file unzips in the working directory, putting an *input* RData file into workdir.
 		# Since it's not in an input folder, this input RData file could get picked up in an output glob("*.RData").
@@ -772,7 +783,8 @@ task assoc_aggregate {
 		echo ""
 		echo "Checking if output exists..."
 		POSSIBLE_OUTPUT=(`find -name "*.RData"`)
-		if [ ${#POSSIBLE_OUTPUT[@]} -gt 0 ]; then 
+		if [ ${#POSSIBLE_OUTPUT[@]} -gt 0 ]
+		then
 			echo "Output appears to exist."
 		else 
 			echo "There appears to be no output. You can verify by checking stdout of the Rscript to see if'exiting gracefully' appears."
@@ -840,15 +852,23 @@ task wdl_echo_lists {
 	Int finalDiskSize = in_size + addldisk
 
 	command <<<
+		find . -type d -exec sudo chmod -R 777 {} +
+		DESTROY_THIS_FILE=$(find -name "BOGUS_FILE_DO_NOT_USE_EVER.RData")
+		rm $DESTROY_THIS_FILE
+
 		python << CODE
 		assocouts = ['~{sep="','" input_list}']
 		print(assocouts)
 
 		for file in assocouts:
 			if "BOGUS_FILE_DO_NOT_USE_EVER.RData" in file:
-				print("Removing bogus output...")
+				print()
+				print()
+				print("Removing bogus output %s..." % file)
 				assocouts.remove(file)
-
+				print()
+				print()
+				print("Assocouts is now %s" % assocouts)
 		f = open("valid_outputs.txt", "a")
 		for list in assocouts:
 			f.write("%s\n" % list)
@@ -885,8 +905,10 @@ task sbg_group_segments_1 {
 	# if not scattered
 	#Int assoc_size = ceil(size(assoc_files, "GB"))
 	# if scattered
-	Int assoc_size = ceil(size(assoc_file, "GB"))
-	Int finalDiskSize = 2*assoc_size + addldisk
+	##Int assoc_size = ceil(size(assoc_file, "GB"))
+	##Int finalDiskSize = 2*assoc_size + addldisk
+
+	Int finalDiskSize = 42 # temporary override
 
 	command <<<
 
@@ -1136,6 +1158,7 @@ task assoc_plots_r {
 		touch foo.txt
 
 		python << CODE
+		import os
 
 		def split_on_chromosome(file):
 			chrom_num = file.split("chr")[1]
@@ -1169,15 +1192,31 @@ task assoc_plots_r {
 
 		a_file = python_assoc_files[0]
 		chr = find_chromosome(os.path.basename(a_file))
-		path = a+file.path.split('chr'+chr)
+		path = a_file.path.split('chr'+chr)
 		extension = path[1].rsplit('.')[-1] # note different logic from CWL
+
+		if "~{plots_prefix}" != "":
+			f.write('plots_prefix ~{plots_prefix}\n')
+			f.write('out_file_manh ~{plots_prefix}_manh.png\n')
+			f.write('out_file_qq ~{plots_prefix}_qq.png\n')
+		else:
+			data_prefix = "testing"
+			# CWL has var data_prefix = path[0].split('/').pop(); but I think that doesn't fit Terra file system, investigate
+			f.write('out_file_manh %smanh.png\n' % data_prefix)
+			f.write('out_file_qq %sqq.png\n' % data_prefix)
+			f.write('plots_prefix "plots"\n')
 		
 		f.write('assoc_type ~{assoc_type}\n')
 
 		assoc_file = path[0].split('/').pop() + 'chr ' + path[1]
 		f.write('assoc_file "%s"\n' % assoc_file)
 
-		# chromosomes will be a bit tricky
+		chr_array = []
+		for assoc_file in python_assoc_files:
+			chrom_num = find_chromosome(assoc_file)
+			chr_array.append(chrom_num)
+		chrs = ' '.join(chr_array)
+		f.write('chromosomes "%s"' % chrs)
 
 		# CWL might have another boolean/defined bug at line 107, investigate
 
@@ -1330,9 +1369,7 @@ workflow assoc_agg {
 				#assoc_files = wdl_echo_lists.output_list # if not scattered
 		}
 	}
-#
-#	# CWL uses a dotproduct scatter; this is the closest WDL equivalent that I'm aware of
-#	#scatter(chr_n_assocfiles in zip(sbg_group_segments_1.chromosome, sbg_group_segments_1.grouped_assoc_files)) {
+
 	scatter(file_set in sbg_group_segments_1.group_out) {
 		call assoc_combine_r {
 			input:
