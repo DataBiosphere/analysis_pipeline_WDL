@@ -95,18 +95,7 @@ task sbg_gds_renamer {
 	Int finalDiskSize = gds_size*2 + addldisk
 	
 	command <<<
-
-		# workaround attempt 1
-		#set -eux -o pipefail
-		#sudo chmod 777 ~{in_variant} # doesn't work on Terra
 		find . -type d -exec sudo chmod -R 777 {} +
-
-		# debugging
-		#whoami | tee -a "debug-terra.txt"
-		#ls -lha ~{in_variant} | tee -a "debug-terra.txt"
-
-		# workaround attempt 2
-		#cp ~{in_variant} . 
 
 		python << CODE
 		import os
@@ -140,12 +129,8 @@ task sbg_gds_renamer {
 		base = nameroot.split('chr'+chr)[0]
 		newname = base+'chr'+chr+".gds"
 
-		# workaround 1
-		os.rename("~{in_variant}", newname) # doesn't work in Terra
+		os.rename("~{in_variant}", newname)
 
-		# workaround 2
-		#oldname = nameroot + ".gds"
-		#os.rename(oldname, newname)
 		CODE
 
 	>>>
@@ -165,7 +150,7 @@ task sbg_gds_renamer {
 }
 
 task define_segments_r {
-	# This task divides the ENTIRE genome into segments, regardless of the number of chromosomes you are working with.
+	# This task divides the entire genome into segments, regardless of the number of chromosomes you are working with.
 	# For example, if you set n_segments to 100, but only run on chr1 and chr2, you can expect there to be about 15
 	# segments as chr1 and chr2 together represent about 15% of the entire genome.
 	# These segments exist in attempt to allow for parallel processing of different chunks of the genome in later steps.
@@ -238,7 +223,6 @@ task aggregate_list {
 
 		# The parent CWL does not have out_file, but it does have out_prefix
 		# The task CWL does not have out_prefix, but it does have out_file
-		# Leaving this as an input is a bit dangerous as it has different requirements than out_prefix and it's easy to mess up
 		String? out_file
 
 		# runtime attr
@@ -867,7 +851,7 @@ task wdl_echo_lists {
 		for input_file in assocouts:
 			assocouts_base.append(os.path.basename(input_file))
 			if "BOGUS_FILE_DO_NOT_USE_EVER.RData" not in input_file:
-				assocouts_base_valid.append(input_file)
+				assocouts_base_valid.append(os.path.basename(input_file))
 
 		print(assocouts)
 		print(assocouts_base)
