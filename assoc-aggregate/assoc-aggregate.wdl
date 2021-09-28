@@ -782,7 +782,7 @@ task assoc_aggregate {
 
 		echo ""
 		echo "Checking if output exists..."
-		POSSIBLE_OUTPUT=(`find -name "*.RData"`)
+		POSSIBLE_OUTPUT=(`find -name "*.RData"`) # does this need to be find . -name or is find -name okay??
 		if [ ${#POSSIBLE_OUTPUT[@]} -gt 0 ]
 		then
 			echo "Output appears to exist."
@@ -852,28 +852,32 @@ task wdl_echo_lists {
 	Int finalDiskSize = in_size + addldisk
 
 	command <<<
-		find . -type d -exec sudo chmod -R 777 {} +
-		DESTROY_THIS_FILE=$(find -name "BOGUS_FILE_DO_NOT_USE_EVER.RData")
-		rm $DESTROY_THIS_FILE
+		ASSO_FILES=(~{sep=" " input_list})
+		for ASSO_FILE in ${ASSO_FILES[@]};
+		do
+			cp ${ASSO_FILE} .
+		done
 
 		python << CODE
+		import os
 		assocouts = ['~{sep="','" input_list}']
-		print(assocouts)
+		assocouts_base = []
+		assocouts_base_valid = []
 
-		for file in assocouts:
-			if "BOGUS_FILE_DO_NOT_USE_EVER.RData" in file:
-				print()
-				print()
-				print("Removing bogus output %s..." % file)
-				assocouts.remove(file)
-				print()
-				print()
-				print("Assocouts is now %s" % assocouts)
+		for input_file in assocouts:
+			assocouts_base.append(os.path.basename(input_file))
+			if "BOGUS_FILE_DO_NOT_USE_EVER.RData" not in input_file:
+				assocouts_base_valid.append(input_file)
+
+		print(assocouts)
+		print(assocouts_base)
+		print(assocouts_base_valid)
+		
+		# Prepare output
 		f = open("valid_outputs.txt", "a")
-		for list in assocouts:
+		for list in assocouts_base_valid:
 			f.write("%s\n" % list)
 		f.close()
-
 		CODE
 	>>>
 
@@ -957,6 +961,7 @@ task sbg_group_segments_1 {
 		for file in python_assoc_files:
 			# point to the workdir copies instead to help Terra
 			python_assoc_files_wkdir.append(os.path.basename(file))
+		
 		print("Debug: We will instead work with the workdir duplicates at %s" % python_assoc_files_wkdir)
 		assoc_files_dict = dict() 
 		grouped_assoc_files = [] # line 53 of CWL
@@ -1192,7 +1197,7 @@ task assoc_plots_r {
 
 		a_file = python_assoc_files[0]
 		chr = find_chromosome(os.path.basename(a_file))
-		path = a_file.path.split('chr'+chr)
+		path = a_file.split('chr'+chr)
 		extension = path[1].rsplit('.')[-1] # note different logic from CWL
 
 		if "~{plots_prefix}" != "":
@@ -1357,11 +1362,11 @@ workflow assoc_agg {
 		input:
 			input_list = assoc_aggregate.assoc_aggregate
 	}
-#
-#	# CWL has this non-scattered and returns arrays of array(file) paired with arrays of chromosomes.
-#	# I cannot get that working properly in WDL even with maps and custom structs, so I've decided
-#	# to take the easy route and just scatter this task. In theory, a non-scattered array(array(file))
-#	# plus array(string) should equal a scattered array(file) plus string once gathered.
+
+	# CWL has this non-scattered and returns arrays of array(file) paired with arrays of chromosomes.
+	# I cannot get that working properly in WDL even with maps and custom structs, so I've decided
+	# to take the easy route and just scatter this task. In theory, a non-scattered array(array(file))
+	# plus array(string) should equal a scattered array(file) plus string once gathered.
 	scatter(assoc_file in wdl_echo_lists.output_list) {
 		call sbg_group_segments_1 {
 			input:
