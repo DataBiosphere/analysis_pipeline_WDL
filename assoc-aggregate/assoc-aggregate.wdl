@@ -990,7 +990,7 @@ task sbg_group_segments_1 {
 		# the next task, but we cannot do that in WDL, so we will use a custom struct instead
 		
 		# if not scattered:
-		Assoc_N_Chr group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_lines("output_chromosomes.txt")}
+		Assoc_N_Chr group_out = {"grouped_assoc_files":glob("*.RData"),"chromosome":read_lines("output_chromosomes.txt")}
 		# if scattered:
 		#Assoc_N_Chr_Neo group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_string("output_chromosomes.txt")}
 	}
