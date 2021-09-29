@@ -8,12 +8,34 @@ These differences are likely only of interest to maintainers of this repo or tho
 
 **Defaults:** The CWL has some entries listed as sbg:toolDefaultValue which are not considered defaults in the WDL. This is because sbg:toolDefaultValue is a UI tooltip that does not write anything. The default values are defaults with regard to the Rscript. For instance, if the user does not input a value for `null_model_r.norm_bygroup`, the WDL will not write `false` to the config file. Instead, it will not write it to the config file at all, and the Rscript will treat this as if the config said `false`
 
-**The chromosome file workaround:** A few R scripts require chromosome numbers to be passed in on the command line rather than in the configuration file. In order to do this, chromosome number is written to a file (completely separate from the configuration file) in the task's inline Python section. Upon exiting the Python block, this extra file is read in BASH and then passed to the Rscript call as an argument (as opposed to being in the configuration file). Although the actual call to the R script is identical as the CWL also passes the chr number as an argument, the CWL is able to rely on its inline Javascript to do this, while the WDL must use this workaround to pass the chr number out of the Python scope. As this only involves writing a tiny file that doesn't scale with inputs, it does not have cost implications.
+**The chromosome file workaround:** A few R scripts require chromosome numbers to be passed in on the command line rather than in the configuration file. In order to do this, chromosome number is written to a file (completely separate from the configuration file) in the task's inline Python section. Upon exiting the Python block, this extra file is read in BASH and then passed to the Rscript call as an argument (as opposed to being in the configuration file). Although the actual call to the R script is identical as the CWL also passes the chr number as an argument, the CWL is able to rely on its inline JavaScript to do this, while the WDL must use this workaround to pass the chr number out of the Python scope. As this only involves writing a tiny file that doesn't scale with inputs, it does not have cost implications.
 
 ## assoc-aggregate.wdl
-This one has the most signficant differences by far.
+This one has the most significant differences by far. Some tasks have their outputs changed to better comply with the strict output limitations of WDL, and subsequent tasks include processing to account for those changed outputs. As such the input and output of some tasks are not one-to-one of their CWL equivalent tasks.
 
+### General
 Some of the outputs in the CWL at first look like they are globbing .txt files, but they actually are using loadContents, which works like this: For each file matched in glob, read up to the first 64 KiB of text from the file  and place it in the contents field of the file object for manipulation by outputEval. So, the CWL's call for self[0].contents would be the first 64 KiB of the 0th file to match the .txt glob. That would be segments.txt in the prepare segments tasks. Therefore the WDL mimics this by just reading segments.txt
+
+This pipeline features heavy usage of the twice localized workaround.
+
+### sbg_prepare_segments_1
+The CWL's output of sbg_prepare_segments_1 is three or four objects:
+* An array of GDS files
+* An array of integers representing segment number
+* An array of aggregate RData files
+* Optional: An array of variant include RData files
+
+The CWL then dot-product scatters on these arrays, meaning that each instance of the next task gets:
+* One GDS file
+* One integer representing segment number
+* One aggregate RData file
+* Optional: One variant include RData file
+
+It is theoretically possible to mimic this in a WDL that is compatible in Terra using custom structs, but I am not sure if it is possible to reliably scatter on such a thing. In any case, I found it to be less error-prone to simply set this task's output to a single array of zip files and to have the next task scatter on those zip files. Each zip file contains, and will pass into each instance of the subsequent scattered task:
+* One GDS file
+* One file with with the pattern X.integer where X is represents the segment number
+* One aggregate RData file
+* Optional: One variant include RData file, in its own subfolder in order to differentiate it from the other RData file
 
 ## ld-pruning.wdl
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().

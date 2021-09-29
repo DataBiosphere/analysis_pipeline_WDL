@@ -5,21 +5,19 @@
 
 **Aggregate Association Testing workflow** runs aggregate association tests, using Burden, SKAT<sup>[1](#SKAT)</sup>, fastSKAT<sup>[2](#fastSKAT)</sup>, SMMAT<sup>[3](#SMMAT)</sup>, or SKAT-O<sup>[4](#SKATO)</sup> to aggregate a user-defined set of variants. Association tests are parallelized by segments within chromosomes.
 
-The define segments tasks splits the genome into segments and assigns each aggregate unit to a segment based on the position of its first variant. Note that n_segments is based upon the entire genome *regardless of the number of chromosomes you are running on.*[5] Association testing is then for each segment in parallel, before combining results on chromosome level. Finally, the last step creates QQ and Manhattan plots.
+The define segments tasks splits the genome into segments and assigns each aggregate unit to a segment based on the position of its first variant. Note that n_segments is based upon the entire genome *regardless of the number of chromosomes you are running on.*<sup>[5](#segs)</sup> Association testing is then performed for each segment in parallel, before combining results on chromosome level. Finally, the last step creates QQ and Manhattan plots.
 
-Aggregate tests are typically used to jointly test rare variants. The **Alt freq max** parameter allows specification of the maximum alternate allele frequency allowable for inclusion in the test. Included variants are usually weighted using either a function of allele frequency (specified via the **Weight Beta** parameter) or some other annotation information (specified via the **Variant weight file** and **Weight user** parameters). 
+The **alt freq max** parameter allows specification of the maximum alternate allele frequency allowable for inclusion in the joint variant test. Included variants are usually weighted using either a function of allele frequency (specified via the **weight beta** parameter) or some other annotation information (specified via the **variant weight file** and **weight user** parameters). 
 
 When running a burden test, the effect estimate is for each additional unit of burden; there are no effect size estimates for the other tests. Multiple alternate alleles for a single variant are treated separately.
 
-This workflow utilizes the *assocTestAggregate* function from the GENESIS [6] software.
+This workflow utilizes the *assocTestAggregate* function from the GENESIS<sup>[6](#GENESIS)</sup> software.
 
-
-### Common Use Cases
-* This workflow is designed to perform multi-variant association testing on a user-defined groups of variants.
-
+### Use case
+Aggregate tests are typically used to jointly test rare variants. This workflow is designed to perform multi-variant association testing on a user-defined groups of variants.
 
 ### Common Issues and important notes:
-* This pipeline expects that **GDS Files**, **Variant Include Files**, and **Variant group files** are separated per chromosome, and that files are properly named. It is expected that chromosome is included in the filename in following format: chr## , where ## is the name of the chromosome (1-24 or X, Y). Chromosome can be included at any part of the filename.  Examples: data_subset_chr1.vcf,  data_chr1_subset.vcf, chr1_data_subset.vcf.
+* This pipeline expects that **GDS files**, **variant include files**, and **variant group files** are separated per chromosome, and that files are properly named (as with other workflows in this repository).
 
 * If **Weight Beta** parameter is set, it needs to follow proper convention, two space-delimited floating point numbers.
 
@@ -36,8 +34,8 @@ This workflow utilizes the *assocTestAggregate* function from the GENESIS [6] so
 
 ## References/Footnotes
 <a name="SKAT">[1]</a> [SKAT](https://dx.doi.org/10.1016%2Fj.ajhg.2011.05.029)  
-[2] [fastSKAT](https://doi.org/10.1002/gepi.22136)  
-[3] [SMMAT](https://doi.org/10.1016/j.ajhg.2018.12.012)  
-[4] [SKAT-O](https://doi.org/10.1093/biostatistics/kxs014)  
-[5] For instance, if you set n_segments = 100 and run on just chr1 and chr2, you can expect there to be about 15 segments because chr1 and chr2 together make up about 15% of the human genome. Furthermore, at a minimum, the code automatically will create 1 segment per chromosome, so setting n_segments = 2, 4, or 10 when running on just chr1 and chr2 will each result in just two segments even though you might expect dividing the entire genome into 2, 4, or 10 pieces would result in one segment covering all of chr1 and chr2.
-[6] [GENESIS](https://f4c.sbgenomics.com/u/boris_majic/genesis-pipelines-dev/apps/doi.org/10.1093/bioinformatics/btz567)
+<a name="fastSKAT">[2]</a>  [fastSKAT](https://doi.org/10.1002/gepi.22136)  
+<a name="SMMAT">[3]</a>  [SMMAT](https://doi.org/10.1016/j.ajhg.2018.12.012)  
+<a name="SKATO">[4]</a>  [SKAT-O](https://doi.org/10.1093/biostatistics/kxs014)  
+<a name="segs">[5]</a>  For instance, if you set n_segments = 100 and run on just chr1 and chr2, you can expect there to be about 15 segments because chr1 and chr2 together make up about 15% of the human genome. Furthermore, at a minimum, the code automatically will create 1 segment per chromosome, so setting n_segments = 2, 4, or 10 when running on just chr1 and chr2 will each result in just two segments even though you might expect dividing the entire genome into 2, 4, or 10 pieces would result in one segment covering all of chr1 and chr2.  
+<a name="GENESIS">[6]</a>  [GENESIS](https://f4c.sbgenomics.com/u/boris_majic/genesis-pipelines-dev/apps/doi.org/10.1093/bioinformatics/btz567)

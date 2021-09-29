@@ -561,10 +561,6 @@ task sbg_prepare_segments_1 {
 				os.mkdir("varinclude")
 				os.rename(output_variant_files[i], "varinclude/%s" % output_variant_files[i])
 				this_zip.write("varinclude/%s" % output_variant_files[i])
-				#nameroot = os.path.basename(output_variant_files[i]).rsplit(".", 1)[0]
-				#newname = nameroot + ".ofarrell"
-				#os.rename(output_variant_files[i], newname)
-				#this_zip.write("%s" % newname)
 			this_zip.close()
 		CODE
 	>>>
@@ -578,7 +574,6 @@ task sbg_prepare_segments_1 {
 	}
 
 	output {
-		# This varies heavily from the CWL due to limitations on WDL outputs and dotproduct scatters -- afaik, this is the only way!
 		# Each zip contains one GDS, one file with an integer representing seg number, one aggregate RData, and maybe a var include
 		Array[File] dotproduct = glob("*.zip")
 	}
