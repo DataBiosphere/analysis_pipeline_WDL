@@ -833,36 +833,32 @@ task wdl_echo_lists {
 	}
 
 	Int in_size = ceil(size(input_list, "GB"))
-	Int finalDiskSize = in_size + addldisk
+	Int finalDiskSize = 2*in_size + addldisk # overkill due to deletions but easiest formula to work with
 
 	command <<<
+
+		# Terra workaround to make input files deletable
+		find . -type d -exec sudo chmod -R 777 {} +
+
 		ASSO_FILES=(~{sep=" " input_list})
 		for ASSO_FILE in ${ASSO_FILES[@]};
 		do
-			cp ${ASSO_FILE} .
+			if [[ "${ASSO_FILE}" == *"BOGUS_FILE_DO_NOT_USE_EVER"* ]]
+			then
+				# Delete bogus output
+				rm ${ASSO_FILE}
+				echo "${ASSO_FILE} has been deleted"
+			else
+				# Copy good output, then delete the orignal. On Terra this is much less prone to
+				# errors than simply leaving them in place.
+				cp ${ASSO_FILE} .
+				rm ${ASSO_FILE}
+				echo "${ASSO_FILE} has been copied to workdir"
+			fi
 		done
 
-		python << CODE
-		import os
-		assocouts = ['~{sep="','" input_list}']
-		assocouts_base = []
-		assocouts_base_valid = []
+		ls
 
-		for input_file in assocouts:
-			assocouts_base.append(os.path.basename(input_file))
-			if "BOGUS_FILE_DO_NOT_USE_EVER.RData" not in input_file:
-				assocouts_base_valid.append(os.path.basename(input_file))
-
-		print(assocouts)
-		print(assocouts_base)
-		print(assocouts_base_valid)
-		
-		# Prepare output
-		f = open("valid_outputs.txt", "a")
-		for list in assocouts_base_valid:
-			f.write("%s\n" % list)
-		f.close()
-		CODE
 	>>>
 
 	runtime {
@@ -872,7 +868,7 @@ task wdl_echo_lists {
 	}
 
 	output {
-		Array[File] output_list = read_lines("valid_outputs.txt")
+		Array[File] output_list = glob("*.RData")
 	}
 }
 
