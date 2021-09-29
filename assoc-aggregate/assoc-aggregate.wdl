@@ -1,7 +1,9 @@
 version 1.0
+# Author: Ash O'Farrell (UCSC)
 
 task wdl_validate_inputs {
 	# WDL Only -- Validate inputs that are type enum in the CWL
+	
 	input {
 		String? genome_build
 		String? aggregate_type
@@ -84,7 +86,7 @@ task sbg_gds_renamer {
 	input {
 		File in_variant
 
-		# runtime attributes, which you shouldn't need
+		# runtime attributes, which you shouldn't need to adjust as this is a very light task
 		Int addldisk = 3
 		Int cpu = 2
 		Int memory = 4
@@ -92,7 +94,7 @@ task sbg_gds_renamer {
 	}
 	
 	Int gds_size = ceil(size(in_variant, "GB"))
-	Int finalDiskSize = gds_size*2 + addldisk
+	Int finalDiskSize = gds_size + addldisk
 	
 	command <<<
 		find . -type d -exec sudo chmod -R 777 {} +
