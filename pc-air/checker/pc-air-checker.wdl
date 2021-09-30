@@ -65,6 +65,7 @@ workflow checker_pcair {
 		input:
 			test  = pcair.pcair_output,
 			truth = truth_pcair_output,
+			rdata_check = true,
 			tolerance = 0.01
 	}
 
