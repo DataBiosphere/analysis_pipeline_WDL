@@ -411,6 +411,7 @@ task sbg_prepare_segments_1 {
 
 		from zipfile import ZipFile
 		import os
+		import shutil
 
 		def find_chromosome(file):
 			chr_array = []
@@ -547,6 +548,11 @@ task sbg_prepare_segments_1 {
 		var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
 		var_output_hack.close()
 
+		# Add varinclude directory, if necessary
+		if IIvariant_include_filesII != [""]:
+			os.mkdir("varinclude")
+			os.mkdir("temp")
+
 		# Make a bunch of zip files
 		for i in range(0, max(output_segments)):
 			plusone = i+1
@@ -554,12 +560,24 @@ task sbg_prepare_segments_1 {
 			this_zip.write("%s" % output_gdss[i])
 			this_zip.write("%s.integer" % output_segments[i])
 			this_zip.write("%s" % output_aggregate_files[i])
-			if IIvariant_include_filesII != [""]: # not sure if this is robust
+			if IIvariant_include_filesII != [""]:
 				# We can only consistently tell zipped files apart by their
 				# extension. var include and agg will share the RData ext.
 				# Therefore we put varinat include files in a subdirectory.
-				os.mkdir("varinclude")
-				os.rename(output_variant_files[i], "varinclude/%s" % output_variant_files[i])
+				print("We detected %s as an output variant file." % output_variant_files[i])
+				try:
+					# All of these may cause permission weirdness on Terra.
+					print("File exists. Making a temporary copy...")
+					shutil.copy(output_variant_files[i], "temp/%s" % output_variant_files[i])
+					print("Moving to varinclude folder...")
+					os.rename(output_variant_files[i], "varinclude/%s" % output_variant_files[i])
+					print("Returning copy to workdir...")
+					shutil.move("temp/%s" % output_variant_files[i], output_variant_files[i])
+				except OSError:
+					# Variant include for this chr has already been taken up and zipped.
+					# The earlier copy should stop this but we should test for permission weirdness.
+					print("Variant include file appears unavailable. Exiting disgracefully...")
+					exit(1)
 				this_zip.write("varinclude/%s" % output_variant_files[i])
 			this_zip.close()
 		CODE
@@ -637,8 +655,8 @@ task assoc_aggregate {
 			print("Debug: Looking for %s" % extension)
 			ls = os.listdir(os.getcwd())
 			for i in range(0, len(ls)):
-				debug = ls[i].rsplit(".", 1)
-				print("Debug: ls[i].rsplit('.', 1) is %s, we now check its value at index one" % debug)
+				#debug = ls[i].rsplit(".", 1)
+				#print("Debug: ls[i].rsplit('.', 1) is %s, we now check its value at index one" % debug)
 				if len(ls[i].rsplit('.', 1)) == 2: # avoid stderr and stdout giving IndexError
 					if ls[i].rsplit(".", 1)[1] == extension:
 						return ls[i].rsplit(".", 1)[0]
@@ -671,14 +689,19 @@ task assoc_aggregate {
 
 		gds = wdl_find_file("gds") + ".gds"
 		agg = wdl_find_file("RData") + ".RData"
-		seg = int(wdl_find_file("integer").rsplit(".", 1)[0])
+		seg = int(wdl_find_file("integer").rsplit(".", 1)[0]) # not used in Python context
 		if os.path.isdir("varinclude"):
-			os.chdir("varinclude") # not sure if that's the right syntax
-			var = "/varinclude/" + wdl_find_file("RData") + ".RData"
-			if type(var) != None:
-				newname = [var.rsplit(".", 1)[0], ".RData"].join
-				os.rename(var, newname)
-			os.chrdir("..") # not sure if that's the right syntax
+			os.chdir("varinclude") # search varinclude folder only to avoid getting assoc RData
+			name_no_ext = wdl_find_file("RData")
+			os.chdir("..")
+			if type(name_no_ext) != None:
+				source = "".join([os.getcwd(), "/varinclude/", name_no_ext, ".RData"])
+				destination = "".join([os.getcwd(), "/", name_no_ext, ".RData"])
+				print("source is %s" % source)
+				print("destination is %s" % destination)
+				print("Renaming...")
+				os.rename(source, destination)
+				var = destination
 
 		chr = find_chromosome(gds) # runs on FULL PATH in the CWL
 		f = open("assoc_aggregate.config", "a")
@@ -707,7 +730,9 @@ task assoc_aggregate {
 		if "~{test}" != "":
 			f.write("test '~{test}'\n")
 		# cwl has test type, not sure if needed here
-		# cwl has variant include file
+		if os.path.isdir("varinclude"):
+			# although moved to the workdir, the folder containing it should still exist
+			f.write('"variant_include_file "%s"\n' % var)
 		if "~{weight_beta}" != "":
 			f.write("weight_beta '~{weight_beta}'\n")
 		if "~{aggregate_type}" != "":
@@ -747,14 +772,16 @@ task assoc_aggregate {
 		# a filename rather than an input variable
 
 		echo ""
-		echo "Deleting RData input files to avoid globbing the wrong output..."
+		echo "Deleting RData input files to avoid globbing the wrong output (you may see file not found in stderr, this is normal)..."
 		# The CWL globs on *.RData (the earlier stuff reliant on out_prefix is multiline commented out) as an output.
 		# But our input zip file unzips in the working directory, putting an *input* RData file into workdir.
 		# Since it's not in an input folder, this input RData file could get picked up in an output glob("*.RData").
 		# It is ornery to predict the output filename before runtime as WDL would require, but it's trivial to
 		# just delete the input RData file during runtime.
-		# It should be noted that if you do NOT do this and run on the provided test data, it will be okay on local
-		# but will grab the wrong file on Terra.
+		# It should be noted that if you do NOT do this and run on the provided test data, it will usually work on local
+		# but will almost always grab the wrong file on Terra (depending which testing format you use).
+		# Side note: The var include file, if it exists, will trigger a non-fatal error here as the Python script moved it.
+		# But we still need to keep this removal for the other RData input file.
 		rm $DESTROY_THIS_FILE
 
 		echo ""
@@ -777,7 +804,7 @@ task assoc_aggregate {
 
 		echo ""
 		echo ""
-		echo "Finished. WDL will now attempt to evaluate its outputs."
+		echo "Finished. The WDL executor will now attempt to evaluate its outputs."
 
 	>>>
 
@@ -805,7 +832,10 @@ task assoc_aggregate {
 		# This is why we cheated in the command section by creating bogus output if necessary -- we want 
 		# this output to be File instead of Array[File?] so this scattered task's gathered output is 
 		# Array[File] instead of Array[Array[File?]].
-
+		#
+		# I have also experimented with custom structs here, but I believe this workaround is truly the
+		# least error-prone method of doing this. I would love to be proven wrong.
+		
 		File assoc_aggregate = glob("*.RData")[0]
 		File config = glob("*.config")[0]
 	}
@@ -1006,6 +1036,7 @@ task sbg_group_segments_1 {
 # OPTION B: Scatter, or don't, sbg_group_segments_1 and use read_tsv() to get array(array(string)) which Walt has previously coerced
 #           into array(file?) in the topmed variant caller
 # OPTION C: Reuse the zip file hack on non-scattered sbg_group_segments_1
+# OPTION D: Glob on the file output!
 
 
 struct Assoc_N_Chr {
