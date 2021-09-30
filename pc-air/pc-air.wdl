@@ -12,8 +12,8 @@ task find_unrelated {
         File? divergence_file
         File? sample_include_file
         String? out_prefix
-        Float kinship_threshold = 0.044194174
-        Float divergence_threshold = 0.044194174
+        Float kinship_threshold = 0.044194174     # 2^(-9/2) (third-degree relatives and closer)
+        Float divergence_threshold = 0.044194174  # 2^(-9/2)
         
         # runtime attributes
         Int addldisk = 5
@@ -64,7 +64,7 @@ task find_unrelated {
         CODE
 
         echo "Calling R script find_unrelated.R"
-        Rscript /usr/local/analysis_pipeline/R/find_unrelated.R find_unrelated.config
+        R -q --vanilla --args find_unrelated.config < /usr/local/analysis_pipeline/R/find_unrelated.R
     >>>
 
     runtime {
@@ -147,7 +147,7 @@ task pca_byrel {
         CODE
 
         echo "Calling R script pca_byrel.R"
-        Rscript /usr/local/analysis_pipeline/R/pca_byrel.R pca_byrel.config
+        R -q --vanilla --args pca_byrel.config < /usr/local/analysis_pipeline/R/pca_byrel.R
     >>>
 
     runtime {
@@ -173,8 +173,8 @@ task pca_plots {
         # optional
         File? phenotype_file
 
-        Int n_pairs = 6
-        String? group = "NA"
+        Int? n_pairs
+        String? group
         String? out_prefix
         
         # runtime attributes
@@ -196,7 +196,7 @@ task pca_plots {
         set -eux -o pipefail
 
         echo "Generating config file"
-        # noquotes = argument has no quotes in the config file to match CWL config EXACTLY
+        
         python << CODE
         import os
 
@@ -204,7 +204,7 @@ task pca_plots {
 
         f.write('pca_file "~{pca_file}"\n')
         
-        if ~{n_pairs} != 6:
+        if ~{n_pairs} != "":
             f.write("n_pairs ~{n_pairs}\n")
 
         if "~{out_prefix}" != "":
@@ -213,7 +213,7 @@ task pca_plots {
                 f.write('out_file_parcoord "~{out_prefix}_pca_parcoord.pdf"\n')
                 f.write('out_file_pairs "~{out_prefix}_pca_pairs.png"\n')
 
-        if "~{group}" != "NA":
+        if "~{group}" != "":
             f.write("group ~{group}\n")
 
         if "~{defPhenotypeFile}" == "true":
@@ -224,7 +224,7 @@ task pca_plots {
         CODE
 
         echo "Calling R script pca_plots.R"
-        Rscript //usr/local/analysis_pipeline/R/pca_plots.R pca_plots.config
+        R -q --vanilla --args pca_plots.config < /usr/local/analysis_pipeline/R/pca_plots.R 
     >>>
 
     runtime {

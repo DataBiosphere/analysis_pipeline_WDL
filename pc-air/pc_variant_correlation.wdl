@@ -18,7 +18,8 @@ task pca_corr_vars {
 
     # Estimate disk size required
     Int gds_size        = ceil(size(gds_file, "GB"))
-    Int final_disk_dize = gds_size + addldisk
+    Int varinclude_size = select_first([ceil(size(variant_include_file, "GB")), 0])
+    Int final_disk_dize = gds_size + varinclude_size + addldisk
 
     # Are optional files defined?
     Boolean defVariantInclude = defined(variant_include_file)
@@ -28,7 +29,7 @@ task pca_corr_vars {
         set -eux -o pipefail
 
         echo "Generating config file"
-        # noquotes = argument has no quotes in the config file to match CWL config EXACTLY
+        
         python << CODE
         import os
 
@@ -51,7 +52,7 @@ task pca_corr_vars {
         CODE
 
         echo "Calling R script pca_corr_vars.R"
-        Rscript /usr/local/analysis_pipeline/R/pca_corr_vars.R pca_corr_vars.config --chromosome ~{chromosome}
+        R -q --vanilla --args pca_corr_vars.config --chromosome ~{chromosome} < /usr/local/analysis_pipeline/R/pca_corr_vars.R 
     >>>
 
     runtime {
@@ -88,7 +89,8 @@ task pca_corr {
     # Estimate disk size required
     Int gds_size        = ceil(size(gds_file, "GB"))
     Int pca_size        = ceil(size(pca_file, "GB"))
-    Int final_disk_dize = gds_size + pca_size + addldisk
+    Int varinclude_size = select_first([ceil(size(variant_include_file, "GB")), 0])
+    Int final_disk_dize = gds_size + pca_size + varinclude_size + addldisk
 
     # Are optional files defined?
     Boolean defVariantInclude    = defined(variant_include_file)
@@ -130,7 +132,7 @@ task pca_corr {
         CODE
 
         echo "Calling R script pca_corr.R"
-        Rscript /usr/local/analysis_pipeline/R/pca_corr.R pca_corr.config
+        R -q --vanilla --args pca_corr.config /usr/local/analysis_pipeline/R/pca_corr.R
     >>>
 
     runtime {
@@ -242,7 +244,7 @@ task pca_corr_plots {
         CODE
 
         echo "Calling R script pca_corr_plots.R"
-        Rscript /usr/local/analysis_pipeline/R/pca_corr_plots.R pca_corr_plots.config
+        R -q --vanilla --args pca_corr_plots.config /usr/local/analysis_pipeline/R/pca_corr_plots.R 
     >>>
 
     runtime {
