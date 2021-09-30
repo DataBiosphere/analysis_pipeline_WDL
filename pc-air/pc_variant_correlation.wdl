@@ -217,6 +217,10 @@ task pca_corr_plots {
         for corr_file in corr_array_basenames:
             chrom_num = find_chromosome(corr_file)
             chr_array.append(chrom_num)
+        
+        ## Sort as string to match CWL: "1 10 2 20 21 22 3 8 9 X"
+        chr_array = [str(i) for i in chr_array]
+        chr_array = chr_array.sort()
         chrs = ' '.join(chr_array)
 
 
@@ -226,9 +230,9 @@ task pca_corr_plots {
 
         f.write('chromosomes "' + chrs + '"\n')
         
-        f.write('n_pcs "~{n_pcs_plot}"\n')
+        f.write('n_pcs ~{n_pcs_plot}\n')
 
-        f.write('n_perpage "~{n_perpage}"\n')
+        f.write('n_perpage ~{n_perpage}\n')
 
         if "~{out_prefix}" != "":
             f.write('out_prefix "~{out_prefix}"\n')

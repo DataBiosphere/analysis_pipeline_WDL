@@ -132,7 +132,7 @@ task pca_byrel {
         if "~{defVariantInclude}" == "true":
             f.write('variant_include_file "~{variant_include_file}"\n')     
 
-        if ~{n_pcs} != 32:
+        if ~{n_pcs} != "":
             f.write("n_pcs ~{n_pcs}\n")
 
         if "~{out_prefix}" != "":
