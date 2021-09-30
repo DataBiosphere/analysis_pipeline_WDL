@@ -1,6 +1,7 @@
 version 1.0
 
 import "../pc-air.wdl" as pcair_wf
+import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v0.100.0/checker_tasks/filecheck_task.wdl" as verify_file
 
 workflow checker_pcair {
 	input {
@@ -23,7 +24,9 @@ workflow checker_pcair {
 		Boolean run_correlation
 
 		# checker-specific inputs
-		Array[File] truth_files
+		File truth_related_file
+		File truth_unrelated_file
+		File truth_pcair_output
 	}
 
 	# Run the workflow to be checked
@@ -46,96 +49,33 @@ workflow checker_pcair {
 			run_correlation = run_correlation
 	}
 
-	Array[File] non_gds_output   = [pcair.out_unrelated_file, pcair.out_related_file, pcair.pcair_output]
-	Array[File] aggregate_output = flatten(select_all([pcair.pca_corr_gds, non_gds_output]))
-	
-	call filecheck_array {
+	call verify_file.filecheck as check_related {
 		input:
-			test_files = aggregate_output,
-			truth_files = truth_files
+			test  = pcair.out_related_file,
+			truth = truth_related_file
+	}
+
+	call verify_file.filecheck as check_unrelated {
+		input:
+			test  = pcair.out_unrelated_file,
+			truth = truth_unrelated_file
+	}
+
+	call verify_file.filecheck as check_pcair {
+		input:
+			test  = pcair.pcair_output,
+			truth = truth_pcair_output,
+			tolerance = 0.01
 	}
 
 	output {
-		File checker_output = filecheck_array.checker_output
+		File related_check   = check_related.report
+		File unrelated_check = check_related.report
+		File pcair_check     = check_pcair.report
 	}
 
 	meta {
 		author: "Julian Lucas"
 		email: "juklucas@ucsc.edu"
 	}
-}
-
-task filecheck_array {
-	input {
-		Array[File] truth_files
-		Array[File] test_files
-		
-		# runtime attributes
-		Int addldisk = 5
-		Int cpu = 2
-		Int memory = 4
-		Int preempt = 3
-	}
-
-	# Estimate disk size required
-	Int truth_size    = ceil(size(truth_files, "GB"))
-	Int test_size     = ceil(size(test_files, "GB"))
-	Int final_disk_dize =  truth_size + test_size + 10
-	
-
-	command <<<
-		set -eux -o pipefail
-
-		TEST_FILE_ARRAY=(~{sep=" " test_files})
-		TRUTH_FILE_ARRAY=(~{sep=" " truth_files})
-
-		## Pull last test file
-		last_test_file_pos=$((${#TEST_FILE_ARRAY[@]} - 1))
-		last_test_file_name="$(basename -- ${TEST_FILE_ARRAY[$last_test_file_pos]})"
-
-		## Check all test files
-		for truth_file in "${TRUTH_FILE_ARRAY[@]}" 
-		do
-			truth_file_name="$(basename -- $truth_file)"
-
-			## Loop through test files
-			for test_file in "${TEST_FILE_ARRAY[@]}" 
-			do
-				test_file_name="$(basename -- $test_file)"	
-				
-				## If filenames match, compare MD5s
-				if [[ $truth_file_name == $test_file_name ]]; 
-				then
-					md5_truth=$(md5sum $truth_file | awk '{print $1}')
-					md5_test=$(md5sum $test_file | awk '{print $1}')
-
-					if [[ $md5_truth == $md5_test ]]; 
-					then
-						echo "$test_file_name md5 matches" | tee -a checker_output.txt
-					else
-						echo "CHECKING ERROR: MD5 MISMATCH $test_file_name md5 mismatch" | tee -a checker_output.txt
-					fi
-					break
-				## If there isn't a match and its the last element, we cannot find a test
-				## file that matches the truth file	
-				elif [[ $test_file_name == $last_test_file_name ]];
-				then
-					echo "CHECKING ERROR: FILE NOT FOUND $truth_file_name not found" | tee -a checker_output.txt
-				fi
-			done
-		done
-
-	>>>
-
-	runtime {
-		cpu: cpu
-		docker: "quay.io/aofarrel/rchecker:1.1.0"
-		disks: "local-disk " + final_disk_dize + " HDD"
-		memory: "${memory} GB"
-		preemptibles: "${preempt}"
-	}
-	output {
-		File checker_output = "checker_output.txt"
-	}
-
 }

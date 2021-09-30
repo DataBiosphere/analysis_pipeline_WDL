@@ -220,7 +220,7 @@ task pca_corr_plots {
         
         ## Sort as string to match CWL: "1 10 2 20 21 22 3 8 9 X"
         chr_array = [str(i) for i in chr_array]
-        chr_array = chr_array.sort()
+        chr_array.sort()
         chrs = ' '.join(chr_array)
 
 
