@@ -1,0 +1,15 @@
+{
+  "assoc_agg.out_prefix": "position",
+  "assoc_agg.input_gds_files": [
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr1.gds",
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr2.gds"],
+  "assoc_agg.phenotype_file": "gs://topmed_workflow_testing/UWGAC_WDL/null_model/1KG_phase3_subset_annot.RData",
+  "assoc_agg.null_model_file": "gs://topmed_workflow_testing/UWGAC_WDL/assoc/null_model.RData",
+  "assoc_agg.alt_freq_max": 0.1,
+  "assoc_agg.variant_group_files": [
+    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/genes_chr1.RData",
+    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/genes_chr2.RData"],
+  "assoc_agg.aggregate_type": "position",
+  "assoc_agg.test": "burden",
+  "assoc_agg.genome_build": "hg19"
+}

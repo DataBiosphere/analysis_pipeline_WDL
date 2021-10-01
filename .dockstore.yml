@@ -35,4 +35,6 @@ workflows:
      primaryDescriptorPath: /assoc-aggregate/assoc-aggregate.wdl
      testParameterFiles:
         - /assoc-aggregate/assoc-aggregate-terra-allele.json
+        - /assoc-aggregate/assoc-aggregate-terra-position.json
+        - /assoc-aggregate/assoc-aggregate-terra-weights.json
      name: assocation-aggregate-wdl
