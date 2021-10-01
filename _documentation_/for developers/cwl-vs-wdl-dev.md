@@ -20,10 +20,10 @@ This pipeline features heavy usage of the twice localized workaround. Some steps
 
 ### High-level overview
 The CWL takes the following approach:
-1. Prepartion tasks, which can run in parallel
-  A. scatter(sbg_gds_renamer)
-  B. define_segments
-  C. scatter(aggregate_list)
+1. Prepartion tasks, which can run in parallel  
+  A. scatter(sbg_gds_renamer)  
+  B. define_segments  
+  C. scatter(aggregate_list)  
 2. sbg_prepare_segments_1
 3. scatter(assoc_aggregate)
 4. sbg_flatten_lists
@@ -33,10 +33,10 @@ The CWL takes the following approach:
 
 The WDL takes the following approach:
 1. **wdl_validate_inputs**
-2. Prepartion tasks, which can run in parallel
-  A. scatter(sbg_gds_renamer)
-  B. define_segments
-  C. scatter(aggregate_list)
+2. Prepartion tasks, which can run in parallel  
+  A. scatter(sbg_gds_renamer)  
+  B. define_segments  
+  C. scatter(aggregate_list)  
 3. sbg_prepare_segments_1
 4. scatter(assoc_aggregate)
 5. **wdl_process_assoc_files**
