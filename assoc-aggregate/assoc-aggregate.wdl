@@ -1406,7 +1406,7 @@ workflow assoc_agg {
 	}
 
 	output {
-		Array[File] assoc_combined = assoc_combine_r.assoc_combine
+		Array[File] assoc_combined = assoc_combine_r.assoc_combined
 		Array[File] assoc_plots = assoc_plots_r.assoc_plots
 	}
 
