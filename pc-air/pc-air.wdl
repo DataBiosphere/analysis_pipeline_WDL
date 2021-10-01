@@ -204,7 +204,7 @@ task pca_plots {
 
         f.write('pca_file "~{pca_file}"\n')
         
-        if ~{n_pairs} != "":
+        if "~{n_pairs}" != "":
             f.write("n_pairs ~{n_pairs}\n")
 
         if "~{out_prefix}" != "":

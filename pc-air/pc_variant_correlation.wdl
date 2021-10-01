@@ -132,7 +132,7 @@ task pca_corr {
         CODE
 
         echo "Calling R script pca_corr.R"
-        R -q --vanilla --args pca_corr.config /usr/local/analysis_pipeline/R/pca_corr.R
+        R -q --vanilla --args pca_corr.config < /usr/local/analysis_pipeline/R/pca_corr.R
     >>>
 
     runtime {
@@ -244,7 +244,7 @@ task pca_corr_plots {
         CODE
 
         echo "Calling R script pca_corr_plots.R"
-        R -q --vanilla --args pca_corr_plots.config /usr/local/analysis_pipeline/R/pca_corr_plots.R 
+        R -q --vanilla --args pca_corr_plots.config < /usr/local/analysis_pipeline/R/pca_corr_plots.R 
     >>>
 
     runtime {
