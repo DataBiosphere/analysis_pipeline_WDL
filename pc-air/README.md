@@ -30,9 +30,9 @@ parameter | type | description | default
 
 ## Outputs
 
-* out_unrelated_file: RData file with vector of sample.id of unrelated samples identified in Step 1
-* out_related_file (File): RData file with vector of sample.id of samples related to the set of unrelated samples identified in Step 1
-* pcair_output (File): RData file with PC-AiR PCs for all samples
-* pcair_plots (Array[File]): Plot of PCs
-* pc_correlation_plots (Array[File]): PC-variant correlation plots (only output if run_correlation is not set to False)
-* pca_corr_gds (Array[File]): GDS file with PC-variant correlation results (only output if run_correlation is not set to False)
+* **out_unrelated_file** (File): RData file with vector of sample.id of unrelated samples identified in Step 1
+* **out_related_file** (File): RData file with vector of sample.id of samples related to the set of unrelated samples identified in Step 1
+* **pcair_output** (File): RData file with PC-AiR PCs for all samples
+* **pcair_plots** (Array[File]): Plot of PCs
+* **pc_correlation_plots** (Array[File]): PC-variant correlation plots (only output if run_correlation is not set to False)
+* **pca_corr_gds** (Array[File]): GDS file with PC-variant correlation results (only output if run_correlation is not set to False)
