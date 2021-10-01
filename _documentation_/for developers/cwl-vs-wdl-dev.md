@@ -19,11 +19,14 @@ Some of the outputs in the CWL at first look like they are globbing .txt files, 
 This pipeline features heavy usage of the twice localized workaround. Some steps in the CWL actually use the same or a similiar workaround.
 
 ### High-level overview
+![Table showing high-level overview of tasks in the CWL versus the WDL. Information is summarized in text.](https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/assoc-agg-part2/_documentation_/for%20developers/assoc_agg_cwl_vs_wdl.png)
 
-
-sbg_flatten_lists is **not** used in the WDL due to major differences between how WDL and CWL handles arrays. It is replaced by wdl_process_assoc_files. Strictly speaking these two tasks have the same goal -- processing the output of the previous task so that it aligns with the requirements and limitations of a given workflow language -- but the nature of those limitations are quite different.
+### wdl_validate_inputs
+This is a simple to task to validate if three String? inputs are valid. The CWL sets them as type enum, which limits what values they can be. WDL does not have this type, so this task performs the validation to ensure inputs are valid. We do this before anything else runs as these inputs are not used until about halfway down the pipeline, and we don't want to waste user's time doing the first half if the second is doomed to fail.
 
 ### sbg_prepare_segments_1
+First, a point on naming: sbg_prepare_segments_1 is not to be confused with sbg_prepare_segments. sbg_prepare_segments is not used in this workflow at all, in neither the CWL or the WDL, but is used in different CWL workflows.
+
 The CWL's output of sbg_prepare_segments_1 is three or four objects:
 * An array of GDS files
 * An array of integers representing segment number
@@ -41,6 +44,21 @@ It is theoretically possible to mimic this in a WDL that is compatible in Terra 
 * One file with with the pattern X.integer where X is represents the segment number
 * One aggregate RData file
 * Optional: One variant include RData file, in its own subfolder in order to differentiate it from the other RData file
+
+### assoc_aggregate
+Each instance of this scattered task represents one segment of the genome. In both the CWL and the WDL, it is possible for a segment to generate no output in this task. The Rscript will report there is nothing to do and print "exiting gracefully" without generating an RData file.
+
+This is problematic for WDL, as Terra-compatiable WDL has strict limitations on generating and using optional outputs. Thusly we use a workaround where if no RData output is generated for a given segment, we generate a blank RData file with a filename clearly indicating that it is bogus.
+
+### sbg_flatten_lists and wdl_process_assoc_files
+sbg_flatten_lists is **not** used in the WDL due to major differences between how WDL and CWL handles arrays. It is replaced by wdl_process_assoc_files. Strictly speaking these two tasks have the same goal -- processing the output of the previous task so that it aligns with the requirements and limitations of a given workflow language -- but the nature of those limitations are quite different.
+
+In particular, wdl_process_assoc_files deletes the bogus files from the previous assoc_aggregate task.
+
+### sbg_group_segments_1
+The CWL has this as a scattered task. Each instance of the scattered task takes in an Array[File] and outputs an Array[Array[File?]] plus an Array[String?].
+
+The WDL has this a non-scattered task. Each instance of the scattered task takes in a File and outputs a complex object containing one Array[File] and one Array[String]. The Array[String] component only has one element, and is therefore effectly just a String.
 
 ## ld-pruning.wdl
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().
