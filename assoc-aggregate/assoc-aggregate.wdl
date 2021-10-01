@@ -97,6 +97,7 @@ task sbg_gds_renamer {
 	Int finalDiskSize = gds_size + addldisk
 	
 	command <<<
+		set -eux -o pipefail
 		find . -type d -exec sudo chmod -R 777 {} +
 
 		python << CODE
@@ -171,6 +172,7 @@ task define_segments_r {
 	Int finalDiskSize = 10
 	
 	command <<<
+		set -eux -o pipefail
 		python << CODE
 		import os
 		f = open("define_segments.config", "a")
@@ -367,15 +369,17 @@ task sbg_prepare_segments_1 {
 		Array[File]? variant_include_files
 
 		# runtime attr
-		Int addldisk = 1
+		Int addldisk = 50
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 2
 	}
 
-	# disk size calculation goes here
+	# disk size calculation goes here -- due to all the copying, especially with
+	# var include, this will benefit from a hefty overestimation.
 	
 	command <<<
+		set -eux -o pipefail
 		cp ~{segments_file} .
 
 		# The CWL only copies the segments file, but copying everything else
@@ -496,6 +500,10 @@ task sbg_prepare_segments_1 {
 		segs_output_hack.close()
 
 		# Prepare aggregate output
+		# The CWL accounts for there being no aggregate files, as the CWL considers them an optional
+		# input. We don't need to account for that because the way WDL works means it they are a
+		# required output of a previous task and a required input of this task. That said, if this
+		# code is reused for other WDLs, it may need some adjustments right around here.
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 		agg_segments = wdl_get_segments()
 		if 'chr' in os.path.basename(IIaggregate_filesII[0]):
@@ -512,10 +520,6 @@ task sbg_prepare_segments_1 {
 				output_aggregate_files.append(input_aggregate_files[chr])
 			elif (chr in input_gdss):
 				output_aggregate_files.append(None)
-		# The CWL accounts for there being no aggregate files, as the CWL considers them an optional
-		# input. We don't need to account for that because the way WDL works means it they are a
-		# required output of a previous task and a required input of this task. That said, if this
-		# code is reused for other WDLs, it may need some adjustments right around here.
 
 		# Prepare variant include output
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
@@ -548,7 +552,9 @@ task sbg_prepare_segments_1 {
 		var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
 		var_output_hack.close()
 
-		# Add varinclude directory, if necessary
+		# We can only consistently tell output files apart by their extension. If var
+		# include files and agg files are both outputs, this is problematic, as they
+		# both share the RData extension. Therefore we put var include files in a subdir.
 		if IIvariant_include_filesII != [""]:
 			os.mkdir("varinclude")
 			os.mkdir("temp")
@@ -561,21 +567,25 @@ task sbg_prepare_segments_1 {
 			this_zip.write("%s.integer" % output_segments[i])
 			this_zip.write("%s" % output_aggregate_files[i])
 			if IIvariant_include_filesII != [""]:
-				# We can only consistently tell zipped files apart by their
-				# extension. var include and agg will share the RData ext.
-				# Therefore we put varinat include files in a subdirectory.
 				print("We detected %s as an output variant file." % output_variant_files[i])
 				try:
-					# All of these may cause permission weirdness on Terra.
-					print("File exists. Making a temporary copy...")
+					# Both the CWL and the WDL basically have duplicated output wherein each
+					# segment for a given chromosome get the same var include output. If you
+					# have six segments that cover chr2, then each segment will get the same
+					# var include file for chr2.
+					# Because we are handling output with zip files, we need to keep copying
+					# the variant include file. The CWL does not need to do this.
+
+					# Make a temporary copy in the temp directory
 					shutil.copy(output_variant_files[i], "temp/%s" % output_variant_files[i])
-					print("Moving to varinclude folder...")
+					# Move the not-copy into the varinclude subdirectory
 					os.rename(output_variant_files[i], "varinclude/%s" % output_variant_files[i])
-					print("Returning copy to workdir...")
+					# Return the copy to the workdir
 					shutil.move("temp/%s" % output_variant_files[i], output_variant_files[i])
 				except OSError:
 					# Variant include for this chr has already been taken up and zipped.
-					# The earlier copy should stop this but we should test for permission weirdness.
+					# The earlier copy should stop this but permissions can get iffy on
+					# Terra, so we should at least catch the error here for debugging.
 					print("Variant include file appears unavailable. Exiting disgracefully...")
 					exit(1)
 				this_zip.write("varinclude/%s" % output_variant_files[i])
@@ -633,12 +643,16 @@ task assoc_aggregate {
 
 	command <<<
 
+		# Do NOT set pipefail in this task until we have a way to stop the deletion triggering an
+		# error when there is a var include file involved... see comments below
+
 		echo "Copying and unzipping zipped inputs..."
-		cp ~{zipped} . # copy because I don't want to deal with finding what directory these files would otherwise unzip into
+		# Unzipping in the inputs directory leads to a host of issues; this copy simplifies life
+		cp ~{zipped} .
 		unzip ./*.zip
 
 		echo "Setting the never-been-zipped inputs to modifiable on Terra..."
-		# this is to prevent false positive later on when detecting if output RData file exists
+		# This is to prevent false positive later on when detecting if output RData file exists
 		find . -type d -exec sudo chmod -R 777 {} +
 
 		echo ""
@@ -841,14 +855,14 @@ task assoc_aggregate {
 	}
 }
 
-# CWL does not officially support arrays of arrays/lists of lists, so SB engineers created a
-# generalizable task called sbg_flatten_lists which is used in several of their CWLs. This task is
-# designed to flatten inputs into a single list of files.
-#
-# The WDL works a bit differently -- the previous task does not output an array of arrays. But we 
-# have our own issues involving optional files, so we are still including a task to process the
-# previous task's output.
-task wdl_echo_lists {
+task wdl_process_assoc_files {
+	# CWL does not officially support arrays of arrays/lists of lists, so SB engineers created a
+	# generalizable task called sbg_flatten_lists which is used in several of their CWLs. This task is
+	# designed to flatten inputs into a single list of files.
+	#
+	# The WDL works a bit differently -- the previous task does not output an array of arrays. But we 
+	# have our own issues involving optional files, so we are still including a task to process the
+	# previous task's output.
 	input {
 		Array[File] input_list
 
@@ -1025,19 +1039,6 @@ task sbg_group_segments_1 {
 		#Assoc_N_Chr_Neo group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_string("output_chromosomes.txt")}
 	}
 }
-
-# TO CHECK:
-# * Right now, does Terra output of assoc_aggregate match that of SB? If NO, the problem is actually upstream
-# --> It's complicated. It seems that it happens to have gotten it right so far, but the way we are globbing might
-#     pick up the input .RData file instead. --> It turns out that is indeed what Terra was doing! Oops!
-#
-# PROBLEM: sbg_group_segments_1 has output that is tricky to put in WDL
-# OPTION A: Scatter sbg_group_segments_1 and have output as custom Array(File) and String struct
-# OPTION B: Scatter, or don't, sbg_group_segments_1 and use read_tsv() to get array(array(string)) which Walt has previously coerced
-#           into array(file?) in the topmed variant caller
-# OPTION C: Reuse the zip file hack on non-scattered sbg_group_segments_1
-# OPTION D: Glob on the file output!
-
 
 struct Assoc_N_Chr {
 	Array[File] grouped_assoc_files
@@ -1366,7 +1367,7 @@ workflow assoc_agg {
 		}
 	}
 
-	call wdl_echo_lists {
+	call wdl_process_assoc_files {
 		input:
 			input_list = assoc_aggregate.assoc_aggregate
 	}
@@ -1375,11 +1376,11 @@ workflow assoc_agg {
 	# I cannot get that working properly in WDL even with maps and custom structs, so I've decided
 	# to take the easy route and just scatter this task. In theory, a non-scattered array(array(file))
 	# plus array(string) should equal a scattered array(file) plus string once gathered.
-	scatter(assoc_file in wdl_echo_lists.output_list) {
+	scatter(assoc_file in wdl_process_assoc_files.output_list) {
 		call sbg_group_segments_1 {
 			input:
 				assoc_file = assoc_file # if scattered
-				#assoc_files = wdl_echo_lists.output_list # if not scattered
+				#assoc_files = wdl_process_assoc_files.output_list # if not scattered
 		}
 	}
 
@@ -1402,6 +1403,11 @@ workflow assoc_agg {
 			thin_nbins = thin_nbins,
 			plot_mac_threshold = plot_mac_threshold,
 			truncate_pval_threshold = truncate_pval_threshold
+	}
+
+	output {
+		Array[File] assoc_combined = assoc_combine_r.assoc_combine
+		Array[File] assoc_plots = assoc_plots_r.assoc_plots
 	}
 
 	meta {

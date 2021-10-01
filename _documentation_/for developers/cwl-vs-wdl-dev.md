@@ -16,7 +16,35 @@ This one has the most significant differences by far. Some tasks have their outp
 ### General
 Some of the outputs in the CWL at first look like they are globbing .txt files, but they actually are using loadContents, which works like this: For each file matched in glob, read up to the first 64 KiB of text from the file  and place it in the contents field of the file object for manipulation by outputEval. So, the CWL's call for self[0].contents would be the first 64 KiB of the 0th file to match the .txt glob. That would be segments.txt in the prepare segments tasks. Therefore the WDL mimics this by just reading segments.txt
 
-This pipeline features heavy usage of the twice localized workaround.
+This pipeline features heavy usage of the twice localized workaround. Some steps in the CWL actually use the same or a similiar workaround.
+
+### High-level overview
+The CWL takes the following approach:
+1. Prepartion tasks, which can run in parallel
+  A. scatter(sbg_gds_renamer)
+  B. define_segments
+  C. scatter(aggregate_list)
+2. sbg_prepare_segments_1
+3. scatter(assoc_aggregate)
+4. sbg_flatten_lists
+5. sbg_group_segments
+6. scatter(assoc_combine)
+7. assoc_plots_r
+
+The WDL takes the following approach:
+1. **wdl_validate_inputs**
+2. Prepartion tasks, which can run in parallel
+  A. scatter(sbg_gds_renamer)
+  B. define_segments
+  C. scatter(aggregate_list)
+3. sbg_prepare_segments_1
+4. scatter(assoc_aggregate)
+5. **wdl_process_assoc_files**
+6. **scatter(sbg_group_segments)**
+7. scatter(assoc_combine)
+8. assoc_plots_r
+
+sbg_flatten_lists is **not** used in the WDL due to major differences between how WDL and CWL handles arrays. It is replaced by wdl_process_assoc_files. Strictly speaking these two tasks have the same goal -- processing the output of the previous task so that it aligns with the requirements and limitations of a given workflow language -- but the nature of those limitations are quite different.
 
 ### sbg_prepare_segments_1
 The CWL's output of sbg_prepare_segments_1 is three or four objects:
