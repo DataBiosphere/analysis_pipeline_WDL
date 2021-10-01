@@ -32,6 +32,11 @@ workflows:
          - /king/king-terra.json
      name: king-wdl
    - subclass: WDL
+     primaryDescriptorPath: /pc-air/pc-air.wdl
+     testParameterFiles:
+         - /pc-air/pc-air-local.json
+         - /pc-air/pc-air-terra.json
+     name: pc-air
      primaryDescriptorPath: /pc-relate/pcrelate.wdl
      testParameterFiles:
          - /pc-relate/pcrelate-terra.json

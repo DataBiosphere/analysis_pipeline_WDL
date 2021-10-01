@@ -25,6 +25,7 @@ Cromwell does not manage resources well on local executions -- parameters such a
 * [king-ibdseg](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/king/README.md)
 * [null-model](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/null-model/README.md)
 * [vcf-to-gds](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/vcf-to-gds/README.md)
+* [pc-air](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/pc-air/README.md)
 
 
 ------
