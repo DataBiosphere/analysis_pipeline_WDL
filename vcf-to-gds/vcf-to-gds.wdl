@@ -90,7 +90,7 @@ task unique_variant_id {
 
 		for BASH_FILE in ${BASH_FILES[@]};
 		do
-			ln -s ${BASH_FILE} .
+			cp ${BASH_FILE} .
 		done
 
 		echo "Generating config file"
@@ -141,7 +141,7 @@ task unique_variant_id {
 		CODE
 		
 		echo "Calling uniqueVariantIDs.R"		
-		sudo su - root
+		#sudo su - root
 		Rscript /usr/local/analysis_pipeline/R/unique_variant_ids.R unique_variant_ids.config
 	>>>
 	# Estimate disk size required
