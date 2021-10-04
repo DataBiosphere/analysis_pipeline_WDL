@@ -36,7 +36,8 @@ workflows:
      testParameterFiles:
          - /pc-air/pc-air-local.json
          - /pc-air/pc-air-terra.json
-     name: pc-air
+     name: pc-air-wdl
+   - subclass: WDL 
      primaryDescriptorPath: /pc-relate/pcrelate.wdl
      testParameterFiles:
          - /pc-relate/pcrelate-terra.json
