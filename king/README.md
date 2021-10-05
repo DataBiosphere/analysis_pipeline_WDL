@@ -1,6 +1,6 @@
 # Relatedness and Population Structure - Getting Initial Kinship Estimates (king.wdl)
 **Cost estimate when running on Terra, default inputs: $0.07**  
-This workflow first converts the ld-pruned gds file to the bed file format. Next, it uses the [PLINK](https://www.cog-genomics.org/plink2/) program to process the bed file. It then used the [KING](https://www.chen.kingrelatedness.com/) program to get initial kinship estimates. It also outputs a kinship matrix and kinship hexbin plot based on the kinship estimates. This represents [the third "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#relatedness-and-population-structure).
+This workflow first converts the ld-pruned gds file to the bed file format. Next, it uses the [PLINK](https://www.cog-genomics.org/plink2/) program to process the bed file. It then uses the [KING](https://www.chen.kingrelatedness.com/) program to get initial kinship estimates. It also outputs a kinship matrix and kinship hexbin plot based on the kinship estimates. This represents [the third "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#relatedness-and-population-structure).
 
 Original CWL description:
 > This workflow uses the KING --ibdseg method to estimate kinship coefficients, and returns results for pairs of related samples. These kinship estimates can be used as measures of kinship in PC-AiR.
@@ -54,7 +54,7 @@ Note that this pipeline the only required input is the gds_file. A sample_includ
 
 Note that `addldisk` is adding gigabytes **on top of** the WDL's best-guess estimate of disk space needed based on the size of your inputs.
 
-### Tuning Your LD Pruning
+### Tuning King
 | variable          			| type   | default    |info                                 	|
 |--------------------------------------	|--------|----------- |----------------------------------------	|
 | gds2bed.bed_file		 	| String |    ""      | Output BED file name		    	|
