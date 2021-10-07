@@ -15,6 +15,8 @@ Essentially all workflows which take in chromosome-level files share filename re
 
 The original CWL pipelines had arguments relating to runtime such as `ncores` and `cluster_type` that do not apply to WDL. Please familiarize yourself with the [runtime attributes of WDL](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/) if you are unsure how your settings may transfer. For more information on specific runtime attributes for specific tasks, see [the further reading section](https://github.com/DataBiosphere/analysis_pipeline_WDL/main/README.md#further-reading).  
 
+The original pipeline had arguments relating to runtime such as `ncores` and `cluster_type` that do not apply to WDL. Please familarize yourself with the [runtime attributes of WDL](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/) if you are unsure how your settings may transfer.
+
 ### Terra users
 For Terra users, it is recommended to import via Dockstore. Importing the correct JSON file for your workflow at the workflow field entry page will fill in test data and recommended runtime attributes for said test data. For example, load `vcf-to-gds-terra.json` for `vcf-to-gds.wdl`. If you are using your own data, please be sure to adjust your runtime attributes appropriately.  
 
@@ -23,12 +25,12 @@ Cromwell does not manage resources well on local executions -- parameters such a
 
 ## Further reading
 * [checker workflows](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/_documentation_/for%20users/checker.md)
-
 * Association testing -- aggregate: [assoc-aggregate](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/assoc-aggregate/README.md)
 * KING IBDSEG: [KING](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/king/README.md)
 * Linkage disequilibrium pruning: [ld-pruning](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/ld-pruning/README.md)
 * Null model generation: [null-model](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/null-model/README.md)
 * VCF to GDS file conversion: [vcf-to-gds](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/vcf-to-gds/README.md)
+* [pc-air](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/pc-air/README.md)
 
 
 ------

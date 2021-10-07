@@ -38,3 +38,15 @@ workflows:
         - /assoc-aggregate/assoc-aggregate-terra-position.json
         - /assoc-aggregate/assoc-aggregate-terra-weights.json
      name: assocation-aggregate-wdl
+   - subclass: WDL
+     primaryDescriptorPath: /pc-air/pc-air.wdl
+     testParameterFiles:
+         - /pc-air/pc-air-local.json
+         - /pc-air/pc-air-terra.json
+     name: pc-air-wdl
+   - subclass: WDL 
+     primaryDescriptorPath: /pc-relate/pcrelate.wdl
+     testParameterFiles:
+         - /pc-relate/pcrelate-terra.json
+         - /pc-relate/pcrelate-local.json
+     name: pc-relate-wdl
