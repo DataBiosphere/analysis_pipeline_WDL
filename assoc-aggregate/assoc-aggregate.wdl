@@ -850,7 +850,8 @@ task assoc_aggregate {
 		# I have also experimented with custom structs here, but I believe this workaround is truly the
 		# least error-prone method of doing this. I would love to be proven wrong.
 		
-		File assoc_aggregate = glob("*.RData")[0]
+		Array[File]? assoc_aggregate = glob("*.RData")
+		#File assoc_aggregate = glob("*.RData")[0]
 		File config = glob("*.config")[0]
 	}
 }
@@ -884,6 +885,7 @@ task wdl_process_assoc_files {
 		ASSO_FILES=(~{sep=" " input_list})
 		for ASSO_FILE in ${ASSO_FILES[@]};
 		do
+			echo "${ASSO_FILE} is present in the directory."
 			if [[ "${ASSO_FILE}" == *"BOGUS_FILE_DO_NOT_USE_EVER"* ]]
 			then
 				# Delete bogus output
@@ -1367,9 +1369,11 @@ workflow assoc_agg {
 		}
 	}
 
+	Array[File] flatten_array = flatten(select_all(assoc_aggregate.assoc_aggregate))
+
 	call wdl_process_assoc_files {
 		input:
-			input_list = assoc_aggregate.assoc_aggregate
+			input_list = flatten_array
 	}
 
 	# CWL has this non-scattered and returns arrays of array(file) paired with arrays of chromosomes.
