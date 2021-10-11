@@ -1409,7 +1409,10 @@ workflow assoc_agg {
 			truncate_pval_threshold = truncate_pval_threshold
 	}
 
-
+	output {
+		Array[File] assoc_combined = assoc_combine_r.assoc_combined
+		Array[File] assoc_plots = assoc_plots_r.assoc_plots
+	}
 
 	meta {
 		author: "Ash O'Farrell"

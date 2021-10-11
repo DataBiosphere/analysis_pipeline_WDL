@@ -2,16 +2,6 @@ version 1.0
 import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/assoc-agg-part2/assoc-aggregate/assoc-aggregate.wdl" as assoc_agg_wf
 import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/rdata-checker-for-arraycheck/checker_tasks/arraycheck_task.wdl" as verify_array
 
-task nothing {
-		input {
-			Int? nothing
-		}
-
-		command {
-			echo "ahh"
-		}
-}
-
 workflow aggie_checker {
 	input {
 		Array[File]  input_gds_files
@@ -50,12 +40,8 @@ workflow aggie_checker {
 			out_prefix = "position",
 			phenotype_file = phenotype_file,
 			test = "burden",
-			variant_group_files = variant_group_files_genes,
-			variant_include_files = variant_include_files
-	}
-
-	output {
-		Array[File]? assoc_combined = glob("*.RData")
+			variant_group_files = variant_group_files,
+			ariant_include_files = variant_include_files
 	}
 
 #	call assoc_agg_wf.assoc_agg as weights_test {
@@ -75,5 +61,4 @@ workflow aggie_checker {
 #			variant_weight_file = variant_weight_file,
 #			weight_user = "CADD"
 #	}
-
 }
