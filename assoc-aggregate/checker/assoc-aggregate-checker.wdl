@@ -12,9 +12,14 @@ workflow aggie_checker {
 		Array[File]  variant_group_files_genes  # used for position_test
 		Array[File]  variant_include_files
 		File         variant_weight_file
+
+		# truths
+		Array[File] truths_allele
+		Array[File] truths_position
+		Array[File] truths_weight
 	}
 
-#	call assoc_agg_wf.assoc_agg as allele_test {
+#	call assoc_agg_wf.assoc_agg as allele_run {
 #		input:
 #			aggregate_type = "allele",
 #			genome_build = "hg19",
@@ -24,12 +29,12 @@ workflow aggie_checker {
 #			out_prefix = "allele",
 #			phenotype_file = phenotype_file,
 #			test = "burden",
-#			variant_group_files = variant_group_files,
-#			ariant_include_files = variant_include_files,
+#			variant_group_files = variant_group_files_coding,
+#			variant_include_files = variant_include_files,
 #			variant_weight_file = variant_weight_file
 #	}
 	
-	call assoc_agg_wf.assoc_agg as position_test {
+	call assoc_agg_wf.assoc_agg as position_run {
 		input:
 			aggregate_type = "position",
 			alt_freq_max = 0.1,
@@ -40,11 +45,17 @@ workflow aggie_checker {
 			out_prefix = "position",
 			phenotype_file = phenotype_file,
 			test = "burden",
-			variant_group_files = variant_group_files,
-			ariant_include_files = variant_include_files
+			variant_group_files = variant_group_files_genes,
+			variant_include_files = variant_include_files
 	}
 
-#	call assoc_agg_wf.assoc_agg as weights_test {
+	call verify_array.arraycheck_classic as position_check {
+		input:
+			test = position_run.assoc_combined,
+			truth = truths_position
+	}
+
+#	call assoc_agg_wf.assoc_agg as weights_run {
 #		input:
 #			aggregate_type = "allele",
 #			alt_freq_max = 0.1,
@@ -57,7 +68,7 @@ workflow aggie_checker {
 #			phenotype_file = phenotype_file,
 #			segment_length = segment_length,
 #			test = "burden",
-#			variant_group_files = variant_group_files,
+#			variant_group_files = variant_group_files_coding,
 #			variant_weight_file = variant_weight_file,
 #			weight_user = "CADD"
 #	}
