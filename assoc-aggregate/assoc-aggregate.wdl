@@ -446,7 +446,6 @@ task sbg_prepare_segments_1 {
 			for i in range(0, len(file_array)): 
 				# Key is chr number, value is associated GDS file
 				gdss[int(find_chromosome(file_array[i]))] = os.path.basename(file_array[i])
-				i += 1
 			return gdss
 
 		def pair_chromosome_gds_special(file_array, agg_file):
@@ -674,7 +673,6 @@ task assoc_aggregate {
 				if len(ls[i].rsplit('.', 1)) == 2: # avoid stderr and stdout giving IndexError
 					if ls[i].rsplit(".", 1)[1] == extension:
 						return ls[i].rsplit(".", 1)[0]
-				i += 1
 			return None
 
 		def split_on_chromosome(file):
@@ -810,10 +808,6 @@ task assoc_aggregate {
 			echo "Output appears to exist."
 		else 
 			echo "There appears to be no output. You can verify by checking stdout of the Rscript to see if'exiting gracefully' appears."
-			echo "Due to WDL output limitations we will not create a bogus RData file that should NEVER be used for actual analysis."
-			echo "This file will be removed in subsequent tasks. As such we DO NOT recommend taking this task out of this WDL!"
-			echo "Please see comments in the output section of this task for further documentation."
-			touch BOGUS_FILE_DO_NOT_USE_EVER.RData
 		fi
 
 		echo ""
@@ -831,27 +825,7 @@ task assoc_aggregate {
 		preemptibles: "${preempt}"
 	}
 	output {
-		# For some reason glob("*.RData")[0] fails if the array is empty, even though File? is optional
-		# But it is very difficult to work with Array[Array[File?]] in WDL.
-		#
-		# One might think that we can deal with Array[Array[File?]] using flatten to get a flat array.
-		# Array[File] flat = flatten(select_all(assoc_aggregate.assoc_aggregate)) doesn’t work because it
-		# considers that an illegal coercing of Array[File?] into Array[File].
-		#
-		# Array[File?] flat = flatten(select_all(assoc_aggregate.assoc_aggregate)) passes womtool but fails
-		# when actually used in the next task with "Cannot interpolate Array[File?] into a command string
-		# with attribute set [PlaceholderAttributeSet(None,None,None,Some(','))]" which is almost exactly the
-		# same error we get when trying to put Array[Array[File?]] in the next task.
-		#
-		# This is why we cheated in the command section by creating bogus output if necessary -- we want 
-		# this output to be File instead of Array[File?] so this scattered task's gathered output is 
-		# Array[File] instead of Array[Array[File?]].
-		#
-		# I have also experimented with custom structs here, but I believe this workaround is truly the
-		# least error-prone method of doing this. I would love to be proven wrong.
-		
 		Array[File]? assoc_aggregate = glob("*.RData")
-		#File assoc_aggregate = glob("*.RData")[0]
 		File config = glob("*.config")[0]
 	}
 }
@@ -886,18 +860,9 @@ task wdl_process_assoc_files {
 		for ASSO_FILE in ${ASSO_FILES[@]};
 		do
 			echo "${ASSO_FILE} is present in the directory."
-			if [[ "${ASSO_FILE}" == *"BOGUS_FILE_DO_NOT_USE_EVER"* ]]
-			then
-				# Delete bogus output
-				rm ${ASSO_FILE}
-				echo "${ASSO_FILE} has been deleted"
-			else
-				# Copy good output, then delete the orignal. On Terra this is much less prone to
-				# errors than simply leaving them in place.
-				cp ${ASSO_FILE} .
-				rm ${ASSO_FILE}
-				echo "${ASSO_FILE} has been copied to workdir"
-			fi
+			cp ${ASSO_FILE} .
+			rm ${ASSO_FILE}
+			echo "${ASSO_FILE} has been copied to workdir"
 		done
 
 		ls
@@ -1371,16 +1336,12 @@ workflow assoc_agg {
 
 	Array[File] flatten_array = flatten(select_all(assoc_aggregate.assoc_aggregate))
 
-	call wdl_process_assoc_files {
-		input:
-			input_list = flatten_array
-	}
-
 	# CWL has this non-scattered and returns arrays of array(file) paired with arrays of chromosomes.
 	# I cannot get that working properly in WDL even with maps and custom structs, so I've decided
 	# to take the easy route and just scatter this task. In theory, a non-scattered array(array(file))
 	# plus array(string) should equal a scattered array(file) plus string once gathered.
-	scatter(assoc_file in wdl_process_assoc_files.output_list) {
+	#scatter(assoc_file in wdl_process_assoc_files.output_list) {
+	scatter(assoc_file in flatten_array) {
 		call sbg_group_segments_1 {
 			input:
 				assoc_file = assoc_file # if scattered
