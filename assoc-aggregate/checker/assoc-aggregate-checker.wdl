@@ -14,9 +14,9 @@ workflow aggie_checker {
 		File         variant_weight_file
 
 		# truths
-		Array[File] truths_allele
+		Array[File]? truths_allele
 		Array[File] truths_position
-		Array[File] truths_weight
+		Array[File]? truths_weight
 	}
 
 #	call assoc_agg_wf.assoc_agg as allele_run {

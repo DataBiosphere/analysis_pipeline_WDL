@@ -2,6 +2,7 @@
   "aggie_checker.input_gds_files": ["_test-data-and-truths_/assoc/1KG_phase3_subset_chr1.gds", "_test-data-and-truths_/gds/a_vcf2gds/1KG_phase3_subset_chr2_butwithadifferentname.gds"],
   "aggie_checker.phenotype_file": "_test-data-and-truths_/null_model/1KG_phase3_subset_annot.RData",
   "aggie_checker.null_model_file": "_test-data-and-truths_/assoc/null_model.RData",
+  "aggie_checker.variant_include_files": ["_test-data-and-truths_/assoc/variant_include_chr1.RData", "_test-data-and-truths_/assoc/variant_include_chr2.RData"],
   "aggie_checker.variant_weight_file": "_test-data-and-truths_/assoc/coding_variants_weights.RData",
   "aggie_checker.variant_group_files_coding": ["_test-data-and-truths_/assoc/coding_variants_chr1.RData", "_test-data-and-truths_/assoc/coding_variants_chr2.RData"],
   "aggie_checker.variant_group_files_genes": ["_test-data-and-truths_/assoc/genes_chr1.RData", "_test-data-and-truths_/assoc/genes_chr2.RData"],

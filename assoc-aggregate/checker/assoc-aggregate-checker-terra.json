@@ -2,8 +2,11 @@
   "aggie_checker.input_gds_files": [
     "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr1.gds",
     "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr2.gds"],  "aggie_checker.phenotype_file": "_test-data-and-truths_/null_model/1KG_phase3_subset_annot.RData",
-  "assoc_agg.phenotype_file": "gs://topmed_workflow_testing/UWGAC_WDL/null_model/1KG_phase3_subset_annot.RData",
-  "assoc_agg.null_model_file": "gs://topmed_workflow_testing/UWGAC_WDL/assoc/null_model.RData",
+  "aggie_checker.phenotype_file": "gs://topmed_workflow_testing/UWGAC_WDL/null_model/1KG_phase3_subset_annot.RData",
+  "aggie_checker.null_model_file": "gs://topmed_workflow_testing/UWGAC_WDL/assoc/null_model.RData",
+  "aggie_checker.variant_include_files": [
+    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/variant_include_chr1.RData",
+    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/variant_include_chr2.RData"],
   "aggie_checker.variant_weight_file": "gs://topmed_workflow_testing/UWGAC_WDL/assoc/coding_variants_weights.RData",
   "aggie_checker.variant_group_files_coding": [
     "gs://topmed_workflow_testing/UWGAC_WDL/assoc/coding_variants_chr1.RData", 
@@ -11,7 +14,7 @@
   "aggie_checker.variant_group_files_genes": [
     "gs://topmed_workflow_testing/UWGAC_WDL/assoc/genes_chr1.RData",
     "gs://topmed_workflow_testing/UWGAC_WDL/assoc/genes_chr2.RData"],
-  "aggie_checker.truth_position_results": [
+  "aggie_checker.truths_position": [
     "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/position_chr1.RData",
-    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc"]
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/position_chr2.RData"]
 }
