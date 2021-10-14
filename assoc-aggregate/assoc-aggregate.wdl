@@ -647,18 +647,10 @@ task assoc_aggregate {
 
 		echo "Copying and unzipping zipped inputs..."
 		# Unzipping in the inputs directory leads to a host of issues; this copy simplifies life
-		cp ~{zipped} .
-		unzip ./*.zip
+		mkdir inputs
+		cp ~{zipped} ./ins
+		unzip ./ins/*.zip
 
-		echo "Setting the never-been-zipped inputs to modifiable on Terra..."
-		# This is to prevent false positive later on when detecting if output RData file exists
-		find . -type d -exec sudo chmod -R 777 {} +
-
-		echo ""
-		echo "Get the name of all RData input files in the workdir..."
-		DESTROY_THIS_FILE=$(find -name "*.RData")
-		echo $DESTROY_THIS_FILE
-		
 		echo ""
 		echo "Calling Python..."
 		python << CODE
@@ -666,7 +658,8 @@ task assoc_aggregate {
 
 		def wdl_find_file(extension):
 			print("Debug: Looking for %s" % extension)
-			ls = os.listdir(os.getcwd())
+			dir = os.getcwd() + "/ins/"
+			ls = os.listdir(dir)
 			for i in range(0, len(ls)):
 				#debug = ls[i].rsplit(".", 1)
 				#print("Debug: ls[i].rsplit('.', 1) is %s, we now check its value at index one" % debug)
@@ -784,19 +777,6 @@ task assoc_aggregate {
 		# a filename rather than an input variable
 
 		echo ""
-		echo "Deleting RData input files to avoid globbing the wrong output (you may see file not found in stderr, this is normal)..."
-		# The CWL globs on *.RData (the earlier stuff reliant on out_prefix is multiline commented out) as an output.
-		# But our input zip file unzips in the working directory, putting an *input* RData file into workdir.
-		# Since it's not in an input folder, this input RData file could get picked up in an output glob("*.RData").
-		# It is ornery to predict the output filename before runtime as WDL would require, but it's trivial to
-		# just delete the input RData file during runtime.
-		# It should be noted that if you do NOT do this and run on the provided test data, it will usually work on local
-		# but will almost always grab the wrong file on Terra (depending which testing format you use).
-		# Side note: The var include file, if it exists, will trigger a non-fatal error here as the Python script moved it.
-		# But we still need to keep this removal for the other RData input file.
-		rm $DESTROY_THIS_FILE
-
-		echo ""
 		echo "Current contents of working directory are:"
 		ls
 
@@ -807,7 +787,7 @@ task assoc_aggregate {
 		then
 			echo "Output appears to exist."
 		else 
-			echo "There appears to be no output. You can verify by checking stdout of the Rscript to see if'exiting gracefully' appears."
+			echo "There appears to be no output. You can verify by checking stdout of the Rscript to see if 'exiting gracefully' appears."
 		fi
 
 		echo ""
