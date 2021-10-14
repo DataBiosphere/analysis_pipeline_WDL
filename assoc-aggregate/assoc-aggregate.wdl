@@ -647,9 +647,16 @@ task assoc_aggregate {
 
 		echo "Copying and unzipping zipped inputs..."
 		# Unzipping in the inputs directory leads to a host of issues; this copy simplifies life
-		mkdir inputs
+		mkdir ins
 		cp ~{zipped} ./ins
-		unzip ./ins/*.zip
+		cd ins
+		echo "Unzipping..."
+		unzip ./*.zip
+		cd ..
+		echo "In directory is:"
+		ls ins/
+		echo "Workdir is:"
+		ls
 
 		echo ""
 		echo "Calling Python..."
@@ -658,13 +665,17 @@ task assoc_aggregate {
 
 		def wdl_find_file(extension):
 			print("Debug: Looking for %s" % extension)
-			dir = os.getcwd() + "/ins/"
+			dir = os.getcwd()
+			print("Debug: dir is %s" % dir)
 			ls = os.listdir(dir)
+			print("Debug: files here are %s" % ls)
 			for i in range(0, len(ls)):
-				#debug = ls[i].rsplit(".", 1)
-				#print("Debug: ls[i].rsplit('.', 1) is %s, we now check its value at index one" % debug)
+				debug = ls[i].rsplit(".", 1)
+				print("Debug: ls[i].rsplit('.', 1) is %s, we now check its value at index one" % debug)
 				if len(ls[i].rsplit('.', 1)) == 2: # avoid stderr and stdout giving IndexError
+					print("Debug: Survived first check")
 					if ls[i].rsplit(".", 1)[1] == extension:
+						print("Debug: Survived second check")
 						return ls[i].rsplit(".", 1)[0]
 			return None
 
@@ -681,7 +692,7 @@ task assoc_aggregate {
 				if chrom_num in acceptable_chrs:
 					return chrom_num
 				else:
-					print("%s appears to be an invalid chromosome number." % chrom_num)
+					print("Debug: %s appears to be an invalid chromosome number." % chrom_num)
 					exit(1)
 			elif (unicode(str(chrom_num[1])).isnumeric()):
 				# two digit number
@@ -692,6 +703,7 @@ task assoc_aggregate {
 				chr_array.append(chrom_num[0])
 			return "".join(chr_array)
 
+		os.chdir("ins")
 		gds = wdl_find_file("gds") + ".gds"
 		agg = wdl_find_file("RData") + ".RData"
 		seg = int(wdl_find_file("integer").rsplit(".", 1)[0]) # not used in Python context
@@ -702,13 +714,15 @@ task assoc_aggregate {
 			if type(name_no_ext) != None:
 				source = "".join([os.getcwd(), "/varinclude/", name_no_ext, ".RData"])
 				destination = "".join([os.getcwd(), "/", name_no_ext, ".RData"])
-				print("source is %s" % source)
-				print("destination is %s" % destination)
-				print("Renaming...")
+				print("Debug: source is %s" % source)
+				print("Debug: destination is %s" % destination)
+				print("Debug: Renaming...")
 				os.rename(source, destination)
 				var = destination
 
 		chr = find_chromosome(gds) # runs on FULL PATH in the CWL
+		dir = os.getcwd()ß
+		print("Debug: dir is %s, about to make config file" % dir)
 		f = open("assoc_aggregate.config", "a")
 		
 		if "~{out_prefix}" != "":
@@ -756,9 +770,21 @@ task assoc_aggregate {
 			f.write("weight_user '~{weight_user}'\n")
 		if "~{genome_build}" != "":
 			f.write("genome_build '~{genome_build}'\n")
+		print("Debug: Finished python section")
+		dir = os.getcwd()
+		print("Debug: dir is %s" % dir)
+		ls = os.listdir(dir)
+		print("Debug: files here are %s" % ls)
+
 		f.close()
 
 		CODE
+
+		# copy config file; it's in a subdirectory at the moment
+		#cp /ins/*.config .
+
+		find -name *.config
+		find -name *.integer
 
 		echo ""
 		echo "Current contents of working directory are:"
@@ -766,7 +792,9 @@ task assoc_aggregate {
 
 		echo ""
 		echo "Searching for the segment number..."
+		cd ins/
 		SEGMENT_NUM=$(find -name "*.integer" | sed -e 's/\.integer$//' | sed -e 's/.\///')
+		cd ..
 		echo $SEGMENT_NUM
 
 		echo ""
