@@ -721,7 +721,7 @@ task assoc_aggregate {
 				var = destination
 
 		chr = find_chromosome(gds) # runs on FULL PATH in the CWL
-		dir = os.getcwd()ß
+		dir = os.getcwd()
 		print("Debug: dir is %s, about to make config file" % dir)
 		f = open("assoc_aggregate.config", "a")
 		
