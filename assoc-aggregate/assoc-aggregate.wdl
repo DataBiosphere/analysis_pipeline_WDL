@@ -746,9 +746,10 @@ task assoc_aggregate {
 			else:
 				f.write('out_prefix "' + data_prefix[0]  + 'aggregate_chr'  + chr + os.path.basename(gds).split('chr'+chr)[1].split('.gds')[0] + '"' + "\n")
 
-		f.write("gds_file '%s'\n" % gds)
+		dir = os.getcwd()
+		f.write("gds_file '%s/%s'\n" % (dir, gds))
 		f.write("phenotype_file '~{phenotype_file}'\n")
-		f.write("aggregate_variant_file '%s'\n" % agg)
+		f.write("aggregate_variant_file '%s/%s'\n" % (dir, agg))
 		f.write("null_model_file '~{null_model_file}'\n")
 		# CWL accounts for null_model_params but this does not exist in aggregate context
 		if "~{rho}" != "":
