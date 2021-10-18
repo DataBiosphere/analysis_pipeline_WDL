@@ -631,6 +631,8 @@ task assoc_aggregate {
 		Int cpu = 1
 		Int memory = 8
 		Int preempt = 0
+
+		Boolean debug = true
 	}
 	# Estimate disk size required
 	Int zipped_size = ceil(size(zipped, "GB"))*5 # not sure how much zip compresses them if at all
@@ -642,21 +644,29 @@ task assoc_aggregate {
 
 	command <<<
 
-		# Do NOT set pipefail in this task until we have a way to stop the deletion triggering an
-		# error when there is a var include file involved... see comments below
+		# I do not recommend deleting the debug sections. There are some workarounds to the specifics of the
+		# Terra file system, which may change later down the line. So they may help future maintainers at the
+		# cost of being a bit ugly.
 
 		echo "Copying and unzipping zipped inputs..."
-		# Unzipping in the inputs directory leads to a host of issues; this copy simplifies life
+		# Unzipping in the inputs directory leads to a host of issues as depending on the platform
+		# they will end up in different places. Copying them to our own directory simplifies the
+		# process and avoids several workarounds, at the cost of relying on permissions cooperating.
+		
 		mkdir ins
 		cp ~{zipped} ./ins
 		cd ins
 		echo "Unzipping..."
 		unzip ./*.zip
 		cd ..
-		echo "In directory is:"
-		ls ins/
-		echo "Workdir is:"
-		ls
+
+		if [[ "~{debug}" = "true" ]]
+		then
+			echo "In directory is:"
+			ls ins/
+			echo "Workdir is:"
+			ls
+		fi
 
 		echo ""
 		echo "Calling Python..."
@@ -664,18 +674,16 @@ task assoc_aggregate {
 		import os
 
 		def wdl_find_file(extension):
-			print("Debug: Looking for %s" % extension)
 			dir = os.getcwd()
-			print("Debug: dir is %s" % dir)
 			ls = os.listdir(dir)
-			print("Debug: files here are %s" % ls)
+			if "~{debug}" == "true":
+				print("Debug: Looking for %s in %s which contains these files: %s" % (extension, dir, ls))
 			for i in range(0, len(ls)):
-				debug = ls[i].rsplit(".", 1)
-				print("Debug: ls[i].rsplit('.', 1) is %s, we now check its value at index one" % debug)
+				debug_split = ls[i].rsplit(".", 1)
+				if "~{debug}" == "true":
+					print("Debug: ls[i].rsplit('.', 1) is %s, we now check its value at index one" % debug_split)
 				if len(ls[i].rsplit('.', 1)) == 2: # avoid stderr and stdout giving IndexError
-					print("Debug: Survived first check")
 					if ls[i].rsplit(".", 1)[1] == extension:
-						print("Debug: Survived second check")
 						return ls[i].rsplit(".", 1)[0]
 			return None
 
@@ -692,7 +700,7 @@ task assoc_aggregate {
 				if chrom_num in acceptable_chrs:
 					return chrom_num
 				else:
-					print("Debug: %s appears to be an invalid chromosome number." % chrom_num)
+					print("Error: %s appears to be an invalid chromosome number." % chrom_num)
 					exit(1)
 			elif (unicode(str(chrom_num[1])).isnumeric()):
 				# two digit number
@@ -714,15 +722,18 @@ task assoc_aggregate {
 			if type(name_no_ext) != None:
 				source = "".join([os.getcwd(), "/varinclude/", name_no_ext, ".RData"])
 				destination = "".join([os.getcwd(), "/", name_no_ext, ".RData"])
-				print("Debug: source is %s" % source)
-				print("Debug: destination is %s" % destination)
-				print("Debug: Renaming...")
+				if "~{debug}" == "true":
+					# Terra permissions can get a little tricky
+					print("Debug: Source is %s" % source)
+					print("Debug: Destination is %s" % destination)
+					print("Debug: Renaming...")
 				os.rename(source, destination)
 				var = destination
 
 		chr = find_chromosome(gds) # runs on FULL PATH in the CWL
 		dir = os.getcwd()
-		print("Debug: dir is %s, about to make config file" % dir)
+		if "~{debug}" == "true":
+			print("Debug: Current working directory is %s; config file will be written here" % dir)
 		f = open("assoc_aggregate.config", "a")
 		
 		if "~{out_prefix}" != "":
@@ -770,32 +781,36 @@ task assoc_aggregate {
 			f.write("weight_user '~{weight_user}'\n")
 		if "~{genome_build}" != "":
 			f.write("genome_build '~{genome_build}'\n")
-		print("Debug: Finished python section")
-		dir = os.getcwd()
-		print("Debug: dir is %s" % dir)
-		ls = os.listdir(dir)
-		print("Debug: files here are %s" % ls)
 
 		f.close()
+
+		if "~{debug}" == "true":
+			dir = os.getcwd()
+			ls = os.listdir(dir)
+			print("Debug: Python working directory is %s and it contains %s" % (dir, ls))
+			print("Debug: Finished python section")
 
 		CODE
 
 		# copy config file; it's in a subdirectory at the moment
-		#cp /ins/*.config .
+		cp ./ins/assoc_aggregate.config .
 
-		find -name *.config
-		find -name *.integer
-
-		echo ""
-		echo "Current contents of working directory are:"
-		ls
-
-		echo ""
-		echo "Searching for the segment number..."
+		if [[ "~{debug}" = "true" ]]
+		then
+			find -name *.config
+			find -name *.integer
+			echo ""
+			echo "Debug: Searching for the segment number or letter in input directory..."
+		fi
+		
 		cd ins/
 		SEGMENT_NUM=$(find -name "*.integer" | sed -e 's/\.integer$//' | sed -e 's/.\///')
 		cd ..
-		echo $SEGMENT_NUM
+
+		if [[ "~{debug}" = "true" ]]
+		then
+			echo $SEGMENT_NUM
+		fi
 
 		echo ""
 		echo "Running Rscript..."
@@ -804,18 +819,20 @@ task assoc_aggregate {
 		# It's likely been replaced by the inputBinding for segment number, which we have to extract from
 		# a filename rather than an input variable
 
-		echo ""
-		echo "Current contents of working directory are:"
-		ls
-
-		echo ""
-		echo "Checking if output exists..."
-		POSSIBLE_OUTPUT=(`find -name "*.RData"`) # does this need to be find . -name or is find -name okay??
-		if [ ${#POSSIBLE_OUTPUT[@]} -gt 0 ]
+		if [[ "~{debug}" = "true" ]]
 		then
-			echo "Output appears to exist."
-		else 
-			echo "There appears to be no output. You can verify by checking stdout of the Rscript to see if 'exiting gracefully' appears."
+			echo ""
+			echo "Debug: Current contents of working directory are:"
+			ls
+			echo ""
+			echo "Debug: Checking if output exists..."
+			POSSIBLE_OUTPUT=(`find -name "*.RData"`) # does this need to be find . -name or is find -name okay??
+			if [ ${#POSSIBLE_OUTPUT[@]} -gt 0 ]
+			then
+				echo "Debug: Output appears to exist."
+			else 
+				echo "Debug: There appears to be no output. You can verify by checking stdout of the Rscript to see if 'exiting gracefully' appears."
+			fi
 		fi
 
 		echo ""
@@ -834,7 +851,7 @@ task assoc_aggregate {
 	}
 	output {
 		Array[File]? assoc_aggregate = glob("*.RData")
-		File config = glob("*.config")[0]
+		File config = glob("ins/*.config")[0]
 	}
 }
 
@@ -1146,10 +1163,13 @@ task assoc_plots_r {
 	command <<<
 		touch foo.txt
 
+		ls
+
 		python << CODE
 		import os
 
 		def split_on_chromosome(file):
+			print("Debug: %s" % file.split("chr"))
 			chrom_num = file.split("chr")[1]
 			return chrom_num
 			
@@ -1174,6 +1194,8 @@ task assoc_plots_r {
 			return "".join(chr_array)
 
 		python_assoc_files = ['~{sep="','" assoc_files}']
+
+		print("Debug: Association files are %s" % python_assoc_files)
 
 		f = open("assoc_file.config", "a")
 
