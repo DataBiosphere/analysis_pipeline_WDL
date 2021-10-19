@@ -369,14 +369,18 @@ task sbg_prepare_segments_1 {
 		Array[File]? variant_include_files
 
 		# runtime attr
-		Int addldisk = 50
+		Int addldisk = 10
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 2
 	}
 
-	# disk size calculation goes here -- due to all the copying, especially with
-	# var include, this will benefit from a hefty overestimation.
+	# Estimate disk size required
+	Int gds_size = 2 * ceil(size(input_gds_files, "GB"))
+	Int seg_size = 2 * ceil(size(segments_file, "GB"))
+	Int agg_size = 2 * ceil(size(aggregate_files, "GB"))
+	Int var_size = 2 * select_first([ceil(size(variant_include_files, "GB")), 0])
+	Int dsk_size = gds_size + seg_size + agg_size + var_size + addldisk
 	
 	command <<<
 		set -eux -o pipefail
@@ -595,7 +599,7 @@ task sbg_prepare_segments_1 {
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-		disks: "local-disk " + 50 + " HDD" # fix this
+		disks: "local-disk " + dsk_size + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -650,8 +654,8 @@ task assoc_aggregate {
 
 		echo "Copying and unzipping zipped inputs..."
 		# Unzipping in the inputs directory leads to a host of issues as depending on the platform
-		# they will end up in different places. Copying them to our own directory simplifies the
-		# process and avoids several workarounds, at the cost of relying on permissions cooperating.
+		# they will end up in different places. Copying them to our own directory avoids an awkward
+		# workaround, at the cost of relying on permissions cooperating.
 		
 		mkdir ins
 		cp ~{zipped} ./ins
@@ -856,56 +860,6 @@ task assoc_aggregate {
 	}
 }
 
-task wdl_process_assoc_files {
-	# CWL does not officially support arrays of arrays/lists of lists, so SB engineers created a
-	# generalizable task called sbg_flatten_lists which is used in several of their CWLs. This task is
-	# designed to flatten inputs into a single list of files.
-	#
-	# The WDL works a bit differently -- the previous task does not output an array of arrays. But we 
-	# have our own issues involving optional files, so we are still including a task to process the
-	# previous task's output.
-	input {
-		Array[File] input_list
-
-		# runtime attr
-		Int addldisk = 1
-		Int cpu = 2
-		Int memory = 4
-		Int preempt = 2
-	}
-
-	Int in_size = ceil(size(input_list, "GB"))
-	Int finalDiskSize = 2*in_size + addldisk # overkill due to deletions but easiest formula to work with
-
-	command <<<
-
-		# Terra workaround to make input files deletable
-		find . -type d -exec sudo chmod -R 777 {} +
-
-		ASSO_FILES=(~{sep=" " input_list})
-		for ASSO_FILE in ${ASSO_FILES[@]};
-		do
-			echo "${ASSO_FILE} is present in the directory."
-			cp ${ASSO_FILE} .
-			rm ${ASSO_FILE}
-			echo "${ASSO_FILE} has been copied to workdir"
-		done
-
-		ls
-
-	>>>
-
-	runtime {
-		disks: "local-disk " + finalDiskSize + " HDD"
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-		preemptibles: 3
-	}
-
-	output {
-		Array[File] output_list = glob("*.RData")
-	}
-}
-
 task sbg_group_segments_1 {
 	input {
 		# if not scattered
@@ -1025,38 +979,22 @@ task sbg_group_segments_1 {
 	output {
 		# The CWL returns array(array(file)) and array(string) in order to dotproduct scatter in
 		# the next task, but we cannot do that in WDL, so we will use a custom struct instead
-		
-		# if not scattered:
 		Assoc_N_Chr group_out = {"grouped_assoc_files":glob("*.RData"),"chromosome":read_lines("output_chromosomes.txt")}
-		# if scattered:
-		#Assoc_N_Chr_Neo group_out = {"grouped_assoc_files":read_lines("output_filenames.txt"),"chromosome":read_string("output_chromosomes.txt")}
 	}
 }
 
 struct Assoc_N_Chr {
 	Array[File] grouped_assoc_files
 	Array[String] chromosome
-}
-
-struct Assoc_N_Chr_Neo {
-	# Should be closer to what's actually in CWL but doesn't seem to work... are the inputs into the group task valid?
-	Array[File] grouped_assoc_files
-	String chromosome
-}
-
-struct Assoc_N_Chr_Single {
-	# Debug attempt to deal with 
-	# Cannot construct WomMapType(WomStringType,WomAnyType) with mixed types in map values: [["/call-sbg_group_segments_1/shard-1/inputs/-2084386719/1KG_phase3_subset_aggregate_chr2_seg2.RData"], WomString(2)]
-	# but it didn't work, just here to indicate not to use it again
-	File grouped_assoc_files
-	String chromosome
+	# You might expect chromosome to be type String, but I have not been able
+	# to get that working properly. Because only one chromosome is generated
+	# per iteration of the scattered task, it becomes an array with just one
+	# element, ergo is functionally equivalent to a String for our purposes.
 }
 
 task assoc_combine_r {
 	input {
-		#Pair[String, File] chr_n_assocfiles
 		Assoc_N_Chr chr_n_assocfiles
-		#Assoc_N_Chr_Neo chr_n_assocfiles
 		String? assoc_type
 		String? out_prefix
 		File? conditional_variant_file
@@ -1071,13 +1009,6 @@ task assoc_combine_r {
 	Int finalDiskSize = 2*assoc_size + addldisk
 
 	command <<<
-
-		# debugging step, delete later
-		FILES=(~{sep=" " chr_n_assocfiles.grouped_assoc_files})
-		for FILE in ${FILES[@]};
-		do
-			echo ${FILE}
-		done
 
 		python << CODE
 		import os
@@ -1114,7 +1045,7 @@ task assoc_combine_r {
 			ln -s ${FILE} .
 		done
 
-		# chromosome has type Array[String] but only ever has one value
+		# chromosome has type Array[String] but only ever has one value; see comments in Assoc_N_Chr struct
 		CHRS=(~{sep=" " chr_n_assocfiles.chromosome})
 		for CHR in ${CHRS[@]};
 		do
@@ -1135,7 +1066,7 @@ task assoc_combine_r {
 
 	output {
 		File assoc_combined = glob("*.RData")[0] # CWL considers this optional
-		File config_file = glob("*.config")[0] # CWL considers this an array but there is always only one
+		File config_file = glob("*.config")[0]   # CWL considers this an array but there is always only one
 	}
 }
 
@@ -1160,10 +1091,7 @@ task assoc_plots_r {
 	Int assoc_size = ceil(size(assoc_files, "GB"))
 	Int finalDiskSize = assoc_size + addldisk
 
-
 	command <<<
-		touch foo.txt
-
 		ls
 
 		python << CODE
@@ -1266,7 +1194,6 @@ task assoc_plots_r {
 	}
 
 	output {
-		File assoc_combined = "foo.txt"
 		Array[File] assoc_plots = glob("*.png")
 		File config_file = "assoc_file.config" # array in CWL
 		Array[File?] lambdas = glob("*.txt") # non-array in CWL
@@ -1302,8 +1229,8 @@ workflow assoc_agg {
 		String?      weight_user
 	}
 
-	# In order to force this to run first, all other tasks that use these psuedoenums
-	# will take them in via outputs of this task
+	# In order to force this to run first, all other tasks that use these "psuedoenums"
+	# (Strings that mimic type Enum from CWL) will take them in via outputs of this task
 	call wdl_validate_inputs {
 		input:
 			genome_build = genome_build,
@@ -1342,8 +1269,7 @@ workflow assoc_agg {
 			variant_include_files = variant_include_files
 	}
  
- #gds, aggregate, segments, and variant include are represented as a zip file here
- #CWL has linkMerge: merge_flattened for all inputs from other tasks, I thiiiiink we're okay here?
+    # gds, aggregate, segments, and variant include are represented as a zip file here
 	scatter(gdsegregatevar in sbg_prepare_segments_1.dotproduct) {
 		call assoc_aggregate {
 			input:
@@ -1368,15 +1294,14 @@ workflow assoc_agg {
 	Array[File] flatten_array = flatten(select_all(assoc_aggregate.assoc_aggregate))
 
 	# CWL has this non-scattered and returns arrays of array(file) paired with arrays of chromosomes.
-	# I cannot get that working properly in WDL even with maps and custom structs, so I've decided
-	# to take the easy route and just scatter this task. In theory, a non-scattered array(array(file))
-	# plus array(string) should equal a scattered array(file) plus string once gathered.
-	#scatter(assoc_file in wdl_process_assoc_files.output_list) {
+	# I struggled to mimic that in WDL, and eventually decided to take the easy route and just scatter
+	# this task. Instead of a non-scattered array(array(file)) plus array(string) I used a scattered
+	# array(file) plus string. The two of these should have equivalent output.
 	scatter(assoc_file in flatten_array) {
 		call sbg_group_segments_1 {
 			input:
-				assoc_file = assoc_file # if scattered
-				#assoc_files = wdl_process_assoc_files.output_list # if not scattered
+				assoc_file = assoc_file
+				#assoc_files = wdl_process_assoc_files.output_list # if not scattered this would be the input
 		}
 	}
 
