@@ -862,9 +862,9 @@ task assoc_aggregate {
 task sbg_group_segments_1 {
 	input {
 		# if not scattered
-		#Array[File] assoc_files
+		Array[File] assoc_files
 		# if scattered
-		File assoc_file
+		#File assoc_file
 
 		# runtime attr
 		Int addldisk = 3
@@ -886,23 +886,29 @@ task sbg_group_segments_1 {
 		# copy over because output struggles to find the files otherwise
 
 		# if not scattered
-		# see above runtime section as womtool cannot detect comments properly
-		# if scattered
-		cp ~{assoc_file} .
+		ASSO_FILES=(~{sep=" " assoc_files})
+		for ASSO_FILE in ${ASSO_FILES[@]};
+		do
+			cp ${ASSO_FILE} .
+		done
 
 		python << CODE
 		import os
 		def split_on_chromosome(file):
+			print("Debug: start split_on_chromosome...")
 			chrom_num = file.split("chr")[1]
+			print("Debug: end split_on_chromosome...")
 			return chrom_num
 			
 		def find_chromosome(file):
+			print("Debug: start find_chromosome...")
 			chr_array = []
 			chrom_num = split_on_chromosome(file)
 			if len(chrom_num) == 1:
 				acceptable_chrs = [str(integer) for integer in list(range(1,22))]
 				acceptable_chrs.extend(["X","Y","M"])
 				if chrom_num in acceptable_chrs:
+					print("Debug: end find_chromosome, returning one digit chr...")
 					return chrom_num
 				else:
 					print("%s appears to be an invalid chromosome number." % chrom_num)
@@ -914,14 +920,13 @@ task sbg_group_segments_1 {
 			else:
 				# one digit number or Y/X/M
 				chr_array.append(chrom_num[0])
+			print("Debug: end find_chromosome, returning two digit chr...")
 			return "".join(chr_array)
 
 		print("Grouping...") # line 116 of CWL
 		
 		# if not scattered
-		# see above runtime block because womtool doesn't parse comments correctly
-		# if scattered
-		python_assoc_files = ["~{assoc_file}"]
+		python_assoc_files = ['~{sep="','" assoc_files}']
 		
 		print("Debug: Input association files located at %s" % python_assoc_files)
 		python_assoc_files_wkdir = []
@@ -941,10 +946,12 @@ task sbg_group_segments_1 {
 			else:
 				assoc_files_dict[chr] = [python_assoc_files[i]]
 
+		print("Debug: Iterating thru keys...")
 		for key in assoc_files_dict.keys():
 			grouped_assoc_files.append(assoc_files_dict[key]) # line 65 in CWL
 			output_chromosomes.append(key) # line 108 in CWL
 
+		print("Debug: Writing outputs...")
 		f = open("output_filenames.txt", "a")
 		for list in grouped_assoc_files:
 			#f.write("%s\n" % list)
@@ -959,13 +966,6 @@ task sbg_group_segments_1 {
 
 		CODE
 	>>>
-	#ASSO_FILES=(~{sep=" " assoc_files})
-	#for ASSO_FILE in ${ASSO_FILES[@]};
-	#do
-	#	cp ${ASSO_FILE} .
-	#done
-
-	#python_assoc_files = ['~{sep="','" assoc_files}']
 	
 	runtime {
 		cpu: cpu
@@ -976,9 +976,13 @@ task sbg_group_segments_1 {
 	}
 
 	output {
+		File debug_output_filenames = "output_filenames.txt"
+		File debug_output_chrs = "output_chromosomes.txt"
 		# The CWL returns array(array(file)) and array(string) in order to dotproduct scatter in
 		# the next task, but we cannot do that in WDL, so we will use a custom struct instead
-		Assoc_N_Chr group_out = {"grouped_assoc_files":glob("*.RData"),"chromosome":read_lines("output_chromosomes.txt")}
+		#Assoc_N_Chr group_out = {"grouped_assoc_files":glob("*.RData"),"chromosome":read_lines("output_chromosomes.txt")}
+		Array[File] grouped_assoc_files = glob("*.RData")
+		Array[String] chromosomes = read_lines("output_chromosomes.txt")
 	}
 }
 
@@ -993,7 +997,8 @@ struct Assoc_N_Chr {
 
 task assoc_combine_r {
 	input {
-		Assoc_N_Chr chr_n_assocfiles
+		String chr
+		Array[File] all_assoc_files
 		String? assoc_type
 		String? out_prefix
 		File? conditional_variant_file
@@ -1004,7 +1009,7 @@ task assoc_combine_r {
 		Int memory = 8
 		Int preempt = 2
 	}
-	Int assoc_size = ceil(size(chr_n_assocfiles.grouped_assoc_files, "GB"))
+	Int assoc_size = ceil(size(all_assoc_files, "GB"))
 	Int finalDiskSize = 2*assoc_size + addldisk
 
 	command <<<
@@ -1012,7 +1017,7 @@ task assoc_combine_r {
 		python << CODE
 		import os
 		
-		python_assoc_files = ['~{sep="','" chr_n_assocfiles.grouped_assoc_files}']
+		python_assoc_files = ['~{sep="','" all_assoc_files}']
 		
 		f = open("assoc_combine.config", "a")
 		
@@ -1038,14 +1043,14 @@ task assoc_combine_r {
 		# Position  10: chromosome flag    (line  97 of CWL -- chromosome has type Array[String] in CWL, but always has just 1 value
 		# Position 100: config file        (line 172 of CWL)
 
-		FILES=(~{sep=" " chr_n_assocfiles.grouped_assoc_files})
+		FILES=(~{sep=" " all_assoc_files})
 		for FILE in ${FILES[@]};
 		do
+			# this needs to be able to ONLY link files of the correct chr
 			ln -s ${FILE} .
 		done
 
-		# chromosome has type Array[String] but only ever has one value; see comments in Assoc_N_Chr struct
-		CHRS=(~{sep=" " chr_n_assocfiles.chromosome})
+		CHRS=(~{sep=" " chr})
 		for CHR in ${CHRS[@]};
 		do
 			THIS_CHR=${CHR}
@@ -1296,25 +1301,39 @@ workflow assoc_agg {
 	# I struggled to mimic that in WDL, and eventually decided to take the easy route and just scatter
 	# this task. Instead of a non-scattered array(array(file)) plus array(string) I used a scattered
 	# array(file) plus string. The two of these should have equivalent output.
-	scatter(assoc_file in flatten_array) {
-		call sbg_group_segments_1 {
+	#scatter(assoc_file in flatten_array) {
+	#	call sbg_group_segments_1 {
+	#		input:
+	#			assoc_file = assoc_file
+	#			#assoc_files = wdl_process_assoc_files.output_list # if not scattered this would be the input
+	#	}
+	#}
+
+	#scatter(file_set in sbg_group_segments_1.group_out) {
+	#	call assoc_combine_r {
+	#		input:
+	#			chr_n_assocfiles = file_set,
+	#			assoc_type = "aggregate"
+	#	}
+	#}
+
+	call sbg_group_segments_1 as debug_nonscattered_group {
 			input:
-				assoc_file = assoc_file
-				#assoc_files = wdl_process_assoc_files.output_list # if not scattered this would be the input
-		}
+				assoc_files = flatten_array
 	}
 
-	scatter(file_set in sbg_group_segments_1.group_out) {
-		call assoc_combine_r {
+	scatter(chromosome_single in debug_nonscattered_group.chromosomes) {
+		call assoc_combine_r as debug_combine_with_nonscattered {
 			input:
-				chr_n_assocfiles = file_set,
+				chr = chromosome_single,
+				all_assoc_files = debug_nonscattered_group.grouped_assoc_files,
 				assoc_type = "aggregate"
 		}
 	}
 
 	call assoc_plots_r {
 		input:
-			assoc_files = assoc_combine_r.assoc_combined,
+			assoc_files = debug_combine_with_nonscattered.assoc_combined,
 			assoc_type = "aggregate",
 			plots_prefix = out_prefix,
 			disable_thin = disable_thin,
@@ -1326,7 +1345,7 @@ workflow assoc_agg {
 	}
 
 	output {
-		Array[File] assoc_combined = assoc_combine_r.assoc_combined
+		Array[File] assoc_combined = debug_combine_with_nonscattered.assoc_combined
 		Array[File] assoc_plots = assoc_plots_r.assoc_plots
 	}
 
