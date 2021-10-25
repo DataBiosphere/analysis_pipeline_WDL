@@ -961,7 +961,7 @@ task sbg_group_segments_1 {
 
 		g = open("output_chromosomes.txt", "a")
 		for chrom in output_chromosomes:
-			g.write("%s" % chrom)
+			g.write("%s\n" % chrom)
 		g.close()
 
 		CODE
@@ -1043,17 +1043,19 @@ task assoc_combine_r {
 		# Position  10: chromosome flag    (line  97 of CWL -- chromosome has type Array[String] in CWL, but always has just 1 value
 		# Position 100: config file        (line 172 of CWL)
 
-		FILES=(~{sep=" " all_assoc_files})
-		for FILE in ${FILES[@]};
-		do
-			# this needs to be able to ONLY link files of the correct chr
-			ln -s ${FILE} .
-		done
-
 		CHRS=(~{sep=" " chr})
 		for CHR in ${CHRS[@]};
 		do
 			THIS_CHR=${CHR}
+		done
+
+		FILES=(~{sep=" " all_assoc_files})
+		for FILE in ${FILES[@]};
+		do
+			if [[ "$FILE" =~ chr$THIS_CHR ]];
+			# this needs to be able to ONLY link files of the correct chr
+			echo "$FILE"
+			ln -s ${FILE} .
 		done
 
 		Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome $THIS_CHR assoc_combine.config
