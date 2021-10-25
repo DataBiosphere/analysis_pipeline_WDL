@@ -1204,7 +1204,7 @@ task assoc_plots_r {
 	output {
 		Array[File] assoc_plots = glob("*.png")
 		File config_file = "assoc_file.config" # array in CWL
-		Array[File?] lambdas = glob("*.txt") # non-array in CWL
+		#Array[File?] lambdas = glob("*.txt") # non-array in CWL
 	}
 }
 
