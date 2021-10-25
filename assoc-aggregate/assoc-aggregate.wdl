@@ -379,7 +379,7 @@ task sbg_prepare_segments_1 {
 	Int gds_size = 2 * ceil(size(input_gds_files, "GB"))
 	Int seg_size = 2 * ceil(size(segments_file, "GB"))
 	Int agg_size = 2 * ceil(size(aggregate_files, "GB"))
-	Int var_size = 2 * select_first([ceil(size(variant_include_files, "GB")), 0])
+	Int var_size = select_first([ceil(size(variant_include_files, "GB")), 0])
 	Int dsk_size = gds_size + seg_size + agg_size + var_size + addldisk
 	
 	command <<<
