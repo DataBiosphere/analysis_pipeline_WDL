@@ -14,7 +14,13 @@
   "aggie_checker.variant_group_files_genes": [
     "gs://topmed_workflow_testing/UWGAC_WDL/assoc/genes_chr1.RData",
     "gs://topmed_workflow_testing/UWGAC_WDL/assoc/genes_chr2.RData"],
+  "aggie_checker.truths_allele": [
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/allele_chr1.RData",
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/allele_chr2.RData"],
   "aggie_checker.truths_position": [
-    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/position_chr1.RData",
-    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/position_chr2.RData"]
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/position_chr1.RData",
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/position_chr2.RData"],
+  "aggie_checker.truths_weights": [
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/weights_chr1.RData",
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/weights_chr2.RData"]
 }

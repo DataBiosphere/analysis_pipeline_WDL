@@ -19,13 +19,19 @@ Aggregate tests are typically used to jointly test rare variants. This workflow 
 ### Common Issues and important notes:
 * This pipeline expects that **GDS files**, **variant include files**, and **variant group files** are separated per chromosome, and that files are properly named (as with other workflows in this repository).
 
-* If **Weight Beta** parameter is set, it needs to follow proper convention, two space-delimited floating point numbers.
+* If **Weight Beta** parameter is set, it needs to follow proper convention: two space-delimited floating point numbers.
 
 * **Number of segments** parameter, if provided, needs to be equal or higher than number of chromosomes.
 
 * Testing showed that default parameters for **CPU** and **memory GB** (8GB) are sufficient for testing studies (up to 50k samples), however different null models might increase the requirements.
 
+* The user can ommit known hits using `known_hits_file`, an RData file with data.frame containing columns `chr` and `pos`. If provided, 1 Mb regions surrounding each variant listed will be omitted from the QQ and manhattan plots.
 
+## Sample Inputs
+* terra-allele, local-allele, and the first part of the checker workflow are based upon https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_allele.config
+* terra-position, local-position, and the second part of the checker workflow are based upon https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_position.config
+* terra-weights, local-weights, and the third part of the checker workflow are based upon https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_weights.config
+* You'll note that none of these make use of `variant_weight_file`, but one has been provided in this repo regardless
 
 
 ## Notes to code maintainers
