@@ -1052,10 +1052,12 @@ task assoc_combine_r {
 		FILES=(~{sep=" " all_assoc_files})
 		for FILE in ${FILES[@]};
 		do
-			if [[ "$FILE" =~ chr$THIS_CHR ]];
-			# this needs to be able to ONLY link files of the correct chr
-			echo "$FILE"
-			ln -s ${FILE} .
+			if [[ "$FILE" =~ "chr$THIS_CHR" ]];
+			then
+				# this needs to be able to ONLY link files of the correct chr
+				echo "$FILE"
+				ln -s ${FILE} .
+			fi
 		done
 
 		Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome $THIS_CHR assoc_combine.config
