@@ -11,7 +11,6 @@ workflow aggie_checker {
 		Array[File]  variant_group_files_coding # used for weights_test and allele_test
 		Array[File]  variant_group_files_genes  # used for position_test
 		Array[File]  variant_include_files
-		File         variant_weight_file
 
 		# truths
 		Array[File] truths_allele
@@ -29,8 +28,7 @@ workflow aggie_checker {
 			phenotype_file = phenotype_file,
 			test = "burden",
 			variant_group_files = variant_group_files_coding,
-			variant_include_files = variant_include_files,
-			variant_weight_file = variant_weight_file
+			variant_include_files = variant_include_files
 	}
 
 	call verify_array.arraycheck_classic as allele_check {
@@ -73,7 +71,7 @@ workflow aggie_checker {
 			weight_user = "CADD"
 	}
 
-	call verify_array.arraycheck_classic as allele_check {
+	call verify_array.arraycheck_classic as weights_check {
 		input:
 			test = weights_run.assoc_combined,
 			truth = truths_weights

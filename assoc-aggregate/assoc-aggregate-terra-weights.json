@@ -6,7 +6,6 @@
   "assoc_agg.phenotype_file": "gs://topmed_workflow_testing/UWGAC_WDL/null_model/1KG_phase3_subset_annot.RData",
   "assoc_agg.null_model_file": "gs://topmed_workflow_testing/UWGAC_WDL/assoc/null_model.RData",
   "assoc_agg.alt_freq_max": 0.1,
-  "assoc_agg.variant_weight_file": "gs://topmed_workflow_testing/UWGAC_WDL/assoc/coding_variants_weights.RData",
   "assoc_agg.variant_group_files": [
     "gs://topmed_workflow_testing/UWGAC_WDL/assoc/coding_variants_chr1.RData", 
     "gs://topmed_workflow_testing/UWGAC_WDL/assoc/coding_variants_chr2.RData"],
