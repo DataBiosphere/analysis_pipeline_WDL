@@ -80,11 +80,16 @@ task wdl_validate_inputs {
 }
 
 task sbg_gds_renamer {
-	# This tool renames GDS file in GENESIS pipelines if they contain suffixes after chromosome (chr##) in the filename.
+	# This tool renames GDS file if they contain suffixes after chromosome (chr##) in the filename.
  	# For example: If GDS file has name data_chr1_subset.gds the tool will rename GDS file to data_chr1.gds.
+ 	# Debug prints exist only because file permissions have some inconsistency on Terra. Do not change the
+ 	# sudo chmod command with something like "sudo chmod 777 ~{in_variant}" even though that may appear to
+ 	# be equivalent -- it doesn't work on Terra.
 
 	input {
 		File in_variant
+
+		Boolean debug = false
 
 		# runtime attributes, which you shouldn't need to adjust as this is a very light task
 		Int addldisk = 3
@@ -97,6 +102,8 @@ task sbg_gds_renamer {
 	Int finalDiskSize = gds_size + addldisk
 	
 	command <<<
+
+		# do not change this without testing, see above
 		set -eux -o pipefail
 		find . -type d -exec sudo chmod -R 777 {} +
 
@@ -126,11 +133,15 @@ task sbg_gds_renamer {
 			chrom_num = file.split("chr")[1]
 			return chrom_num
 
-		print("Debug: Getting nameroot")
+		if "~{debug}" == "true":
+			print("Debug: Getting nameroot and generating new name...")
 		nameroot = os.path.basename("~{in_variant}").rsplit(".", 1)[0]
 		chr = find_chromosome(nameroot)
 		base = nameroot.split('chr'+chr)[0]
 		newname = base+'chr'+chr+".gds"
+		if "~{debug}" == "true":
+			print("Debug: Generated name: %s" % newname)
+			print("Debug: Renaming file...")
 
 		os.rename("~{in_variant}", newname)
 
@@ -243,7 +254,7 @@ task aggregate_list {
 	command <<<
 		set -eux -o pipefail
 
-		cp ~{variant_group_file} ~{basename_vargroup} # check if should be .
+		cp ~{variant_group_file} ~{basename_vargroup}
 
 		python << CODE
 		import os
@@ -275,16 +286,16 @@ task aggregate_list {
 
 		f = open("aggregate_list.config", "a")
 
-		# This part of the CWL is a bit confusing and I'd like some extra eyes on it
+		# This part of the CWL is a bit confusing so let's walk through it line by line
 		if "chr" in "~{basename_vargroup}": #if (inputs.variant_group_file.basename.includes('chr'))
 			chr = find_chromosome("~{variant_group_file}") #var chr = find_chromosome(inputs.variant_group_file.path);
 			
 			# CWL then has:
 			# chromosomes_basename = inputs.variant_group_file.path.slice(0,-6).replace(/\/.+\//g,"");
-			# We know that this file is expected to be RData so I assume slice(0,6) is to remove ".RData" leaving a path with no extension.
-			# If given inputs/304343024/mygroupfile the regex would return inputsmygroupfile.RData which obviously isn't correct.
-			# If given /inputs/304343024/mygroupfile the regex would return mygroupfile which seems to be the intention.
-			# This ought to be equivalent to the CWL nameroot function, which these CWLs use extensively, so I'm not sure why they get fancy here.
+			# We know that this file is expected to be RData, so slice(0,6) removes ".RData" leaving a path with no extension.
+			# If given inputs/304343024/mygroupfile the regex would return inputsmygroupfile.RData (not correct).
+			# If given /inputs/304343024/mygroupfile the regex would return mygroupfile (clear intention).
+			# In other words this ought to be equivalent to the CWL nameroot function; unsure why CWL does not use that instead
 			chromosomes_basename = os.path.basename("~{variant_group_file}"[:-6])
 
 			# The CWL is then followed by a section that doesn't seem to do anything...
@@ -635,7 +646,7 @@ task assoc_aggregate {
 		Int memory = 8
 		Int preempt = 0
 
-		Boolean debug = true
+		Boolean debug = false
 	}
 	# Estimate disk size required
 	Int zipped_size = ceil(size(zipped, "GB"))*5 # not sure how much zip compresses them if at all
@@ -651,7 +662,7 @@ task assoc_aggregate {
 		# Terra file system, which may change later down the line. So they may help future maintainers at the
 		# cost of being a bit ugly.
 
-		echo "Copying and unzipping zipped inputs..."
+		echo "Copying zipped inputs..."
 		# Unzipping in the inputs directory leads to a host of issues as depending on the platform
 		# they will end up in different places. Copying them to our own directory avoids an awkward
 		# workaround, at the cost of relying on permissions cooperating.
@@ -665,9 +676,9 @@ task assoc_aggregate {
 
 		if [[ "~{debug}" = "true" ]]
 		then
-			echo "In directory is:"
+			echo "Debug: Contents of our makeshift input directory (NOT the standard Cromwell inputs dir) is:"
 			ls ins/
-			echo "Workdir is:"
+			echo "Debug: Contents of current workdir is:"
 			ls
 		fi
 
@@ -801,7 +812,11 @@ task assoc_aggregate {
 
 		if [[ "~{debug}" = "true" ]]
 		then
+			echo "Debug: Location of file(s):"
+			echo ""
 			find -name *.config
+			echo "Debug: Location of file(s) representing chromosome number:"
+			echo ""
 			find -name *.integer
 			echo ""
 			echo "Debug: Searching for the segment number or letter in input directory..."
@@ -813,6 +828,7 @@ task assoc_aggregate {
 
 		if [[ "~{debug}" = "true" ]]
 		then
+			echo "Debug: Segment number is: "
 			echo $SEGMENT_NUM
 		fi
 
@@ -835,7 +851,9 @@ task assoc_aggregate {
 			then
 				echo "Debug: Output appears to exist."
 			else 
-				echo "Debug: There appears to be no output. You can verify by checking stdout of the Rscript to see if 'exiting gracefully' appears."
+				echo "Debug: There appears to be no output. This is not necessarily a problem -- some segments "
+				echo "may simply give no output, especially if you have a lot of segments. " 
+				echo "You can verify by checking stdout of the Rscript to see if 'exiting gracefully' appears."
 			fi
 		fi
 
@@ -854,6 +872,9 @@ task assoc_aggregate {
 		preemptibles: "${preempt}"
 	}
 	output {
+		# Do not change this to Array[File?] as that will break everything. The files within the array cannot be
+		# optional, instead, we make the array itself optional to account for segments that do not give output.
+		# Working with Array[File?] is infinitely more difficult than working with Array[File]?, trust me on this.
 		Array[File]? assoc_aggregate = glob("*.RData")
 		File config = glob("ins/*.config")[0]
 	}
@@ -866,6 +887,8 @@ task sbg_group_segments_1 {
 		# if scattered
 		#File assoc_file
 
+		Boolean debug = false
+
 		# runtime attr
 		Int addldisk = 3
 		Int cpu = 8
@@ -874,18 +897,16 @@ task sbg_group_segments_1 {
 	}
 
 	# if not scattered
-	#Int assoc_size = ceil(size(assoc_files, "GB"))
+	Int assoc_size = ceil(size(assoc_files, "GB"))
 	# if scattered
 	##Int assoc_size = ceil(size(assoc_file, "GB"))
 	##Int finalDiskSize = 2*assoc_size + addldisk
 
-	Int finalDiskSize = 42 # temporary override
+	Int finalDiskSize = 2*assoc_size
 
 	command <<<
 
 		# copy over because output struggles to find the files otherwise
-
-		# if not scattered
 		ASSO_FILES=(~{sep=" " assoc_files})
 		for ASSO_FILE in ${ASSO_FILES[@]};
 		do
@@ -895,20 +916,20 @@ task sbg_group_segments_1 {
 		python << CODE
 		import os
 		def split_on_chromosome(file):
-			print("Debug: start split_on_chromosome...")
 			chrom_num = file.split("chr")[1]
-			print("Debug: end split_on_chromosome...")
 			return chrom_num
 			
 		def find_chromosome(file):
-			print("Debug: start find_chromosome...")
+			if "~{debug}" == "true":
+				print("Debug: start find_chromosome...")
 			chr_array = []
 			chrom_num = split_on_chromosome(file)
 			if len(chrom_num) == 1:
 				acceptable_chrs = [str(integer) for integer in list(range(1,22))]
 				acceptable_chrs.extend(["X","Y","M"])
 				if chrom_num in acceptable_chrs:
-					print("Debug: end find_chromosome, returning one digit chr...")
+					if "~{debug}" == "true":
+						print("Debug: end find_chromosome, returning one digit chr...")
 					return chrom_num
 				else:
 					print("%s appears to be an invalid chromosome number." % chrom_num)
@@ -920,21 +941,21 @@ task sbg_group_segments_1 {
 			else:
 				# one digit number or Y/X/M
 				chr_array.append(chrom_num[0])
-			print("Debug: end find_chromosome, returning two digit chr...")
+			if "~{debug}" == "true":
+				print("Debug: end find_chromosome, returning two digit chr...")
 			return "".join(chr_array)
 
 		print("Grouping...") # line 116 of CWL
 		
-		# if not scattered
 		python_assoc_files = ['~{sep="','" assoc_files}']
-		
-		print("Debug: Input association files located at %s" % python_assoc_files)
+		if "~{debug}" == "true":
+			print("Debug: Input association files located at %s" % python_assoc_files)
 		python_assoc_files_wkdir = []
 		for file in python_assoc_files:
 			# point to the workdir copies instead to help Terra
 			python_assoc_files_wkdir.append(os.path.basename(file))
-		
-		print("Debug: We will instead work with the workdir duplicates at %s" % python_assoc_files_wkdir)
+		if "~{debug}" == "true":
+			print("Debug: We will instead work with the workdir duplicates at %s" % python_assoc_files_wkdir)
 		assoc_files_dict = dict() 
 		grouped_assoc_files = [] # line 53 of CWL
 		output_chromosomes = [] # line 96 of CWL
@@ -946,12 +967,23 @@ task sbg_group_segments_1 {
 			else:
 				assoc_files_dict[chr] = [python_assoc_files[i]]
 
-		print("Debug: Iterating thru keys...")
+		if "~{debug}" == "true":
+			print("Debug: Iterating thru keys...")
 		for key in assoc_files_dict.keys():
 			grouped_assoc_files.append(assoc_files_dict[key]) # line 65 in CWL
 			output_chromosomes.append(key) # line 108 in CWL
-
-		print("Debug: Writing outputs...")
+		
+		if "~{debug}" == "true":
+			print("Debug: Writing outputs...")
+		
+		# debugging
+		for list in grouped_assoc_files:
+			print("List in grouped_assoc_files:")
+			print("%s\n" % list)
+			for entry in list:
+				print("Entry in list:")
+				print("%s\n" % entry)
+		
 		f = open("output_filenames.txt", "a")
 		for list in grouped_assoc_files:
 			#f.write("%s\n" % list)
@@ -963,6 +995,9 @@ task sbg_group_segments_1 {
 		for chrom in output_chromosomes:
 			g.write("%s\n" % chrom)
 		g.close()
+
+		if "~{debug}" == "true":
+			print("Debug: Finished. Executor will now attempt to evaulate outputs.")
 
 		CODE
 	>>>
@@ -979,20 +1014,26 @@ task sbg_group_segments_1 {
 		File debug_output_filenames = "output_filenames.txt"
 		File debug_output_chrs = "output_chromosomes.txt"
 		# The CWL returns array(array(file)) and array(string) in order to dotproduct scatter in
-		# the next task, but we cannot do that in WDL, so we will use a custom struct instead
+		# the next task, but we cannot do that in WDL. An older version of this code scattered this
+		# task and used a custom struct defined below. This version does not use the custom struct
+		# as was difficult to debug, but it may need to be used again if we wish to remove
+		# assoc_combine_r's current reliance on having EVERY task end up with EVERY chromosome's
+		# association files, so I am just leaving it commented it out now.
 		#Assoc_N_Chr group_out = {"grouped_assoc_files":glob("*.RData"),"chromosome":read_lines("output_chromosomes.txt")}
+		
+		# New version: Simpler, but will cost us dearly in disk size in the next task.
 		Array[File] grouped_assoc_files = glob("*.RData")
 		Array[String] chromosomes = read_lines("output_chromosomes.txt")
 	}
 }
 
+# Recall that this struct was developed based on the assumption that the assoc_aggregate task
+# was scattered. You might expect chromosome to be type String, but I have not been able to
+# get that working properly. Because only one chromosome is generated per iteration of the 
+# scattered assoc_aggregate task, it becomes an array with just one element.
 struct Assoc_N_Chr {
 	Array[File] grouped_assoc_files
 	Array[String] chromosome
-	# You might expect chromosome to be type String, but I have not been able
-	# to get that working properly. Because only one chromosome is generated
-	# per iteration of the scattered task, it becomes an array with just one
-	# element, ergo is functionally equivalent to a String for our purposes.
 }
 
 task assoc_combine_r {
@@ -1052,9 +1093,10 @@ task assoc_combine_r {
 		FILES=(~{sep=" " all_assoc_files})
 		for FILE in ${FILES[@]};
 		do
+			# only link files related to this chromosome; the inability to find inputs that are
+			# not softlinked or copied to the workdir actually helps us out here!
 			if [[ "$FILE" =~ "chr$THIS_CHR" ]];
 			then
-				# this needs to be able to ONLY link files of the correct chr
 				echo "$FILE"
 				ln -s ${FILE} .
 			fi
@@ -1090,6 +1132,8 @@ task assoc_plots_r {
 		Int? plot_mac_threshold
 		Float? truncate_pval_threshold
 
+		Boolean debug = false
+
 		# runtime attr
 		Int addldisk = 3
 		Int cpu = 8
@@ -1100,13 +1144,11 @@ task assoc_plots_r {
 	Int finalDiskSize = assoc_size + addldisk
 
 	command <<<
-		ls
 
 		python << CODE
 		import os
 
 		def split_on_chromosome(file):
-			print("Debug: %s" % file.split("chr"))
 			chrom_num = file.split("chr")[1]
 			return chrom_num
 			
@@ -1132,7 +1174,8 @@ task assoc_plots_r {
 
 		python_assoc_files = ['~{sep="','" assoc_files}']
 
-		print("Debug: Association files are %s" % python_assoc_files)
+		if "~{debug}" = "true":
+			print("Debug: Association files are %s" % python_assoc_files)
 
 		f = open("assoc_file.config", "a")
 
@@ -1178,11 +1221,12 @@ task assoc_plots_r {
 			f.write('plot_mac_threshold ~{plot_mac_threshold}\n')
 		if "~{truncate_pval_threshold}" != "":
 			f.write('truncate_pval_threshold ~{truncate_pval_threshold}\n')
-		# plot qq, plot include file, signif type, signif fixed, qq mac bins, lambda, outfile lambadas, plot max, and maf threshold not used
+		# plot qq, plot include file, signif type, signif fixed, qq mac bins, lambda, 
+		# outfile lambadas, plot max, and maf threshold not used
 		f.close()
 		CODE
 
-		# considered prefix 1 in the CWL
+		# this block is considered prefix 1 in the CWL
 		FILES=(~{sep=" " assoc_files})
 		for FILE in ${FILES[@]};
 		do
@@ -1204,7 +1248,7 @@ task assoc_plots_r {
 	output {
 		Array[File] assoc_plots = glob("*.png")
 		File config_file = "assoc_file.config" # array in CWL
-		#Array[File?] lambdas = glob("*.txt") # non-array in CWL
+		#Array[File?] lambdas = glob("*.txt") # non-array in CWL, seems to never be generated
 	}
 }
 
@@ -1304,40 +1348,45 @@ workflow assoc_agg {
 	# CWL has this non-scattered and returns arrays of array(file) paired with arrays of chromosomes.
 	# I struggled to mimic that in WDL, and eventually decided to take the easy route and just scatter
 	# this task. Instead of a non-scattered array(array(file)) plus array(string) I used a scattered
-	# array(file) plus string. The two of these should have equivalent output.
+	# array(file) plus string. Unfortunately, this results in output files cannot be directly compared
+	# to the original CWL: https://github.com/DataBiosphere/analysis_pipeline_WDL/pull/57#issuecomment-951353842
+	# The setup was as follows:
+	
 	#scatter(assoc_file in flatten_array) {
-	#	call sbg_group_segments_1 {
+	#	call sbg_group_segments_1 as oldversion_sbg_group_segments_1 {
 	#		input:
 	#			assoc_file = assoc_file
-	#			#assoc_files = wdl_process_assoc_files.output_list # if not scattered this would be the input
 	#	}
 	#}
 
 	#scatter(file_set in sbg_group_segments_1.group_out) {
-	#	call assoc_combine_r {
+	#	call assoc_combine_r as oldversion_assoc_combine_r {
 	#		input:
 	#			chr_n_assocfiles = file_set,
 	#			assoc_type = "aggregate"
 	#	}
 	#}
 
-	call sbg_group_segments_1 as debug_nonscattered_group {
+	# The new version is closer the CWL, but it can only scatters on the chromosomes. This means
+	# that every instance of assoc_combine_r gets all of the association files. Is there a way
+	# to avoid this with the pair() type?
+	call sbg_group_segments_1 {
 			input:
 				assoc_files = flatten_array
 	}
 
-	scatter(chromosome_single in debug_nonscattered_group.chromosomes) {
-		call assoc_combine_r as debug_combine_with_nonscattered {
+	scatter(chromosome_single in sbg_group_segments_1.chromosomes) {
+		call assoc_combine_r {
 			input:
 				chr = chromosome_single,
-				all_assoc_files = debug_nonscattered_group.grouped_assoc_files,
+				all_assoc_files = sbg_group_segments_1.grouped_assoc_files,
 				assoc_type = "aggregate"
 		}
 	}
 
 	call assoc_plots_r {
 		input:
-			assoc_files = debug_combine_with_nonscattered.assoc_combined,
+			assoc_files = assoc_combine_r.assoc_combined,
 			assoc_type = "aggregate",
 			plots_prefix = out_prefix,
 			disable_thin = disable_thin,
@@ -1349,7 +1398,7 @@ workflow assoc_agg {
 	}
 
 	output {
-		Array[File] assoc_combined = debug_combine_with_nonscattered.assoc_combined
+		Array[File] assoc_combined = assoc_combine_r.assoc_combined
 		Array[File] assoc_plots = assoc_plots_r.assoc_plots
 	}
 
