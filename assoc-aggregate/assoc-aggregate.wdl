@@ -929,7 +929,7 @@ task sbg_group_segments_1 {
 				acceptable_chrs.extend(["X","Y","M"])
 				if chrom_num in acceptable_chrs:
 					if "~{debug}" == "true":
-						print("Debug: end find_chromosome, returning one digit chr...")
+						print("Debug: end find_chromosome, returning %s..." % chrom_num)
 					return chrom_num
 				else:
 					print("%s appears to be an invalid chromosome number." % chrom_num)
@@ -942,7 +942,7 @@ task sbg_group_segments_1 {
 				# one digit number or Y/X/M
 				chr_array.append(chrom_num[0])
 			if "~{debug}" == "true":
-				print("Debug: end find_chromosome, returning two digit chr...")
+				print("Debug: end find_chromosome, returning %s..." % chrom_num)
 			return "".join(chr_array)
 
 		print("Grouping...") # line 116 of CWL
@@ -972,23 +972,21 @@ task sbg_group_segments_1 {
 		for key in assoc_files_dict.keys():
 			grouped_assoc_files.append(assoc_files_dict[key]) # line 65 in CWL
 			output_chromosomes.append(key) # line 108 in CWL
-		
-		if "~{debug}" == "true":
-			print("Debug: Writing outputs...")
-		
+			
 		# debugging
-		for list in grouped_assoc_files:
-			print("List in grouped_assoc_files:")
-			print("%s\n" % list)
-			for entry in list:
-				print("Entry in list:")
-				print("%s\n" % entry)
+		if "~{debug}" == "true":
+			for list in grouped_assoc_files:
+				print("Debug: List in grouped_assoc_files:")
+				print("%s\n" % list)
+				for entry in list:
+					print("Debug: Entry in list:")
+					print("%s\n" % entry)
 		
 		f = open("output_filenames.txt", "a")
 		for list in grouped_assoc_files:
-			#f.write("%s\n" % list)
-			for entry in list:
-				f.write("%s\n" % entry)
+			f.write("[%s\t]" % list)
+			#for entry in list:
+				#f.write("%s\n" % entry)
 		f.close()
 
 		g = open("output_chromosomes.txt", "a")
@@ -1013,6 +1011,8 @@ task sbg_group_segments_1 {
 	output {
 		File debug_output_filenames = "output_filenames.txt"
 		File debug_output_chrs = "output_chromosomes.txt"
+		Array[Array[String]] debug_grouped_string = read_tsv("output_filenames.txt")
+		Array[Array[File]] debug_grouped_files = read_tsv("output_filenames.txt")
 		# The CWL returns array(array(file)) and array(string) in order to dotproduct scatter in
 		# the next task, but we cannot do that in WDL. An older version of this code scattered this
 		# task and used a custom struct defined below. This version does not use the custom struct
@@ -1174,7 +1174,7 @@ task assoc_plots_r {
 
 		python_assoc_files = ['~{sep="','" assoc_files}']
 
-		if "~{debug}" = "true":
+		if "~{debug}" == "true":
 			print("Debug: Association files are %s" % python_assoc_files)
 
 		f = open("assoc_file.config", "a")
