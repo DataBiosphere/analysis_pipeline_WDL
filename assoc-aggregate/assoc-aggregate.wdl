@@ -1009,10 +1009,10 @@ task sbg_group_segments_1 {
 	}
 
 	output {
-		File debug_output_filenames = "output_filenames.txt"
-		File debug_output_chrs = "output_chromosomes.txt"
-		Array[Array[String]] debug_grouped_string = read_tsv("output_filenames.txt")
-		Array[Array[File]] debug_grouped_files = read_tsv("output_filenames.txt")
+		File d_filenames = "output_filenames.txt"
+		File d_chrs = "output_chromosomes.txt"
+		Array[Array[String]] d_string = read_tsv("output_filenames.txt")
+		Array[Array[File]] d_files = read_tsv("output_filenames.txt")
 		# The CWL returns array(array(file)) and array(string) in order to dotproduct scatter in
 		# the next task, but we cannot do that in WDL. An older version of this code scattered this
 		# task and used a custom struct defined below. This version does not use the custom struct
@@ -1375,11 +1375,12 @@ workflow assoc_agg {
 				assoc_files = flatten_array
 	}
 
+	# should try zip() once we confirm if array(file) or array(array(file)) can be passed at all
 	scatter(chromosome_single in sbg_group_segments_1.chromosomes) {
 		call assoc_combine_r {
 			input:
 				chr = chromosome_single,
-				all_assoc_files = sbg_group_segments_1.grouped_assoc_files,
+				all_assoc_files = sbg_group_segments_1.d_files[1], # index 1 just so this becomes just an array for testing
 				assoc_type = "aggregate"
 		}
 	}
