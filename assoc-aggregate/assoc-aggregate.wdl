@@ -1120,6 +1120,205 @@ task assoc_combine_r {
 	}
 }
 
+
+
+task wdl_group_segments_then_combine {
+	input {
+		# from grouping
+		Array[File] assoc_files
+
+		# from combining
+		String? assoc_type
+		String? out_prefix
+		File? conditional_variant_file
+
+		Boolean debug = false
+
+		# runtime attr
+		Int addldisk = 3
+		Int cpu = 8
+		Int memory = 8
+		Int preempt = 2
+	}
+
+	Int assoc_size = ceil(size(assoc_files, "GB"))
+	Int finalDiskSize = 2*assoc_size
+
+	command <<<
+
+		# copy over because output struggles to find the files otherwise
+		ASSO_FILES=(~{sep=" " assoc_files})
+		for ASSO_FILE in ${ASSO_FILES[@]};
+		do
+			cp ${ASSO_FILE} .
+		done
+
+		python << CODE
+		import os
+		import shutil
+		def split_on_chromosome(file):
+			chrom_num = file.split("chr")[1]
+			return chrom_num
+			
+		def find_chromosome(file):
+			if "~{debug}" == "true":
+				print("Debug: start find_chromosome...")
+			chr_array = []
+			chrom_num = split_on_chromosome(file)
+			if len(chrom_num) == 1:
+				acceptable_chrs = [str(integer) for integer in list(range(1,22))]
+				acceptable_chrs.extend(["X","Y","M"])
+				if chrom_num in acceptable_chrs:
+					if "~{debug}" == "true":
+						print("Debug: end find_chromosome, returning %s..." % chrom_num)
+					return chrom_num
+				else:
+					print("%s appears to be an invalid chromosome number." % chrom_num)
+					exit(1)
+			elif (unicode(str(chrom_num[1])).isnumeric()):
+				# two digit number
+				chr_array.append(chrom_num[0])
+				chr_array.append(chrom_num[1])
+			else:
+				# one digit number or Y/X/M
+				chr_array.append(chrom_num[0])
+			if "~{debug}" == "true":
+				print("Debug: end find_chromosome, returning %s..." % chrom_num)
+			return "".join(chr_array)
+
+		print("Grouping...") # line 116 of CWL
+		
+		python_assoc_files = ['~{sep="','" assoc_files}']
+		if "~{debug}" == "true":
+			print("Debug: Input association files located at %s" % python_assoc_files)
+		python_assoc_files_wkdir = []
+		for file in python_assoc_files:
+			# point to the workdir copies instead to help Terra
+			python_assoc_files_wkdir.append(os.path.basename(file))
+		if "~{debug}" == "true":
+			print("Debug: We will instead work with the workdir duplicates at %s" % python_assoc_files_wkdir)
+		assoc_files_dict = dict() 
+		grouped_assoc_files = [] # line 53 of CWL
+		output_chromosomes = [] # line 96 of CWL
+
+		for i in range(0, len(python_assoc_files)):
+			chr = find_chromosome(python_assoc_files[i])
+			if chr in assoc_files_dict:
+				assoc_files_dict[chr].append(python_assoc_files[i])
+			else:
+				assoc_files_dict[chr] = [python_assoc_files[i]]
+
+		# grouped_assoc_files now is an array of arrays with a structure like this:
+		# [ [ "/path/chr1.seg1.RData", "/path/chr1.seg2.RData"], ["/path/chr2.seg3.RData", "/path/chr2.seg4.RData"] ]
+		# Note that even though we did some copying earlier, the path here is actually the INPUT path!
+		# In other words these do not point to the copies we made in the workdir but rather the originals.
+
+		if "~{debug}" == "true":
+			print("Debug: Iterating thru keys...")
+		for key in assoc_files_dict.keys():
+			grouped_assoc_files.append(assoc_files_dict[key]) # line 65 in CWL
+			output_chromosomes.append(key) # line 108 in CWL
+			
+		# debugging
+		if "~{debug}" == "true":
+			for list in grouped_assoc_files:
+				print("Debug: List in grouped_assoc_files:")
+				print("%s\n" % list)
+				for entry in list:
+					print("Debug: Entry in list:")
+					print("%s\n" % entry)
+		
+		f = open("output_filenames.txt", "a")
+		for list in grouped_assoc_files:
+			f.write("[%s\t]" % list)
+			#for entry in list:
+				#f.write("%s\n" % entry)
+		f.close()
+
+		g = open("output_chromosomes.txt", "a")
+		for chrom in output_chromosomes:
+			g.write("%s\n" % chrom)
+		g.close()
+
+		if "~{debug}" == "true":
+			print("Debug: Finished grouping. Now, we combine.")
+		########################################################################
+		
+		for (chrom, group) in zip(output_chromosomes, grouped_assoc_files): # represents the top-level "scatter"
+			os.remove("*.RData") # remove workdir copies from group task or previous iters
+			for each_file in group:
+				shutil.copy(each_file, ".") # copy every file in a group into the
+
+
+
+		
+		python_assoc_files = ['~{sep="','" all_assoc_files}']
+		
+		f = open("assoc_combine.config", "a")
+		
+		f.write('assoc_type "~{assoc_type}"\n')
+		data_prefix = os.path.basename(python_assoc_files[0]).split('_chr')[0]
+		if "~{out_prefix}" != "":
+			f.write('out_prefix "~{out_prefix}"\n')
+		else:
+			f.write('out_prefix "%s"\n' % data_prefix)
+
+		if "~{conditional_variant_file}" != "":
+			f.write('conditional_variant_file "~{conditional_variant_file}"\n')
+
+		# CWL then has commented out portion for adding assoc files
+
+		f.close()
+		CODE
+
+		# CWL's commands are scattered in different places so let's break it down here
+		# Line numbers reference my fork's commit 196a734c2b40f9ab7183559f57d9824cffec20a1
+		# Position   1: softlink RData ins (line 185 of CWL)
+		# Position   5: Rscript call       (line 176 of CWL)
+		# Position  10: chromosome flag    (line  97 of CWL -- chromosome has type Array[String] in CWL, but always has just 1 value
+		# Position 100: config file        (line 172 of CWL)
+
+		CHRS=(~{sep=" " chr})
+		for CHR in ${CHRS[@]};
+		do
+			THIS_CHR=${CHR}
+			Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome $THIS_CHR assoc_combine.config
+		done
+
+		FILES=(~{sep=" " all_assoc_files})
+		for FILE in ${FILES[@]};
+		do
+			# only link files related to this chromosome; the inability to find inputs that are
+			# not softlinked or copied to the workdir actually helps us out here!
+			if [[ "$FILE" =~ "chr$THIS_CHR" ]];
+			then
+				echo "$FILE"
+				ln -s ${FILE} .
+			fi
+		done
+
+		
+
+
+	>>>
+	
+	runtime {
+		cpu: cpu
+		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		disks: "local-disk " + finalDiskSize + " HDD"
+		memory: "${memory} GB"
+		preemptibles: "${preempt}"
+	}
+
+	output {
+		File debug_output_filenames = "output_filenames.txt"
+		File debug_output_chrs = "output_chromosomes.txt"
+		Array[File] assoc_combined = glob("*.RData")
+	}
+}
+
+
+
 task assoc_plots_r {
 	input {
 		Array[File] assoc_files
