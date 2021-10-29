@@ -1380,7 +1380,7 @@ workflow assoc_agg {
 		call assoc_combine_r {
 			input:
 				chr = chromosome_single,
-				all_assoc_files = sbg_group_segments_1.d_files[1], # index 1 just so this becomes just an array for testing
+				all_assoc_files = sbg_group_segments_1.d_files[0], # index 0 just so this becomes just an array for testing
 				assoc_type = "aggregate"
 		}
 	}
