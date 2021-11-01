@@ -1538,23 +1538,14 @@ workflow assoc_agg {
 	# The new version is closer the CWL, but it can only scatters on the chromosomes. This means
 	# that every instance of assoc_combine_r gets all of the association files. Is there a way
 	# to avoid this with the pair() type?
-	call sbg_group_segments_1 {
+	call wdl_group_segments_then_combine {
 			input:
 				assoc_files = flatten_array
 	}
 
-	scatter(chromosome_single in sbg_group_segments_1.chromosomes) {
-		call assoc_combine_r {
-			input:
-				chr = chromosome_single,
-				all_assoc_files = sbg_group_segments_1.grouped_assoc_files,
-				assoc_type = "aggregate"
-		}
-	}
-
 	call assoc_plots_r {
 		input:
-			assoc_files = assoc_combine_r.assoc_combined,
+			assoc_files = wdl_group_segments_then_combine.assoc_combined,
 			assoc_type = "aggregate",
 			plots_prefix = out_prefix,
 			disable_thin = disable_thin,
@@ -1566,7 +1557,7 @@ workflow assoc_agg {
 	}
 
 	output {
-		Array[File] assoc_combined = assoc_combine_r.assoc_combined
+		Array[File] assoc_combined = wdl_group_segments_then_combine.assoc_combined
 		Array[File] assoc_plots = assoc_plots_r.assoc_plots
 	}
 
