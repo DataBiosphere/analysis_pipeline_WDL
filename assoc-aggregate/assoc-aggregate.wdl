@@ -1156,6 +1156,7 @@ task wdl_group_segments_then_combine {
 		python << CODE
 		import os
 		import shutil
+		import subprocess
 		def split_on_chromosome(file):
 			chrom_num = file.split("chr")[1]
 			return chrom_num
@@ -1243,62 +1244,30 @@ task wdl_group_segments_then_combine {
 		if "~{debug}" == "true":
 			print("Debug: Finished grouping. Now, we combine.")
 		########################################################################
-		
-		for (chrom, group) in zip(output_chromosomes, grouped_assoc_files): # represents the top-level "scatter"
-			os.remove("*.RData") # remove workdir copies from group task or previous iters
-			for each_file in group:
-				shutil.copy(each_file, ".") # copy every file in a group into the
-
-
-
-		
-		python_assoc_files = ['~{sep="','" all_assoc_files}']
-		
 		f = open("assoc_combine.config", "a")
-		
 		f.write('assoc_type "~{assoc_type}"\n')
 		data_prefix = os.path.basename(python_assoc_files[0]).split('_chr')[0]
 		if "~{out_prefix}" != "":
 			f.write('out_prefix "~{out_prefix}"\n')
 		else:
 			f.write('out_prefix "%s"\n' % data_prefix)
-
 		if "~{conditional_variant_file}" != "":
 			f.write('conditional_variant_file "~{conditional_variant_file}"\n')
-
 		# CWL then has commented out portion for adding assoc files
-
 		f.close()
-		CODE
-
-		# CWL's commands are scattered in different places so let's break it down here
-		# Line numbers reference my fork's commit 196a734c2b40f9ab7183559f57d9824cffec20a1
-		# Position   1: softlink RData ins (line 185 of CWL)
-		# Position   5: Rscript call       (line 176 of CWL)
-		# Position  10: chromosome flag    (line  97 of CWL -- chromosome has type Array[String] in CWL, but always has just 1 value
-		# Position 100: config file        (line 172 of CWL)
-
-		CHRS=(~{sep=" " chr})
-		for CHR in ${CHRS[@]};
-		do
-			THIS_CHR=${CHR}
-			Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome $THIS_CHR assoc_combine.config
-		done
-
-		FILES=(~{sep=" " all_assoc_files})
-		for FILE in ${FILES[@]};
-		do
-			# only link files related to this chromosome; the inability to find inputs that are
-			# not softlinked or copied to the workdir actually helps us out here!
-			if [[ "$FILE" =~ "chr$THIS_CHR" ]];
-			then
-				echo "$FILE"
-				ln -s ${FILE} .
-			fi
-		done
-
 		
+		for (chrom, group) in zip(output_chromosomes, grouped_assoc_files): # represents the top-level "scatter"
+			print("Debug: We are on chr %s" % chrom)
+			os.remove("*.RData") # remove workdir copies from group task or previous iters
+			for each_file in group:
+				print("Debug: We are copying %s" % each_file)
+				shutil.copy(each_file, ".") # copy every file in a group into the workdir
 
+			# Run the Rscript as a subprocess
+			print("Debug: Running Rscript...")
+			process = subprocess.pOpen(["Rscript", "/usr/local/analysis_pipeline/R/assoc_combine.R --chromosome %s assoc_combine.config" % chrom])
+		
+		CODE
 
 	>>>
 	
