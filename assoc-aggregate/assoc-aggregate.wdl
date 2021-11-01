@@ -1054,8 +1054,7 @@ task assoc_combine_r {
 		Int memory = 8
 		Int preempt = 2
 	}
-	Int assoc_size = ceil(size(all_assoc_files, "GB"))
-	Int finalDiskSize = 2*assoc_size + addldisk
+	Int finalDiskSize = 100 # override, replace me!
 
 	command <<<
 
