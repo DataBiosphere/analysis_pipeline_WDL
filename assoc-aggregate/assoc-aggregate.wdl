@@ -988,7 +988,7 @@ task sbg_group_segments_1 {
 			i += 1
 			for entry in list:
 				f.write("%s\t" % entry)
-			if i == len(list):
+			if i != len(list):
 				# do not write on last iteration; removing trailing newlines is kind of awkward
 				f.write("\n" % list)
 		f.close()
