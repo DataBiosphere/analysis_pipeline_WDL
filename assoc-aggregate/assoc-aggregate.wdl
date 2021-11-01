@@ -988,9 +988,9 @@ task sbg_group_segments_1 {
 			i += 1
 			for entry in list:
 				f.write("%s\t" % entry)
-			if i != len(list):
-				# do not write on last iteration; removing trailing newlines is kind of awkward
-				f.write("\n" % list)
+			#if i != len(list):
+			# do not write on last iteration; removing trailing newlines is kind of awkward
+			f.write("\n")
 		f.close()
 
 		g = open("output_chromosomes.txt", "a")
@@ -1384,7 +1384,7 @@ workflow assoc_agg {
 		call assoc_combine_r {
 			input:
 				chr = chromosome_single,
-				all_assoc_files = sbg_group_segments_1.d_files[0], # index 0 just so this becomes just an array for testing
+				all_assoc_files = sbg_group_segments_1.d_string[0], # index 0 just so this becomes just an array for testing
 				assoc_type = "aggregate"
 		}
 	}
