@@ -1155,6 +1155,7 @@ task wdl_group_segments_then_combine {
 
 		python << CODE
 		import os
+		import glob
 		import shutil
 		import subprocess
 		def split_on_chromosome(file):
@@ -1255,17 +1256,31 @@ task wdl_group_segments_then_combine {
 			f.write('conditional_variant_file "~{conditional_variant_file}"\n')
 		# CWL then has commented out portion for adding assoc files
 		f.close()
+
+		# remove workdir copies from group task, and just hope previous iterations don't get mixed up
+		files_to_delete = glob.glob("%s/*.RData" % os.getcwd())
+		for file_to_delete in files_to_delete:
+			try:
+				os.remove(file_to_delete)
+			except OSError:
+				print("Unable to delete %s" % file_to_delete)
 		
 		for (chrom, group) in zip(output_chromosomes, grouped_assoc_files): # represents the top-level "scatter"
 			print("Debug: We are on chr %s" % chrom)
-			os.remove("*.RData") # remove workdir copies from group task or previous iters
+			
 			for each_file in group:
 				print("Debug: We are copying %s" % each_file)
 				shutil.copy(each_file, ".") # copy every file in a group into the workdir
 
 			# Run the Rscript as a subprocess
 			print("Debug: Running Rscript...")
-			process = subprocess.pOpen(["Rscript", "/usr/local/analysis_pipeline/R/assoc_combine.R --chromosome %s assoc_combine.config" % chrom])
+			process = subprocess.Popen(["Rscript", "/usr/local/analysis_pipeline/R/assoc_combine.R", "--chromosome", "%s" % chrom, "assoc_combine.config"])
+
+			# Prevent our outputs from being deleted next iteration
+			all_RData_files = glob.glob("%s/*.RData" % os.getcwd())
+			print("Debug: files_to_delete is %s" % files_to_delete)
+			print("Debug: all_RData_files is %s" % all_RData_files)
+			print("Debug: Maybe we can subtract one from the other?")
 		
 		CODE
 
@@ -1280,8 +1295,8 @@ task wdl_group_segments_then_combine {
 	}
 
 	output {
-		File debug_output_filenames = "output_filenames.txt"
-		File debug_output_chrs = "output_chromosomes.txt"
+		File d_out_filenames = "output_filenames.txt"
+		File d_out_chrs = "output_chromosomes.txt"
 		Array[File] assoc_combined = glob("*.RData")
 	}
 }
