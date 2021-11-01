@@ -983,10 +983,14 @@ task sbg_group_segments_1 {
 					print("%s\n" % entry)
 		
 		f = open("output_filenames.txt", "a")
+		i = 0
 		for list in grouped_assoc_files:
-			f.write("[%s\t]" % list)
-			#for entry in list:
-				#f.write("%s\n" % entry)
+			i += 1
+			for entry in list:
+				f.write("%s\t" % entry)
+			if i == len(list):
+				# do not write on last iteration; removing trailing newlines is kind of awkward
+				f.write("\n" % list)
 		f.close()
 
 		g = open("output_chromosomes.txt", "a")
