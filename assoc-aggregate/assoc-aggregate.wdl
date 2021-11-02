@@ -1284,7 +1284,7 @@ task wdl_group_segments_then_combine {
 		
 		CODE
 
-		echo("Debug: Outside Python block. Folder contents are: ")
+		echo "Debug: Outside Python block. Folder contents are: "
 		ls
 
 	>>>
