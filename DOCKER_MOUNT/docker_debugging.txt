@@ -1,0 +1,12 @@
+docker run -it --mount type=bind,target="/mount",source="$(pwd)/DOCKER_MOUNT" -u 0 4c8e2ed32b51
+
+FILES=(/mount/position_chr1_seg1.RData /mount/position_chr1_seg10.RData /mount/position_chr1_seg11.RData /mount/position_chr1_seg12.RData /mount/position_chr1_seg13.RData /mount/position_chr1_seg15.RData /mount/position_chr1_seg16.RData /mount/position_chr1_seg17.RData /mount/position_chr1_seg18.RData /mount/position_chr1_seg19.RData /mount/position_chr1_seg2.RData /mount/position_chr1_seg20.RData /mount/position_chr1_seg21.RData /mount/position_chr1_seg22.RData /mount/position_chr1_seg23.RData /mount/position_chr1_seg24.RData /mount/position_chr1_seg25.RData /mount/position_chr1_seg3.RData /mount/position_chr1_seg4.RData /mount/position_chr1_seg5.RData /mount/position_chr1_seg6.RData /mount/position_chr1_seg7.RData /mount/position_chr1_seg8.RData /mount/position_chr1_seg9.RData)
+
+for FILE in "${FILES[@]}"; do ln -s  $FILE .; done
+
+ln -s /mount/assoc_combine.config
+
+python
+import subprocess
+chrom = 1
+subprocess.Popen(["Rscript", "/usr/local/analysis_pipeline/R/assoc_combine.R", "--chromosome", "%s" % chrom, "assoc_combine.config"])

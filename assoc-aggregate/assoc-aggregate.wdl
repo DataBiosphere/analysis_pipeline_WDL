@@ -1128,7 +1128,7 @@ task wdl_group_segments_then_combine {
 		Array[File] assoc_files
 
 		# from combining
-		String? assoc_type
+		String? assoc_type = "aggregate"
 		String? out_prefix
 		File? conditional_variant_file
 
@@ -1277,12 +1277,15 @@ task wdl_group_segments_then_combine {
 			process = subprocess.Popen(["Rscript", "/usr/local/analysis_pipeline/R/assoc_combine.R", "--chromosome", "%s" % chrom, "assoc_combine.config"])
 
 			# Prevent our outputs from being deleted next iteration
-			all_RData_files = glob.glob("%s/*.RData" % os.getcwd())
+			some_RData_files = glob.glob("%s/*seg*.RData" % os.getcwd()) # may false pos if prefix has seg in it?
 			print("Debug: files_to_delete is %s" % files_to_delete)
-			print("Debug: all_RData_files is %s" % all_RData_files)
+			print("Debug: some_RData_files is %s" % some_RData_files)
 			print("Debug: Maybe we can subtract one from the other?")
 		
 		CODE
+
+		echo("Debug: Outside Python block. Folder contents are: ")
+		ls
 
 	>>>
 	
