@@ -1040,64 +1040,6 @@ struct Assoc_N_Chr {
 	Array[String] chromosome
 }
 
-task array_array_localization {
-	input {
-		Array[Array[File]] array_of_arrays
-	}
-
-	command <<<
-	ARRAYS=(~{sep=" " array_of_arrays})
-	for ARRAY in ${ARRAYS[@]};
-	do
-		echo ${ARRAY}
-		echo "AAAAAAAAAAAA"
-	done
-
-	touch foo.txt
-	>>>
-
-	runtime {
-		cpu: 4
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-		disks: "local-disk " + 20 + " HDD"
-		memory: "5 GB"
-		preemptibles: "2"
-	}
-
-	output {
-		File foo = "foo.txt"
-	}
-}
-
-task array_localization {
-	input {
-		Array[File] array_of_files
-	}
-
-	command <<<
-	ARRAYS=(~{sep=" " array_of_files})
-	for ARRAY in ${ARRAYS[@]};
-	do
-		echo ${ARRAY}
-		echo "AAAAAAAAAAAA"
-	done
-
-	touch foo.txt
-	>>>
-
-	runtime {
-		cpu: 4
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-		disks: "local-disk " + 20 + " HDD"
-		memory: "5 GB"
-		preemptibles: "2"
-	}
-
-	output {
-		File foo = "foo.txt"
-	}
-}
-
 task assoc_combine_r {
 	input {
 		String chr
@@ -1436,49 +1378,33 @@ workflow assoc_agg {
 				assoc_files = flatten_array
 	}
 
-	scatter(d_file in sbg_group_segments_1.d_files) {
-		call array_localization {
+	# should try zip() once we confirm if array(file) or array(array(file)) can be passed at all
+	scatter(chromosome_single in sbg_group_segments_1.chromosomes) {
+		call assoc_combine_r {
 			input:
-				array_of_files = d_file
+				chr = chromosome_single,
+				all_assoc_files = sbg_group_segments_1.d_string[0], # index 0 just so this becomes just an array for testing
+				assoc_type = "aggregate"
 		}
 	}
 
-
-	call array_array_localization {
+	call assoc_plots_r {
 		input:
-			array_of_arrays = sbg_group_segments_1.d_files
+			assoc_files = assoc_combine_r.assoc_combined,
+			assoc_type = "aggregate",
+			plots_prefix = out_prefix,
+			disable_thin = disable_thin,
+			known_hits_file = known_hits_file,
+			thin_npoints = thin_npoints,
+			thin_nbins = thin_nbins,
+			plot_mac_threshold = plot_mac_threshold,
+			truncate_pval_threshold = truncate_pval_threshold
 	}
 
-
-	# should try zip() once we confirm if array(file) or array(array(file)) can be passed at all
-
-	# try scatter for array in sbg_group_segments_1.d_files instead of chromosomes
-#	scatter(chromosome_single in sbg_group_segments_1.chromosomes) {
-#		call assoc_combine_r {
-#			input:
-#				chr = chromosome_single,
-#				all_assoc_files = d_files,
-#				assoc_type = "aggregate"
-#		}
-#	}
-#
-#	call assoc_plots_r {
-#		input:
-#			assoc_files = assoc_combine_r.assoc_combined,
-#			assoc_type = "aggregate",
-#			plots_prefix = out_prefix,
-#			disable_thin = disable_thin,
-#			known_hits_file = known_hits_file,
-#			thin_npoints = thin_npoints,
-#			thin_nbins = thin_nbins,
-#			plot_mac_threshold = plot_mac_threshold,
-#			truncate_pval_threshold = truncate_pval_threshold
-#	}
-#
-#	output {
-#		Array[File] assoc_combined = assoc_combine_r.assoc_combined
-#		Array[File] assoc_plots = assoc_plots_r.assoc_plots
-#	}
+	output {
+		Array[File] assoc_combined = assoc_combine_r.assoc_combined
+		Array[File] assoc_plots = assoc_plots_r.assoc_plots
+	}
 
 	meta {
 		author: "Ash O'Farrell"
