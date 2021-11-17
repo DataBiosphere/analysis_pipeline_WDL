@@ -1000,14 +1000,13 @@ task sbg_group_segments_1 {
 
 		if "~{debug}" == "true":
 			print("Debug: Finished. Executor will now attempt to evaulate outputs.")
-
 		CODE
 	>>>
 	
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
-		disks: "local-disk " + finalDiskSize + " HDD"
+		disks: "local-disk " + addldisk + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -1015,38 +1014,19 @@ task sbg_group_segments_1 {
 	output {
 		File d_filenames = "output_filenames.txt"
 		File d_chrs = "output_chromosomes.txt"
-		Array[Array[String]] d_string = read_tsv("output_filenames.txt")
-		Array[Array[File]] d_files = read_tsv("output_filenames.txt")
-		# The CWL returns array(array(file)) and array(string) in order to dotproduct scatter in
-		# the next task, but we cannot do that in WDL. An older version of this code scattered this
-		# task and used a custom struct defined below. This version does not use the custom struct
-		# as was difficult to debug, but it may need to be used again if we wish to remove
-		# assoc_combine_r's current reliance on having EVERY task end up with EVERY chromosome's
-		# association files, so I am just leaving it commented it out now.
-		#Assoc_N_Chr group_out = {"grouped_assoc_files":glob("*.RData"),"chromosome":read_lines("output_chromosomes.txt")}
-		
-		# New version: Simpler, but will cost us dearly in disk size in the next task.
-		Array[File] grouped_assoc_files = glob("*.RData")
-		Array[String] chromosomes = read_lines("output_chromosomes.txt")
+		Array[Array[String]] grouped_files_as_strings = read_tsv("output_filenames.txt")
 	}
-}
-
-# Recall that this struct was developed based on the assumption that the assoc_aggregate task
-# was scattered. You might expect chromosome to be type String, but I have not been able to
-# get that working properly. Because only one chromosome is generated per iteration of the 
-# scattered assoc_aggregate task, it becomes an array with just one element.
-struct Assoc_N_Chr {
-	Array[File] grouped_assoc_files
-	Array[String] chromosome
 }
 
 task assoc_combine_r {
 	input {
-		String chr
-		Array[File] all_assoc_files
+		#String chr # not used in the WDL
+		Array[File] assoc_files
 		String? assoc_type
-		String? out_prefix
+		String? out_prefix = "combined" # not the default in CWL
 		File? conditional_variant_file
+
+		Boolean debug = true
 		
 		# runtime attr
 		Int addldisk = 3
@@ -1060,8 +1040,70 @@ task assoc_combine_r {
 
 		python << CODE
 		import os
+
+		########### ripped from the grouping task, should be whittled down #############
+		import os
+
+		def split_on_chromosome(file):
+			chrom_num = file.split("chr")[1]
+			return chrom_num
+			
+		def find_chromosome(file):
+			chr_array = []
+			chrom_num = split_on_chromosome(file)
+			if len(chrom_num) == 1:
+				acceptable_chrs = [str(integer) for integer in list(range(1,22))]
+				acceptable_chrs.extend(["X","Y","M"])
+				if chrom_num in acceptable_chrs:
+					return chrom_num
+				else:
+					print("Error: %s appears to be an invalid chromosome number." % chrom_num)
+					exit(1)
+			elif (unicode(str(chrom_num[1])).isnumeric()):
+				# two digit number
+				chr_array.append(chrom_num[0])
+				chr_array.append(chrom_num[1])
+			else:
+				# one digit number or Y/X/M
+				chr_array.append(chrom_num[0])
+			return "".join(chr_array)
+
+		print("Grouping...") # line 116 of CWL
 		
-		python_assoc_files = ['~{sep="','" all_assoc_files}']
+		python_assoc_files = ['~{sep="','" assoc_files}']
+		if "~{debug}" == "true":
+			print("Debug: Input association files located at %s" % python_assoc_files)
+		python_assoc_files_wkdir = []
+		for file in python_assoc_files:
+			# point to the workdir copies instead to help Terra
+			python_assoc_files_wkdir.append(os.path.basename(file))
+		if "~{debug}" == "true":
+			print("Debug: We will instead work with the workdir duplicates at %s" % python_assoc_files_wkdir)
+		assoc_files_dict = dict() 
+		grouped_assoc_files = [] # line 53 of CWL
+		output_chromosomes = [] # line 96 of CWL
+
+		for i in range(0, len(python_assoc_files)):
+			chr = find_chromosome(python_assoc_files[i])
+			if chr in assoc_files_dict:
+				assoc_files_dict[chr].append(python_assoc_files[i])
+			else:
+				assoc_files_dict[chr] = [python_assoc_files[i]]
+
+		if "~{debug}" == "true":
+			print("Debug: Iterating thru keys...")
+		for key in assoc_files_dict.keys():
+			grouped_assoc_files.append(assoc_files_dict[key]) # line 65 in CWL
+			output_chromosomes.append(key) # line 108 in CWL
+
+		g = open("output_chromosomes.txt", "a")
+		for chrom in output_chromosomes:
+			g.write("%s" % chrom) # no newline for combine task's version
+		g.close()
+		########### end stuff taken from grouping task #############
+		print(output_chromosomes) # in this task, this should only have one value
+		
+		python_assoc_files = ['~{sep="','" assoc_files}']
 		
 		f = open("assoc_combine.config", "a")
 		
@@ -1087,13 +1129,9 @@ task assoc_combine_r {
 		# Position  10: chromosome flag    (line  97 of CWL -- chromosome has type Array[String] in CWL, but always has just 1 value
 		# Position 100: config file        (line 172 of CWL)
 
-		CHRS=(~{sep=" " chr})
-		for CHR in ${CHRS[@]};
-		do
-			THIS_CHR=${CHR}
-		done
+		THIS_CHR=`cat output_chromosomes.txt`
 
-		FILES=(~{sep=" " all_assoc_files})
+		FILES=(~{sep=" " assoc_files})
 		for FILE in ${FILES[@]};
 		do
 			# only link files related to this chromosome; the inability to find inputs that are
@@ -1379,11 +1417,10 @@ workflow assoc_agg {
 	}
 
 	# should try zip() once we confirm if array(file) or array(array(file)) can be passed at all
-	scatter(chromosome_single in sbg_group_segments_1.chromosomes) {
+	scatter(thing in sbg_group_segments_1.grouped_files_as_strings) {
 		call assoc_combine_r {
 			input:
-				chr = chromosome_single,
-				all_assoc_files = sbg_group_segments_1.d_string[0], # index 0 just so this becomes just an array for testing
+				assoc_files = thing,
 				assoc_type = "aggregate"
 		}
 	}
