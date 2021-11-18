@@ -1037,9 +1037,13 @@ task assoc_combine_r {
 	Int finalDiskSize = 100 # override, replace me!
 
 	command <<<
+		# to make the output globbing work, we will eventually delete out input files
+		# this requires this specific command on Terra - do not replace it with a simpler
+		# chmod, it will probably not work!
+		set -eux -o pipefail
+		find . -type d -exec sudo chmod -R 777 {} +
 
 		python << CODE
-		import os
 
 		########### ripped from the grouping task, should be whittled down #############
 		import os
