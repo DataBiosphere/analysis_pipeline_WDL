@@ -653,7 +653,7 @@ task assoc_aggregate {
 	Int segment_size = ceil(size(segment_file, "GB"))
 	Int null_size = ceil(size(null_model_file, "GB"))
 	Int pheno_size = ceil(size(phenotype_file, "GB"))
-	Int varweight_size = select_first([ceil(size(variant_weight_file, "GB")), 0])
+	Int varweight_size = 9 # OVERRIDE, previously ([ceil(size(variant_weight_file, "GB")), 0])
 	Int finalDiskSize = zipped_size + segment_size + null_size + pheno_size + varweight_size + addldisk
 
 	command <<<
@@ -883,7 +883,7 @@ task assoc_aggregate {
 task sbg_group_segments_1 {
 	input {
 		# if not scattered
-		Array[File] assoc_files
+		Array[String] assoc_files
 		# if scattered
 		#File assoc_file
 
