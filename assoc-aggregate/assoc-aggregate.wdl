@@ -1145,6 +1145,14 @@ task assoc_combine_r {
 
 		Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome $THIS_CHR assoc_combine.config
 
+		for FILE in ${FILES[@]};
+		do
+			rm ${FILE}
+		done
+
+		echo "Input files should be removed, let's ls to be sure"
+		ls
+
 	>>>
 
 	runtime {
