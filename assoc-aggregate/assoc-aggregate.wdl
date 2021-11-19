@@ -1037,6 +1037,7 @@ task assoc_combine_r {
 	Int finalDiskSize = 100 # override, replace me!
 
 	command <<<
+
 		python << CODE
 
 		########### ripped from the grouping task, should be whittled down #############
@@ -1136,10 +1137,19 @@ task assoc_combine_r {
 			# not softlinked or copied to the workdir actually helps us out here!
 			if [[ "$FILE" =~ "chr$THIS_CHR" ]];
 			then
-				echo "$FILE"
+				echo "$FILE has sha1sum of..."
+				sha1sum ${FILE}
+				echo "It has the size of..."
+				ls -sh ${FILE}
+				echo "And we are softlinking it!"
 				ln -s ${FILE} .
 			fi
 		done
+
+		echo "Here's the contents of this directory:"
+		ls -lha
+
+		echo "Now, let's run the Rscript and hope for the best!"
 
 		Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome $THIS_CHR assoc_combine.config
 
@@ -1149,8 +1159,8 @@ task assoc_combine_r {
 		#	rm ${FILE}
 		#done
 
-		echo "contents of directory: "
-		ls
+		echo "Final contents of directory: "
+		ls -lha
 
 	>>>
 
