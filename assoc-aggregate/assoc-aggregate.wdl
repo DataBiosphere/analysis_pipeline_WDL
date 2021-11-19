@@ -1023,7 +1023,7 @@ task assoc_combine_r {
 		#String chr # not used in the WDL
 		Array[File] assoc_files
 		String? assoc_type
-		String? out_prefix = "combined" # not the default in CWL
+		String? out_prefix = "combinedcombinedcombineduniquestring" # not the default in CWL
 		File? conditional_variant_file
 
 		Boolean debug = true
@@ -1037,12 +1037,6 @@ task assoc_combine_r {
 	Int finalDiskSize = 100 # override, replace me!
 
 	command <<<
-		# to make the output globbing work, we will eventually delete out input files
-		# this requires this specific command on Terra - do not replace it with a simpler
-		# chmod, it will probably not work!
-		set -eux -o pipefail
-		find . -type d -exec sudo chmod -R 777 {} +
-
 		python << CODE
 
 		########### ripped from the grouping task, should be whittled down #############
@@ -1149,12 +1143,13 @@ task assoc_combine_r {
 
 		Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome $THIS_CHR assoc_combine.config
 
-		for FILE in ${FILES[@]};
-		do
-			rm ${FILE}
-		done
+		# this doesn't work, even if we do terra-specific sudo chmod earlier
+		#for FILE in ${FILES[@]};
+		#do
+		#	rm ${FILE}
+		#done
 
-		echo "Input files should be removed, let's ls to be sure"
+		echo "contents of directory: "
 		ls
 
 	>>>
@@ -1168,7 +1163,7 @@ task assoc_combine_r {
 	}
 
 	output {
-		File assoc_combined = glob("*.RData")[0] # CWL considers this optional
+		File assoc_combined = glob("combinedcombinedcombineduniquestring*.RData")[0] # CWL considers this optional
 		File config_file = glob("*.config")[0]   # CWL considers this an array but there is always only one
 	}
 }
