@@ -13,20 +13,27 @@ These differences are likely only of interest to maintainers of this repo or tho
 ## assoc-aggregate.wdl
 This one has the most significant differences by far. Some tasks have their outputs changed to better comply with the strict output limitations of WDL, and subsequent tasks include processing to account for those changed outputs. As such the input and output of some tasks are not one-to-one of their CWL equivalent tasks.
 
-### General
-Some of the outputs in the CWL at first look like they are globbing .txt files, but they actually are using loadContents, which works like this: For each file matched in glob, read up to the first 64 KiB of text from the file  and place it in the contents field of the file object for manipulation by outputEval. So, the CWL's call for self[0].contents would be the first 64 KiB of the 0th file to match the .txt glob. That would be segments.txt in the prepare segments tasks. Therefore the WDL mimics this by just reading segments.txt
+### Miscellanous
+* loadContents: Some of the outputs in the CWL at first look like they are globbing .txt files, but they actually are using loadContents, which works like this: For each file matched in glob, read up to the first 64 KiB of text from the file  and place it in the contents field of the file object for manipulation by outputEval. So, the CWL's call for self[0].contents would be the first 64 KiB of the 0th file to match the .txt glob. That would be segments.txt in the prepare segments tasks. Therefore the WDL mimics this by just reading segments.txt
 
-This pipeline features heavy usage of the twice localized workaround. Some steps in the CWL actually use the same or a similiar workaround.
+* This pipeline features heavy usage of the twice localized workaround. (Interestingly, some steps in the CWL actually use the same or a similiar workaround, so sometimes this isn't a difference but rather a case of simultaneous invention.)
 
 ### High-level overview
 ![Table showing high-level overview of tasks in the CWL versus the WDL. Information is summarized in text.](https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/assoc-agg-part2/_documentation_/for%20developers/assoc_agg_cwl_vs_wdl.png)
 
 ### wdl_validate_inputs
+**Summary: New task to validate inputs**  
 This is a simple to task to validate if three String? inputs are valid. The CWL sets them as type enum, which limits what values they can be. WDL does not have this type, so this task performs the validation to ensure inputs are valid. We do this before anything else runs as these inputs are not used until about halfway down the pipeline, and we don't want to waste user's time doing the first half if the second is doomed to fail.
 
 ### sbg_prepare_segments_1
 First, a point on naming: sbg_prepare_segments_1 is not to be confused with sbg_prepare_segments. sbg_prepare_segments is not used in this workflow at all, in neither the CWL or the WDL, but is used in different CWL workflows.
 
+#### input differences
+**Summary: CWL considers an input optional; WDL considers it required**  
+The CWL accounts for there being no aggregate files, as the CWL considers them an optional input. We don't need to account for that because the way WDL works means it they are a required output of a previous task and a required input of this task. That said, if this code is reused for other WDLs, it will need adjustment in the latter half of this task (the region is marked with a comment restating this paragraph).
+
+#### output differences
+**Summary: CWL outputs 3 or 4 files; WDL outputs one zip file containing 3 or 4 files**  
 The CWL's output of sbg_prepare_segments_1 is three or four objects:
 * An array of GDS files
 * An array of integers representing segment number
@@ -39,18 +46,22 @@ The CWL then dot-product scatters on these arrays, meaning that each instance of
 * One aggregate RData file
 * Optional: One variant include RData file
 
-It is theoretically possible to mimic this in a WDL that is compatible in Terra using custom structs, but I am not sure if it is possible to reliably scatter on such a thing. In any case, I found it to be less error-prone to simply set this task's output to a single array of zip files and to have the next task scatter on those zip files. Each zip file contains, and will pass into each instance of the subsequent scattered task:
+It is theoretically possible to mimic this in a WDL that is compatible in Terra using custom structs, but I had difficulty scattering on such a thing reliably. In any case, I found it to be less error-prone to simply set this task's output to a single array of zip files and to have the next task scatter on those zip files. Each zip file contains, and will pass into each instance of the subsequent scattered task:
 * One GDS file
-* One file with with the pattern X.integer where X is represents the segment number
+* One file with with the pattern X.integer where X represents the segment number
 * One aggregate RData file
 * Optional: One variant include RData file, in its own subfolder in order to differentiate it from the other RData file
 
+Why is the variant include output in its own subfolder? The variant include RData file does not have a predictable file name, nor does the aggregate RData file -- all we know is their extension, which they share. The CWL "keeps track" of them by assigning them to output variables of type file. We are unable to do that, nor can we easily assign unpredictable file names to an output variable of type string in WDL ("easily" because in theory this could be done with using read_file() to output a variable of type string but I have found it to be error-prone), therefore we are using the filesystem itself to keep track of which RData file is which.
+
 ### assoc_aggregate
-Each instance of this scattered task represents one segment of the genome. In both the CWL and the WDL, it is possible for a segment to generate no output in this task. The Rscript will report there is nothing to do and print "exiting gracefully" without generating an RData file.
+**Summary: WDL can't handle optional outputs so we sometimes force bogus output that CWL would not generate**  
+Each instance of this scattered task represents one segment of the genome. In both the CWL and the WDL, it is possible for a segment to generate no output in this task. This is not an error, and it is more common with a greater number of segments (as that means smaller segments and decreased likelihood of a "hit"). The Rscript will report there is nothing to do and print "exiting gracefully" without generating an RData file.
 
 This is problematic for WDL, as Terra-compatiable WDL has strict limitations on generating and using optional outputs. Thusly we use a workaround where if no RData output is generated for a given segment, we generate a blank RData file with a filename clearly indicating that it is bogus.
 
 ### sbg_flatten_lists and wdl_process_assoc_files
+**Summary: Completely replace CWL task with a different processing task that among other things handles previous task's potential bogus output**  
 sbg_flatten_lists is **not** used in the WDL due to major differences between how WDL and CWL handles arrays. It is replaced by wdl_process_assoc_files. Strictly speaking these two tasks have the same goal -- processing the output of the previous task so that it aligns with the requirements and limitations of a given workflow language -- but the nature of those limitations are quite different.
 
 In particular, wdl_process_assoc_files deletes the bogus files from the previous assoc_aggregate task.
