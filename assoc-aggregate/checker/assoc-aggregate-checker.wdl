@@ -34,7 +34,8 @@ workflow aggie_checker {
 	call verify_array.arraycheck_classic as allele_check {
 		input:
 			test = allele_run.assoc_combined,
-			truth = truths_allele
+			truth = truths_allele,
+			rdata_check = true
 	}
 	
 	call assoc_agg_wf.assoc_agg as position_run {
@@ -54,7 +55,8 @@ workflow aggie_checker {
 	call verify_array.arraycheck_classic as position_check {
 		input:
 			test = position_run.assoc_combined,
-			truth = truths_position
+			truth = truths_position,
+			rdata_check = true
 	}
 
 	call assoc_agg_wf.assoc_agg as weights_run {
@@ -74,6 +76,7 @@ workflow aggie_checker {
 	call verify_array.arraycheck_classic as weights_check {
 		input:
 			test = weights_run.assoc_combined,
-			truth = truths_weights
+			truth = truths_weights,
+			rdata_check = true
 	}
 }
