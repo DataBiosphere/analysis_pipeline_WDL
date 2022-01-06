@@ -1026,7 +1026,7 @@ task assoc_combine_r {
 		# a very unique filename so we can glob upon it
 		Array[File] assoc_files
 		String? assoc_type
-		String? out_prefix = "combinedcombinedcombineduniquestring" # not the default in CWL
+		String? out_prefix = "" # not the default in CWL
 		File? conditional_variant_file
 
 		Boolean debug = true
@@ -1042,8 +1042,6 @@ task assoc_combine_r {
 	command <<<
 
 		python << CODE
-
-		########### ripped from the grouping task, should be whittled down #############
 		import os
 
 		def split_on_chromosome(file):
@@ -1071,39 +1069,11 @@ task assoc_combine_r {
 			return "".join(chr_array)
 		
 		python_assoc_files = ['~{sep="','" assoc_files}']
-		if "~{debug}" == "true":
-			print("Debug: Input association files located at %s" % python_assoc_files)
-		python_assoc_files_wkdir = []
-		for file in python_assoc_files:
-			# point to the workdir copies instead to help Terra
-			python_assoc_files_wkdir.append(os.path.basename(file))
-		if "~{debug}" == "true":
-			print("Debug: We will instead work with the workdir duplicates at %s" % python_assoc_files_wkdir)
-		assoc_files_dict = dict() 
-		grouped_assoc_files = [] # line 53 of CWL
-		output_chromosomes = [] # line 96 of CWL
 
-		for i in range(0, len(python_assoc_files)):
-			chr = find_chromosome(python_assoc_files[i])
-			if chr in assoc_files_dict:
-				assoc_files_dict[chr].append(python_assoc_files[i])
-			else:
-				assoc_files_dict[chr] = [python_assoc_files[i]]
-
-		if "~{debug}" == "true":
-			print("Debug: Iterating thru keys...")
-		for key in assoc_files_dict.keys():
-			grouped_assoc_files.append(assoc_files_dict[key]) # line 65 in CWL
-			output_chromosomes.append(key) # line 108 in CWL
-
+		chr = find_chromosome(python_assoc_files[0])
 		g = open("output_chromosomes.txt", "a")
-		for chrom in output_chromosomes:
-			g.write("%s" % chrom) # no newline for combine task's version
+		g.write("%s" % chr)
 		g.close()
-		########### end stuff taken from grouping task #############
-		print(output_chromosomes) # in this task, this should only have one value
-		
-		python_assoc_files = ['~{sep="','" assoc_files}']
 		
 		f = open("assoc_combine.config", "a")
 		
@@ -1180,7 +1150,7 @@ task assoc_combine_r {
 	}
 
 	output {
-		File assoc_combined = glob("combinedcombinedcombineduniquestring*.RData")[0] # CWL considers this optional
+		File assoc_combined = glob("*.RData")[0] # CWL considers this optional
 		File config_file = glob("*.config")[0]   # CWL considers this an array but there is always only one
 	}
 }
