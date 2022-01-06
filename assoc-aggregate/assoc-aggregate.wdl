@@ -887,7 +887,7 @@ task sbg_group_segments_1 {
 		# if scattered
 		#File assoc_file
 
-		Boolean debug = false
+		Boolean debug = true
 
 		# runtime attr
 		Int addldisk = 3
@@ -1021,6 +1021,9 @@ task sbg_group_segments_1 {
 task assoc_combine_r {
 	input {
 		#String chr # not used in the WDL
+
+		# to prevent globbing on the wrong RData files as output, we need to give the real output
+		# a very unique filename so we can glob upon it
 		Array[File] assoc_files
 		String? assoc_type
 		String? out_prefix = "combinedcombinedcombineduniquestring" # not the default in CWL
@@ -1137,18 +1140,21 @@ task assoc_combine_r {
 			# not softlinked or copied to the workdir actually helps us out here!
 			if [[ "$FILE" =~ "chr$THIS_CHR" ]];
 			then
-				echo "$FILE has sha1sum of..."
+				echo "----------------------------"
+				echo "File found with this sha1sum: "
 				sha1sum ${FILE}
-				echo "It has the size of..."
-				ls -sh ${FILE}
 				echo "And we are softlinking it!"
-				ln -s ${FILE} .
+				#ln -s ${FILE} . # doesn't seem to be working and CWL does it a little different
+				$BASE=basename ${FILE}
+				ln -s ${FILE} ${BASE}
 			fi
 		done
 
+		echo "----------------------------"
 		echo "Here's the contents of this directory:"
 		ls -lha
 
+		echo "----------------------------"
 		echo "Now, let's run the Rscript and hope for the best!"
 
 		Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome $THIS_CHR assoc_combine.config
@@ -1238,6 +1244,8 @@ task assoc_plots_r {
 		f = open("assoc_file.config", "a")
 
 		# CWL has  argument.push('out_prefix "assoc_single"'); but that doesn't seem valid
+		# but we are currently failing so let us try adding it
+		f.write('out_prefix "assoc_single"\n')
 
 		a_file = python_assoc_files[0]
 		chr = find_chromosome(os.path.basename(a_file))
@@ -1265,7 +1273,7 @@ task assoc_plots_r {
 			chrom_num = find_chromosome(assoc_file)
 			chr_array.append(chrom_num)
 		chrs = ' '.join(chr_array)
-		f.write('chromosomes "%s"' % chrs)
+		f.write('chromosomes "%s "' % chrs)
 
 		# CWL might have another boolean/defined bug at line 107, investigate
 

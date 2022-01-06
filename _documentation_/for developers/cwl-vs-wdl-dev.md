@@ -71,6 +71,9 @@ The CWL has this as a scattered task. Each instance of the scattered task takes 
 
 The WDL has this a non-scattered task. Each instance of the scattered task takes in a File and outputs a complex object containing one Array[File] and one Array[String]. The Array[String] component only has one element, and is therefore effectly just a String.
 
+### assoc_combine_r
+In this task we have a bunch of RData input files in the workdir. Google-compatiable WDL is very restrictive in how it handles output files, therefore, it is easiest to just give the output file a very unique prefix that is extremely unlikely to be found in an input RData file. (If we did not need to run on Terra, we could write the output filename to a text file, then read theat as a WDL task-level output and then glob upon that as another WDL task output, but Google-Cromwell doesn't allow for such workarounds.) For now that string is "combinedcombinedcombineduniquestring"
+
 ## ld-pruning.wdl
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().
 * check_merged_gds uses the chromosome file workaround.
