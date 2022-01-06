@@ -1069,8 +1069,6 @@ task assoc_combine_r {
 				# one digit number or Y/X/M
 				chr_array.append(chrom_num[0])
 			return "".join(chr_array)
-
-		print("Grouping...") # line 116 of CWL
 		
 		python_assoc_files = ['~{sep="','" assoc_files}']
 		if "~{debug}" == "true":
@@ -1143,10 +1141,13 @@ task assoc_combine_r {
 				echo "----------------------------"
 				echo "File found with this sha1sum: "
 				sha1sum ${FILE}
-				echo "And we are softlinking it!"
+				#echo "And we are softlinking it!"
 				#ln -s ${FILE} . # doesn't seem to be working and CWL does it a little different
-				$BASE=basename ${FILE}
-				ln -s ${FILE} ${BASE}
+				
+				#$BASE=basename ${FILE}
+				#ln -s ${FILE} ${BASE}
+
+				cp ${FILE} .
 			fi
 		done
 
@@ -1157,7 +1158,7 @@ task assoc_combine_r {
 		echo "----------------------------"
 		echo "Now, let's run the Rscript and hope for the best!"
 
-		Rscript /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome $THIS_CHR assoc_combine.config
+		Rscript --verbose /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome $THIS_CHR assoc_combine.config
 
 		# this doesn't work, even if we do terra-specific sudo chmod earlier
 		#for FILE in ${FILES[@]};
