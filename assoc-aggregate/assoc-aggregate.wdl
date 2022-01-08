@@ -761,23 +761,23 @@ task assoc_aggregate {
 				f.write('out_prefix "' + data_prefix[0]  + 'aggregate_chr'  + chr + os.path.basename(gds).split('chr'+chr)[1].split('.gds')[0] + '"' + "\n")
 
 		dir = os.getcwd()
-		f.write("gds_file '%s/%s'\n" % (dir, gds))
-		f.write("phenotype_file '~{phenotype_file}'\n")
-		f.write("aggregate_variant_file '%s/%s'\n" % (dir, agg))
-		f.write("null_model_file '~{null_model_file}'\n")
+		f.write('gds_file "%s/%s"\n' % (dir, gds))
+		f.write('phenotype_file "~{phenotype_file}"\n')
+		f.write('aggregate_variant_file "%s/%s"\n' % (dir, agg))
+		f.write('null_model_file "~{null_model_file}"\n')
 		# CWL accounts for null_model_params but this does not exist in aggregate context
 		if "~{rho}" != "":
 			f.write("rho ")
 			for r in ['~{sep="','" rho}']:
 				f.write("%s " % r)
 			f.write("\n")
-		f.write("segment_file '~{segment_file}'\n") # never optional in WDL
+		f.write('segment_file "~{segment_file}"\n') # never optional in WDL
 		if "~{test}" != "":
-			f.write("test '~{test}'\n")
+			f.write('test "~{test}"\n')
 		# cwl has test type, not sure if needed here
 		if os.path.isdir("varinclude"):
 			# although moved to the workdir, the folder containing it should still exist
-			f.write('"variant_include_file "%s"\n' % var)
+			f.write('variant_include_file "%s"\n' % var)
 		if "~{weight_beta}" != "":
 			f.write("weight_beta '~{weight_beta}'\n")
 		if "~{aggregate_type}" != "":
