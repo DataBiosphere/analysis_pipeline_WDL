@@ -12,6 +12,9 @@ workflow aggie_checker {
 		Array[File]  variant_group_files_genes  # used for position_test
 		Array[File]  variant_include_files
 
+		# variant_weight_file is not included in any of the assoc-aggregate configs
+		# see: https://github.com/UW-GAC/analysis_pipeline/search?q=variant_weights
+
 		# truths
 		Array[File] truths_allele
 		Array[File] truths_position
