@@ -12,6 +12,7 @@ IIaggregate_filesII = ["_test-data-and-truths_/assoc/aggregate_list_chr1.RData",
 
 from zipfile import ZipFile
 import os
+import shutil
 
 def find_chromosome(file):
 	chr_array = []
@@ -42,7 +43,6 @@ def pair_chromosome_gds(file_array):
 	for i in range(0, len(file_array)): 
 		# Key is chr number, value is associated GDS file
 		gdss[int(find_chromosome(file_array[i]))] = os.path.basename(file_array[i])
-		i += 1
 	return gdss
 
 def pair_chromosome_gds_special(file_array, agg_file):
@@ -96,6 +96,10 @@ segs_output_hack.writelines(["%s " % thing for thing in output_segments])
 segs_output_hack.close()
 
 # Prepare aggregate output
+# The CWL accounts for there being no aggregate files, as the CWL considers them an optional
+# input. We don't need to account for that because the way WDL works means it they are a
+# required output of a previous task and a required input of this task. That said, if this
+# code is reused for other WDLs, it may need some adjustments right around here.
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 agg_segments = wdl_get_segments()
 if 'chr' in os.path.basename(IIaggregate_filesII[0]):
@@ -112,10 +116,6 @@ for i in range(0, len(agg_segments)): # for(var i=0;i<segments.length;i++){
 		output_aggregate_files.append(input_aggregate_files[chr])
 	elif (chr in input_gdss):
 		output_aggregate_files.append(None)
-# The CWL accounts for there being no aggregate files, as the CWL considers them an optional
-# input. We don't need to account for that because the way WDL works means it they are a
-# required output of a previous task and a required input of this task. That said, if this
-# code is reused for other WDLs, it may need some adjustments right around here.
 
 # Prepare variant include output
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
@@ -148,12 +148,41 @@ var_output_hack = open("variant_output_debug.txt", "w")
 var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
 var_output_hack.close()
 
+# We can only consistently tell output files apart by their extension. If var
+# include files and agg files are both outputs, this is problematic, as they
+# both share the RData extension. Therefore we put var include files in a subdir.
+if IIvariant_include_filesII != [""]:
+	os.mkdir("varinclude")
+	os.mkdir("temp")
+
 # Make a bunch of zip files
 for i in range(0, max(output_segments)):
-	this_zip = ZipFile("dotprod%s.zip" % i+1, "w")
+	plusone = i+1
+	this_zip = ZipFile("dotprod%s.zip" % plusone, "w")
 	this_zip.write("%s" % output_gdss[i])
 	this_zip.write("%s.integer" % output_segments[i])
 	this_zip.write("%s" % output_aggregate_files[i])
-	if IIvariant_include_filesII != [""]: # not sure if this is robust
-		this_zip.write("%s" % output_variant_files)
+	if IIvariant_include_filesII != [""]:
+		print("We detected %s as an output variant file." % output_variant_files[i])
+		try:
+			# Both the CWL and the WDL basically have duplicated output wherein each
+			# segment for a given chromosome get the same var include output. If you
+			# have six segments that cover chr2, then each segment will get the same
+			# var include file for chr2.
+			# Because we are handling output with zip files, we need to keep copying
+			# the variant include file. The CWL does not need to do this.
+
+			# Make a temporary copy in the temp directory
+			shutil.copy(output_variant_files[i], "temp/%s" % output_variant_files[i])
+			# Move the not-copy into the varinclude subdirectory
+			os.rename(output_variant_files[i], "varinclude/%s" % output_variant_files[i])
+			# Return the copy to the workdir
+			shutil.move("temp/%s" % output_variant_files[i], output_variant_files[i])
+		except OSError:
+			# Variant include for this chr has already been taken up and zipped.
+			# The earlier copy should stop this but permissions can get iffy on
+			# Terra, so we should at least catch the error here for debugging.
+			print("Variant include file appears unavailable. Exiting disgracefully...")
+			exit(1)
+		this_zip.write("varinclude/%s" % output_variant_files[i])
 	this_zip.close()
