@@ -2,13 +2,13 @@
 IIsegments_fileII = "_test-data-and-truths_/assoc/segments.txt"
 
 # ['~{sep="','" input_gds_files}']
-IIinput_gds_filesII = ["_test-data-and-truths_/assoc/1KG_phase3_subset_chr1.gds", "_test-data-and-truths_/gds/a_vcf2gds/1KG_phase3_subset_chr2_butwithadifferentname.gds"]
+IIinput_gds_filesII = ["_test-data-and-truths_/assoc/1KG_phase3_subset_chr1.gds", "_test-data-and-truths_/gds/a_vcf2gds/1KG_phase3_subset_chr2_butwithadifferentname.gds", "_test-data-and-truths_/gds/a_vcf2gds/1KG_phase3_subset_chrX.gds"]
 
 #['~{sep="','" variant_include_files}']
 IIvariant_include_filesII = [""]
 
 #['~{sep="','" aggregate_files}']
-IIaggregate_filesII = ["_test-data-and-truths_/assoc/aggregate_list_chr1.RData", "_test-data-and-truths_/assoc/aggregate_list_chr2.RData"]
+IIaggregate_filesII = ["_test-data-and-truths_/assoc/aggregate_list_chr1.RData", "_test-data-and-truths_/assoc/aggregate_list_chr2.RData", "_test-data-and-truths_/assoc/aggregate_list_chrX_bogus.RData" ]
 
 from zipfile import ZipFile
 import os
