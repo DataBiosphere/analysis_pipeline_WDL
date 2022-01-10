@@ -459,7 +459,15 @@ task sbg_prepare_segments_1 {
 			gdss = dict() # forced to use constructor due to WDL syntax issues
 			for i in range(0, len(file_array)): 
 				# Key is chr number, value is associated GDS file
-				gdss[int(find_chromosome(file_array[i]))] = os.path.basename(file_array[i])
+				this_chr = find_chromosome(file_array[i])
+				if this_chr == "X":
+					gdss[23] = os.path.basename(file_array[i])
+				elif this_chr == "Y":
+					gdss[24] = os.path.basename(file_array[i])
+				elif this_chr == "M":
+					gdss[25] = os.path.basename(file_array[i])
+				else:
+					gdss[int(this_chr)] = os.path.basename(file_array[i])
 			return gdss
 
 		def pair_chromosome_gds_special(file_array, agg_file):
