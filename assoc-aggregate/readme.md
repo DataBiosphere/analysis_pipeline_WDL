@@ -7,7 +7,7 @@
 
 The define segments tasks splits the genome into segments and assigns each aggregate unit to a segment based on the position of its first variant. Note that n_segments is based upon the entire genome *regardless of the number of chromosomes you are running on.*<sup>[5](#segs)</sup> Association testing is then performed for each segment in parallel, before combining results on chromosome level. Finally, the last step creates QQ and Manhattan plots.
 
-The **alt freq max** parameter allows specification of the maximum alternate allele frequency allowable for inclusion in the joint variant test. Included variants are usually weighted using either a function of allele frequency (specified via the **weight beta** parameter) or some other annotation information (specified via the **variant weight file** and **weight user** parameters). 
+The **alt freq max** parameter allows specification of the maximum alternate allele frequency allowable for inclusion in the joint variant test. Included variants are usually weighted using either a function of allele frequency (specified via the **weight beta** parameter). Note that the association aggregate version of this pipeline does not support the inclusion of the variant weight file, as the CWL it is based upon only uses that file in the association-window version of the pipeline.
 
 When running a burden test, the effect estimate is for each additional unit of burden; there are no effect size estimates for the other tests. Multiple alternate alleles for a single variant are treated separately.
 
@@ -31,12 +31,14 @@ Aggregate tests are typically used to jointly test rare variants. This workflow 
 * terra-allele, local-allele, and the first part of the checker workflow are based upon https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_allele.config
 * terra-position, local-position, and the second part of the checker workflow are based upon https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_position.config
 * terra-weights, local-weights, and the third part of the checker workflow are based upon https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_weights.config
-* You'll note that none of these make use of `variant_weight_file`, but one has been provided in this repo regardless
+* terra-big-test is based upon aformentioned position configuation, but it runs on all autosomes plus chrX
 
+Running terra-big-test has been timed to take about one hour and 25 minutes with default compute options.
 
 ## Notes to code maintainers
 * Local Cromwell allows for modifying input files directly even though the Docker image executes as the topmed user which should not have write permissions on the input files. Terra is technically more correct in blocking this, but this leads to some headaches where an output is supposed to be a modified input file as opposed to a brand new file. For these scenarios Terra support suggested `find . -type d -exec sudo chmod -R 777 {} +` which should allow for modifying any input files as the topmed user. This should probably not be messed with -- we need stderr/stdout to keep their permissions, and something like `sudo chmod 777 ${input_file_to_change}` or `sudo su - root` does not work.
 * Unlike most WDLs in this repository, this one has some major differences in how it works versus the CWL. These differences should not change the output, but any future code maintainers should take note of cwl-vs-wdl-dev.md in the `_documentation_` folder of this repo.
+* If debugging anything related to the prepare segments task, it is recommend to test on prepare_segments_1.py instead of the WDL itself.
 
 ## References/Footnotes
 <a name="SKAT">[1]</a> [SKAT](https://dx.doi.org/10.1016%2Fj.ajhg.2011.05.029)  
