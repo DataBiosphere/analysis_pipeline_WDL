@@ -11,3 +11,5 @@ assoc-aggregate/cromwell-68.1.jar
 *_debug.txt
 *.integer
 *.zip
+cwl.output.json
+job.json
