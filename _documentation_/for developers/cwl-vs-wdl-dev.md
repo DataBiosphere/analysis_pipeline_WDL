@@ -2,8 +2,11 @@
 These differences are likely only of interest to maintainers of this repo or those seeking to fully understand the CWL --> WDL conversion process, besides basics of the WDL or removal of things related to the Seven Bridges API.  
 
 * [All Workflows](#all-workflows)
-* [assoc-aggregate.wdl](#assoc-aggregate.wdl)
-* [null-model.wdl](#null-model.wdl)
+* [assoc-aggregate.wdl](#assoc-aggregatewdl)
+* [ld-pruning.wdl](#ld-pruningwdl)
+* [null-model.wdl](#null-modelwdl)
+* [pcrelate.wdl](#pcrelatewdl)
+* [vcf-to-gds.wdl](#vcf-to-gdswdl)
 
 ## All Workflows 
 **Javascript vs Python:** The CWL generates config files using an InlineJavascriptRequirement, which is run before the CWL equivivalent of a task's command section begins. The WDL generates them using an inline Python script during the beginning of a task's command section.  
@@ -79,10 +82,6 @@ In this task we have a bunch of RData input files in the workdir. If we did not 
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().
 * check_merged_gds uses the chromosome file workaround.
 
-## pcrelate.wdl
-* The kinship_plots task, in the CWL, takes in an out_prefix input via `valueFrom: ${ return inputs.out_prefix + "_pcrelated` } but WDL does not allow this sort of evaulation during a call task. As such the calculation of this string is instead made at runtime of the task.
-* The tasks pcrelate_beta and pcrelate both check each input variable is defined before writing that variable to the config file. Some of these inputs must always be defined, so the WDL skips checks for non-optional inputs.
-
 ## null-model.wdl
 The CWL technically has duplicated outputs. The WDL instead returns each file once. On SB, cwl.output.json sets the outputs as the following, where ! indicates a duplicated output, inverse norm transformation is applied, and the output_prefix is set to `test`:
 * configs:
@@ -99,6 +98,10 @@ The CWL technically has duplicated outputs. The WDL instead returns each file on
 * null_model_phenotypes:
   * test_phenotypes.RData
 Because everything in null_model_output is already covered by null_model_files, it does not exist as an output in the WDL.
+
+## pcrelate.wdl
+* The kinship_plots task, in the CWL, takes in an out_prefix input via `valueFrom: ${ return inputs.out_prefix + "_pcrelated` } but WDL does not allow this sort of evaulation during a call task. As such the calculation of this string is instead made at runtime of the task.
+* The tasks pcrelate_beta and pcrelate both check each input variable is defined before writing that variable to the config file. Some of these inputs must always be defined, so the WDL skips checks for non-optional inputs.
 
 ## vcf-to-gds.wdl     
 * The twice-localized workaround is used in unique_variant_ids due to permission errors on Terra. See [#2](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/2).
