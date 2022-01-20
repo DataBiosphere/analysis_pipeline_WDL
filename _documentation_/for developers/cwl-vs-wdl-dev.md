@@ -1,6 +1,13 @@
 # CWL vs WDL: Algorithmic Differences
 These differences are likely only of interest to maintainers of this repo or those seeking to fully understand the CWL --> WDL conversion process, besides basics of the WDL or removal of things related to the Seven Bridges API.  
 
+* [All Workflows](#all-workflows)
+* [assoc-aggregate.wdl](#assoc-aggregatewdl)
+* [ld-pruning.wdl](#ld-pruningwdl)
+* [null-model.wdl](#null-modelwdl)
+* [pcrelate.wdl](#pcrelatewdl)
+* [vcf-to-gds.wdl](#vcf-to-gdswdl)
+
 ## All Workflows 
 **Javascript vs Python:** The CWL generates config files using an InlineJavascriptRequirement, which is run before the CWL equivivalent of a task's command section begins. The WDL generates them using an inline Python script during the beginning of a task's command section.  
 
@@ -55,32 +62,25 @@ It is theoretically possible to mimic this in a WDL that is compatible in Terra 
 Why is the variant include output in its own subfolder? The variant include RData file does not have a predictable file name, nor does the aggregate RData file -- all we know is their extension, which they share. The CWL "keeps track" of them by assigning them to output variables of type file. We are unable to do that, nor can we easily assign unpredictable file names to an output variable of type string in WDL ("easily" because in theory this could be done with using read_file() to output a variable of type string but I have found it to be error-prone), therefore we are using the filesystem itself to keep track of which RData file is which.
 
 ### assoc_aggregate
-**Summary: WDL can't handle optional outputs so we sometimes force bogus output that CWL would not generate**  
+**Summary: Both WDL and CWL can output nothing for this task, but in WDL we must be very careful**  
 Each instance of this scattered task represents one segment of the genome. In both the CWL and the WDL, it is possible for a segment to generate no output in this task. This is not an error, and it is more common with a greater number of segments (as that means smaller segments and decreased likelihood of a "hit"). The Rscript will report there is nothing to do and print "exiting gracefully" without generating an RData file.
 
-This is problematic for WDL, as Terra-compatiable WDL has strict limitations on generating and using optional outputs. Thusly we use a workaround where if no RData output is generated for a given segment, we generate a blank RData file with a filename clearly indicating that it is bogus.
+This is problematic for WDL, as Terra-compatiable WDL has strict limitations on generating and using optional outputs. Thusly we have to set the output to `Array[File]? assoc_aggregate = glob("*.RData")`, which is not to be confused with `Array[File?] assoc_aggregate = glob("*.RData")`.
 
-### sbg_flatten_lists and wdl_process_assoc_files
-**Summary: Completely replace CWL task with a different processing task that among other things handles previous task's potential bogus output**  
-sbg_flatten_lists is **not** used in the WDL due to major differences between how WDL and CWL handles arrays. It is replaced by wdl_process_assoc_files. Strictly speaking these two tasks have the same goal -- processing the output of the previous task so that it aligns with the requirements and limitations of a given workflow language -- but the nature of those limitations are quite different.
-
-In particular, wdl_process_assoc_files deletes the bogus files from the previous assoc_aggregate task.
+### sbg_flatten_lists and `Array[File] flatten_array = flatten(select_all(assoc_aggregate.assoc_aggregate))`
+Completely replace CWL task with a WDL built-in function.  
 
 ### sbg_group_segments_1
 The CWL has this as a scattered task. Each instance of the scattered task takes in an Array[File] and outputs an Array[Array[File?]] plus an Array[String?].
 
-The WDL has this a non-scattered task. Each instance of the scattered task takes in a File and outputs a complex object containing one Array[File] and one Array[String]. The Array[String] component only has one element, and is therefore effectly just a String.
+The WDL has this a non-scattered task. The task takes in a Array[File] and outputs list of strings a list of the grouped files as Array[String] (along with two debug files). Previous versions of this code attempted to output a complex object containing one Array[File] and one Array[String], but this has issues on Terra. Therefore, the current version is not actually passing any files to the next task. This has the unfortunate side effect of the next task needing to duplicate some of the work done in this task.
 
 ### assoc_combine_r
-In this task we have a bunch of RData input files in the workdir. Google-compatiable WDL is very restrictive in how it handles output files, therefore, it is easiest to just give the output file a very unique prefix that is extremely unlikely to be found in an input RData file. (If we did not need to run on Terra, we could write the output filename to a text file, then read theat as a WDL task-level output and then glob upon that as another WDL task output, but Google-Cromwell doesn't allow for such workarounds.) For now that string is "combinedcombinedcombineduniquestring"
+In this task we have a bunch of RData input files in the workdir. If we did not need to run on Terra, we could write the output filename to a text file, then read that as a WDL task-level output and then glob upon that as another WDL task output, but Google-Cromwell doesn't allow for such workarounds. Thankfully, `assoc_combined = glob("*.RData")[0]` *appears* to always grab the correct RData file in its output, although I fear this may not be robust.
 
 ## ld-pruning.wdl
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().
 * check_merged_gds uses the chromosome file workaround.
-
-## pcrelate.wdl
-* The kinship_plots task, in the CWL, takes in an out_prefix input via `valueFrom: ${ return inputs.out_prefix + "_pcrelated` } but WDL does not allow this sort of evaulation during a call task. As such the calculation of this string is instead made at runtime of the task.
-* The tasks pcrelate_beta and pcrelate both check each input variable is defined before writing that variable to the config file. Some of these inputs must always be defined, so the WDL skips checks for non-optional inputs.
 
 ## null-model.wdl
 The CWL technically has duplicated outputs. The WDL instead returns each file once. On SB, cwl.output.json sets the outputs as the following, where ! indicates a duplicated output, inverse norm transformation is applied, and the output_prefix is set to `test`:
@@ -98,6 +98,10 @@ The CWL technically has duplicated outputs. The WDL instead returns each file on
 * null_model_phenotypes:
   * test_phenotypes.RData
 Because everything in null_model_output is already covered by null_model_files, it does not exist as an output in the WDL.
+
+## pcrelate.wdl
+* The kinship_plots task, in the CWL, takes in an out_prefix input via `valueFrom: ${ return inputs.out_prefix + "_pcrelated` } but WDL does not allow this sort of evaulation during a call task. As such the calculation of this string is instead made at runtime of the task.
+* The tasks pcrelate_beta and pcrelate both check each input variable is defined before writing that variable to the config file. Some of these inputs must always be defined, so the WDL skips checks for non-optional inputs.
 
 ## vcf-to-gds.wdl     
 * The twice-localized workaround is used in unique_variant_ids due to permission errors on Terra. See [#2](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/2).
