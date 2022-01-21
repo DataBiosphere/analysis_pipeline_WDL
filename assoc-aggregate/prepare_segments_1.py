@@ -61,12 +61,12 @@ def pair_chromosome_gds_special(file_array, agg_file):
 
 def wdl_get_segments():
 	segfile = open(IIsegments_fileII, 'rb')
-	segments = str((segfile.read(64000))).split('\n') # var segments = self[0].contents.split('\n');
+	segments = str((segfile.read(64000))).split('\n') # CWL x.contents only gets 64000 bytes
 	segfile.close()
-	segments = segments[1:] # segments = segments.slice(1) # cut off the first line
+	segments = segments[1:] # remove first line
 	return segments
 
-# Prepare GDS output
+# prepare GDS output
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 output_gdss = []
 gds_segments = wdl_get_segments()
@@ -81,7 +81,7 @@ gds_output_hack = open("gds_output_debug.txt", "w")
 gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
 gds_output_hack.close()
 
-# Prepare segment output
+# prepare segment output
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 output_segments = []
 actual_segments = wdl_get_segments()
@@ -94,17 +94,21 @@ for i in range(0, len(actual_segments)): # for(var i=0;i<segments.length;i++){
 		seg_num = i+1
 		output_segments.append(seg_num)
 		output_seg_as_file = open("%s.integer" % seg_num, "w")
-if max(output_segments) != len(output_segments): # I don't know if this case is actually problematic but I suspect it will be.
-	print("ERROR: Subsequent code relies on output_segments being a list of consecutive integers.")
-	print("Debug information: Max of list is %s, len of list is %s" % [max(output_segments), len(output_segments)])
-	print("Debug information: List is as follows:\n\t%s" % output_segments)
+
+# I don't know for sure if this case is actually problematic, but I suspect it will be.
+if max(output_segments) != len(output_segments):
+	print("ERROR: output_segments needs to be a list of consecutive integers.")
+	print("Debug: Max of list: %s. Len of list: %s." % 
+		[max(output_segments), len(output_segments)])
+	print("Debug: List is as follows:\n\t%s" % output_segments)
 	exit(1)
+
 segs_output_hack = open("segs_output_debug.txt", "w")
 segs_output_hack.writelines(["%s " % thing for thing in output_segments])
 segs_output_hack.close()
 
-# Prepare aggregate output
-# The CWL accounts for there being no aggregate files, as the CWL considers them an optional
+# prepare aggregate output
+# The CWL accounts for there being no aggregate files as the CWL considers them an optional
 # input. We don't need to account for that because the way WDL works means it they are a
 # required output of a previous task and a required input of this task. That said, if this
 # code is reused for other WDLs, it may need some adjustments right around here.
@@ -125,7 +129,7 @@ for i in range(0, len(agg_segments)): # for(var i=0;i<segments.length;i++){
 	elif (chr in input_gdss):
 		output_aggregate_files.append(None)
 
-# Prepare variant include output
+# prepare variant include output
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 var_segments = wdl_get_segments()
 if IIvariant_include_filesII != [""]:
@@ -156,14 +160,14 @@ var_output_hack = open("variant_output_debug.txt", "w")
 var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
 var_output_hack.close()
 
-# We can only consistently tell output files apart by their extension. If var
-# include files and agg files are both outputs, this is problematic, as they
-# both share the RData extension. Therefore we put var include files in a subdir.
+# We can only consistently tell output files apart by their extension. If var include files 
+# and agg files are both outputs, this is problematic, as they both share the RData ext.
+# Therefore we put var include files in a subdir.
 if IIvariant_include_filesII != [""]:
 	os.mkdir("varinclude")
 	os.mkdir("temp")
 
-# Make a bunch of zip files
+# make a bunch of zip files
 for i in range(0, max(output_segments)):
 	plusone = i+1
 	this_zip = ZipFile("dotprod%s.zip" % plusone, "w")
@@ -180,17 +184,21 @@ for i in range(0, max(output_segments)):
 			# Because we are handling output with zip files, we need to keep copying
 			# the variant include file. The CWL does not need to do this.
 
-			# Make a temporary copy in the temp directory
+			# make a temporary copy in the temp directory
 			shutil.copy(output_variant_files[i], "temp/%s" % output_variant_files[i])
-			# Move the not-copy into the varinclude subdirectory
+			
+			# move the not-copy into the varinclude subdirectory
 			os.rename(output_variant_files[i], "varinclude/%s" % output_variant_files[i])
-			# Return the copy to the workdir
+			
+			# return the copy to the workdir
 			shutil.move("temp/%s" % output_variant_files[i], output_variant_files[i])
+		
 		except OSError:
 			# Variant include for this chr has already been taken up and zipped.
 			# The earlier copy should stop this but permissions can get iffy on
 			# Terra, so we should at least catch the error here for debugging.
 			print("Variant include file appears unavailable. Exiting disgracefully...")
 			exit(1)
+		
 		this_zip.write("varinclude/%s" % output_variant_files[i])
 	this_zip.close()

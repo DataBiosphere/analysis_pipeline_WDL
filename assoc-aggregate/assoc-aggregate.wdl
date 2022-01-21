@@ -80,11 +80,11 @@ task wdl_validate_inputs {
 }
 
 task sbg_gds_renamer {
-	# This tool renames GDS file if they contain suffixes after chromosome (chr##) in the filename.
- 	# For example: If GDS file has name data_chr1_subset.gds the tool will rename GDS file to data_chr1.gds.
- 	# Debug prints exist only because file permissions have some inconsistency on Terra. Do not change the
- 	# sudo chmod command with something like "sudo chmod 777 ~{in_variant}" even though that may appear to
- 	# be equivalent -- it doesn't work on Terra.
+	# Renames GDS file if they contain suffixes after chromosome (chr##) in the filename.
+ 	# Example: data_chr1_subset.gds --> data_chr1.gds.
+ 	#
+ 	# Do not change the sudo chmod command with something like "sudo chmod 777 ~{in_variant}"
+ 	# That does not work on Terra!
 
 	input {
 		File in_variant
@@ -103,7 +103,7 @@ task sbg_gds_renamer {
 	
 	command <<<
 
-		# do not change this without testing, see above
+		# do not change these two lines without careful testing on Terra
 		set -eux -o pipefail
 		find . -type d -exec sudo chmod -R 777 {} +
 
@@ -133,15 +133,13 @@ task sbg_gds_renamer {
 			chrom_num = file.split("chr")[1]
 			return chrom_num
 
-		if "~{debug}" == "true":
-			print("Debug: Getting nameroot and generating new name...")
 		nameroot = os.path.basename("~{in_variant}").rsplit(".", 1)[0]
 		chr = find_chromosome(nameroot)
 		base = nameroot.split('chr'+chr)[0]
 		newname = base+'chr'+chr+".gds"
 		if "~{debug}" == "true":
 			print("Debug: Generated name: %s" % newname)
-			print("Debug: Renaming file...")
+			print("Debug: Renaming file... (if you error here, it's likely a permissions problem)")
 
 		os.rename("~{in_variant}", newname)
 
@@ -157,29 +155,35 @@ task sbg_gds_renamer {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File renamed_variants = glob("*.gds")[0]
-		# Although there are two gds files lying around, only the one that's in the parent directory
+		# although there are two gds files lying around, only the one that's in the parent directory
 		# should get matched here according to my testing.
+		File renamed_variants = glob("*.gds")[0]
 	}
 }
 
 task define_segments_r {
-	# This task divides the entire genome into segments, regardless of the number of chromosomes you are working with.
-	# For example, if you set n_segments to 100, but only run on chr1 and chr2, you can expect there to be about 15
-	# segments as chr1 and chr2 together represent about 15% of the entire genome.
-	# These segments exist in attempt to allow for parallel processing of different chunks of the genome in later steps.
+	# This task divides the entire genome into segments to improve parallelization in later tasks.
 	# As an absolute minimum, you will end up with one segment per chromosome.
+
+	# n_segments (optional)
+	# n_segments sets the number of segments. Note that n_segments assumes you are running on the
+	# full genome. For example, if you set n_segments to 100, but only run on chr1 and chr2, you can
+	# expect there to be about 15 segments as chr1 and chr2 together represent ~15% of the genome.
+	# The remaining segments won't be created, and your 15 segments will be parallelized in later
+	# tasks as 15 units, instead of 100.
+	
 	input {
 		Int? segment_length
 		Int? n_segments
 		String? genome_build
 
-		# runtime attributes, which you shouldn't need, although in fairness hg38 might need more oomph than this
+		# runtime attributes -- should be sufficient for hg19, maybe adjust if you're using hg38
 		Int cpu = 2
 		Int memory = 4
 		Int preempt = 3
 	}
 	
+	# this task doesn't localize input files, so it doesn't need much disk size
 	Int finalDiskSize = 10
 	
 	command <<<
@@ -193,7 +197,6 @@ task define_segments_r {
 		f.close()
 		CODE
 
-		# this could probably be improved
 		if [[ ! "~{segment_length}" = "" ]]
 		then
 			if [[ ! "~{n_segments}" = "" ]]
@@ -236,8 +239,9 @@ task aggregate_list {
 		String? aggregate_type
 		String? group_id
 
-		# The parent CWL does not have out_file, but it does have out_prefix
-		# The task CWL does not have out_prefix, but it does have out_file
+		# there is an inconsistency in the CWL here...
+		# the parent CWL does not have out_file, but it does have out_prefix
+		# the task CWL does not have out_prefix, but it does have out_file
 		String? out_file
 
 		# runtime attr
@@ -246,11 +250,11 @@ task aggregate_list {
 		Int memory = 4
 		Int preempt = 2
 	}
-	# Basenames
+
 	String basename_vargroup = basename(variant_group_file)
-	# Estimate disk size required
 	Int vargroup_size = ceil(size(variant_group_file, "GB"))
 	Int finalDiskSize = vargroup_size + addldisk
+	
 	command <<<
 		set -eux -o pipefail
 
@@ -287,23 +291,38 @@ task aggregate_list {
 		f = open("aggregate_list.config", "a")
 
 		# This part of the CWL is a bit confusing so let's walk through it line by line
-		if "chr" in "~{basename_vargroup}": #if (inputs.variant_group_file.basename.includes('chr'))
-			chr = find_chromosome("~{variant_group_file}") #var chr = find_chromosome(inputs.variant_group_file.path);
+
+		#if (inputs.variant_group_file.basename.includes('chr'))
+		if "chr" in "~{basename_vargroup}":
+
+			#var chr = find_chromosome(inputs.variant_group_file.path);
+			chr = find_chromosome("~{variant_group_file}")
 			
-			# CWL then has:
+			# The next part of the CWL is:
+			#
 			# chromosomes_basename = inputs.variant_group_file.path.slice(0,-6).replace(/\/.+\//g,"");
-			# We know that this file is expected to be RData, so slice(0,6) removes ".RData" leaving a path with no extension.
-			# If given inputs/304343024/mygroupfile the regex would return inputsmygroupfile.RData (not correct).
-			# If given /inputs/304343024/mygroupfile the regex would return mygroupfile (clear intention).
-			# In other words this ought to be equivalent to the CWL nameroot function; unsure why CWL does not use that instead
+			#
+			# We know that inputs.variant_group_file is RData, so slice(0,6) removes ".RData",
+			# leaving a path with no extension. Then comes the regex in .replace():
+			#
+			# If given inputs/304343024/mygroupfile  --regex--> inputsmygroupfile.RData
+			# If given /inputs/304343024/mygroupfile --regex--> mygroupfile
+			#
+			# The second is the clear intention, and seems to match CWL's behavior of including the
+			# leading slash in file names. Interestingly, this seems to be equivalent to the CWL
+			# built-in nameroot function. CWL nameroot = python basename iff we drop the extension,
+			# so we mimic their slicing of the last six characters, but not the regex.
 			chromosomes_basename = os.path.basename("~{variant_group_file}"[:-6])
 
-			# The CWL is then followed by a section that doesn't seem to do anything...
-			# This would iterate through the string character-by-character. If it comes across a non-number that isn't X or Y, it stops
-			# iterating. But... why iterate in the first place?
-			for i in range(0, len(chromosomes_basename)): #for(i = chromosomes_basename.length - 1; i > 0; i--)
-				if chromosomes_basename[i] not in ["X","Y","1","2","3","4","5","6","7","8","9","0"]: #	if(chromosomes_basename[i] != 'X' && chromosomes_basename[i] != "Y" && isNaN(chromosomes_basename[i]))
-					break #	break;
+			
+			# for(i = chromosomes_basename.length - 1; i > 0; i--)
+			for i in range(0, len(chromosomes_basename)):
+
+				#if(chromosomes_basename[i] != 'X' && chromosomes_basename[i] != "Y" && isNaN(chromosomes_basename[i]))
+				if chromosomes_basename[i] not in ["X","Y","1","2","3","4","5","6","7","8","9","0"]:
+					
+					#break;
+					break
 			
 			# Finally, after all that, chromosomes_basename gets overwritten anyway
 			chromosomes_basename_1 = "~{basename_vargroup}".split('chr'+chr)[0]
@@ -369,10 +388,18 @@ task aggregate_list {
 }
 
 task sbg_prepare_segments_1 {
-	# Although the format of the outputs are different from the CWL, the actual
-	# contents of each component (gds, segment number, and agg file) should match
-	# the CWL perfectly. This code essentially combines the CWL's baseCommand and
-	# its multiple outputEvals in one Python block I am perhaps unfairly proud of.
+	# Actually creates segment files.
+	#
+	# This implementation combines the CWL's baseCommand and its multiple outputEvals in one Python 
+	# block, as WDL does not have an outputEval equivalent. The Python block is mirrored in this
+	# repo as prepare_segments_1.py and I recommend you use that if you are modifying this task.
+	#
+	# Although the format of the outputs are different from the CWL, the actual contents of each
+	# component (gds, segment number, and agg file) should match the CWL perfectly (barring compute
+	# platform differences, etc). The format is a zip file containing each segment's components in
+	# order to work around WDL's limitations. Essentially, CWL easily scatters on the dot-product
+	# multiple arrays, but trying to that in WDL is painful. See cwl-vs-wdl-dev.md for more info.
+
 	input {
 		Array[File] input_gds_files
 		File segments_file
@@ -386,7 +413,7 @@ task sbg_prepare_segments_1 {
 		Int preempt = 2
 	}
 
-	# Estimate disk size required
+	# estimate disk size required
 	Int gds_size = 2 * ceil(size(input_gds_files, "GB"))
 	Int seg_size = 2 * ceil(size(segments_file, "GB"))
 	Int agg_size = 2 * ceil(size(aggregate_files, "GB"))
@@ -396,9 +423,8 @@ task sbg_prepare_segments_1 {
 		set -eux -o pipefail
 		cp ~{segments_file} .
 
-		# The CWL only copies the segments file, but copying everything else
-		# will allow us to zip them without the zip having subfolders. I think
-		# this is also required to get drs and gs working correctly.
+		# The CWL only copies the segments file, but this implementation copies everything else so
+		# we can zip them at the end more easily. This may also be required for drs:// inputs.
 
 		GDS_FILES=(~{sep=" " input_gds_files})
 		for GDS_FILE in ${GDS_FILES[@]};
@@ -478,12 +504,12 @@ task sbg_prepare_segments_1 {
 
 		def wdl_get_segments():
 			segfile = open(IIsegments_fileII, 'rb')
-			segments = str((segfile.read(64000))).split('\n') # var segments = self[0].contents.split('\n');
+			segments = str((segfile.read(64000))).split('\n') # CWL x.contents only gets 64000 bytes
 			segfile.close()
-			segments = segments[1:] # segments = segments.slice(1) # cut off the first line
+			segments = segments[1:] # remove first line
 			return segments
 
-		# Prepare GDS output
+		# prepare GDS output
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 		output_gdss = []
 		gds_segments = wdl_get_segments()
@@ -498,7 +524,7 @@ task sbg_prepare_segments_1 {
 		gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
 		gds_output_hack.close()
 
-		# Prepare segment output
+		# prepare segment output
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 		output_segments = []
 		actual_segments = wdl_get_segments()
@@ -511,17 +537,20 @@ task sbg_prepare_segments_1 {
 				seg_num = i+1
 				output_segments.append(seg_num)
 				output_seg_as_file = open("%s.integer" % seg_num, "w")
-		if max(output_segments) != len(output_segments): # I don't know if this case is actually problematic but I suspect it will be.
-			print("ERROR: Subsequent code relies on output_segments being a list of consecutive integers.")
-			print("Debug information: Max of list is %s, len of list is %s" % [max(output_segments), len(output_segments)])
-			print("Debug information: List is as follows:\n\t%s" % output_segments)
+		
+		# I don't know for sure if this case is actually problematic, but I suspect it will be.
+		if max(output_segments) != len(output_segments):
+			print("ERROR: output_segments needs to be a list of consecutive integers.")
+			print("Debug: Max of list: %s. Len of list: %s." % 
+				[max(output_segments), len(output_segments)])
+			print("Debug: List is as follows:\n\t%s" % output_segments)
 			exit(1)
 		segs_output_hack = open("segs_output_debug.txt", "w")
 		segs_output_hack.writelines(["%s " % thing for thing in output_segments])
 		segs_output_hack.close()
 
-		# Prepare aggregate output
-		# The CWL accounts for there being no aggregate files, as the CWL considers them an optional
+		# prepare aggregate output
+		# The CWL accounts for there being no aggregate files as the CWL considers them an optional
 		# input. We don't need to account for that because the way WDL works means it they are a
 		# required output of a previous task and a required input of this task. That said, if this
 		# code is reused for other WDLs, it may need some adjustments right around here.
@@ -542,7 +571,7 @@ task sbg_prepare_segments_1 {
 			elif (chr in input_gdss):
 				output_aggregate_files.append(None)
 
-		# Prepare variant include output
+		# prepare variant include output
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 		var_segments = wdl_get_segments()
 		if IIvariant_include_filesII != [""]:
@@ -573,14 +602,14 @@ task sbg_prepare_segments_1 {
 		var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
 		var_output_hack.close()
 
-		# We can only consistently tell output files apart by their extension. If var
-		# include files and agg files are both outputs, this is problematic, as they
-		# both share the RData extension. Therefore we put var include files in a subdir.
+		# We can only consistently tell output files apart by their extension. If var include files 
+		# and agg files are both outputs, this is problematic, as they both share the RData ext.
+		# Therefore we put var include files in a subdir.
 		if IIvariant_include_filesII != [""]:
 			os.mkdir("varinclude")
 			os.mkdir("temp")
 
-		# Make a bunch of zip files
+		# make a bunch of zip files
 		for i in range(0, max(output_segments)):
 			plusone = i+1
 			this_zip = ZipFile("dotprod%s.zip" % plusone, "w")
@@ -597,18 +626,22 @@ task sbg_prepare_segments_1 {
 					# Because we are handling output with zip files, we need to keep copying
 					# the variant include file. The CWL does not need to do this.
 
-					# Make a temporary copy in the temp directory
+					# make a temporary copy in the temp directory
 					shutil.copy(output_variant_files[i], "temp/%s" % output_variant_files[i])
-					# Move the not-copy into the varinclude subdirectory
+					
+					# move the not-copy into the varinclude subdirectory
 					os.rename(output_variant_files[i], "varinclude/%s" % output_variant_files[i])
-					# Return the copy to the workdir
+					
+					# return the copy to the workdir
 					shutil.move("temp/%s" % output_variant_files[i], output_variant_files[i])
+				
 				except OSError:
 					# Variant include for this chr has already been taken up and zipped.
 					# The earlier copy should stop this but permissions can get iffy on
 					# Terra, so we should at least catch the error here for debugging.
 					print("Variant include file appears unavailable. Exiting disgracefully...")
 					exit(1)
+				
 				this_zip.write("varinclude/%s" % output_variant_files[i])
 			this_zip.close()
 		CODE
@@ -623,16 +656,19 @@ task sbg_prepare_segments_1 {
 	}
 
 	output {
-		# Each zip contains one GDS, one file with an integer representing seg number, one aggregate RData, and maybe a var include
+		# Each zip contains one GDS, one file w/ an integer representing seg number, one aggregate
+		# RData file, and maybe a var include.
 		Array[File] dotproduct = glob("*.zip")
 	}
 }
 
 task assoc_aggregate {
-	input {
-		File zipped
+	# This is the meat-and-potatoes of this pipeline. It is parallelized on a segment basis, with
+	# each instance of this task getting a zipped file containing all the files associated with a
+	# segment.
 
-		# other inputs
+	input {
+		File zipped # from the previous task; replaces some of the CWL inputs
 		File segment_file # NOT the same as segment
 		File null_model_file
 		File phenotype_file
@@ -656,7 +692,8 @@ task assoc_aggregate {
 
 		Boolean debug = false
 	}
-	# Estimate disk size required
+	
+	# estimate disk size required
 	Int zipped_size = ceil(size(zipped, "GB"))*5 # not sure how much zip compresses them if at all
 	Int segment_size = ceil(size(segment_file, "GB"))
 	Int null_size = ceil(size(null_model_file, "GB"))

@@ -53,7 +53,7 @@ The CWL then dot-product scatters on these arrays, meaning that each instance of
 * One aggregate RData file
 * Optional: One variant include RData file
 
-It is theoretically possible to mimic this in a WDL that is compatible in Terra using custom structs, but I had difficulty scattering on such a thing reliably. In any case, I found it to be less error-prone to simply set this task's output to a single array of zip files and to have the next task scatter on those zip files. Each zip file contains, and will pass into each instance of the subsequent scattered task:
+It is theoretically possible to mimic this in a WDL that is compatible in Terra using custom structs, but I had difficulty scattering on such a thing reliably. (The fact that varaint_include_files is an optional array seems to be part of the issue.) In any case, I found it to be less error-prone to simply set this task's output to a single array of zip files and to have the next task scatter on those zip files. Each zip file contains, and will pass into each instance of the subsequent scattered task:
 * One GDS file
 * One file with with the pattern X.integer where X represents the segment number
 * One aggregate RData file
