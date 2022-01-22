@@ -1252,7 +1252,8 @@ task assoc_plots_r {
 			f.write('out_file_qq ~{plots_prefix}_qq.png\n')
 		else:
 			data_prefix = "testing"
-			# CWL has var data_prefix = path[0].split('/').pop(); but I think that doesn't fit Terra file system, investigate
+			# CWL has var data_prefix = path[0].split('/').pop(); 
+			# but I think that doesn't fit Terra file system
 			f.write('out_file_manh %smanh.png\n' % data_prefix)
 			f.write('out_file_qq %sqq.png\n' % data_prefix)
 			f.write('plots_prefix "plots"\n')
@@ -1268,13 +1269,12 @@ task assoc_plots_r {
 			chr_array.append(chrom_num)
 		chrs = ' '.join(chr_array)
 		f.write('chromosomes "%s "' % chrs)
-
-		# CWL might have another boolean/defined bug at line 107, investigate
-
+		if "~{disable_thin}" != "":
+			f.write('thin ~{disable_thin}\n')
 		if "~{thin_npoints}" != "":
 			f.write('thin_npoints ~{thin_npoints}\n')
-		if "~{thin_nbins}" != "": # does not match apparent CWL bug
-			f.write('plot_mac_threshold ~{plot_mac_threshold}\n')
+		if "~{thin_nbins}" != "":
+			f.write('thin_nbins ~{thin_nbins}\n')
 		if "~{known_hits_file}" != "":
 			f.write('known_hits_file "~{known_hits_file}"\n')
 		if "~{plot_mac_threshold}" != "":
@@ -1282,7 +1282,7 @@ task assoc_plots_r {
 		if "~{truncate_pval_threshold}" != "":
 			f.write('truncate_pval_threshold ~{truncate_pval_threshold}\n')
 		# plot qq, plot include file, signif type, signif fixed, qq mac bins, lambda, 
-		# outfile lambadas, plot max, and maf threshold not used
+		# outfile lambadas, plot max, and maf threshold not used in the WDL version
 		f.close()
 		CODE
 
@@ -1307,8 +1307,7 @@ task assoc_plots_r {
 
 	output {
 		Array[File] assoc_plots = glob("*.png")
-		File config_file = "assoc_file.config" # array in CWL
-		#Array[File?] lambdas = glob("*.txt") # non-array in CWL, seems to never be generated
+		File config_file = "assoc_file.config"
 	}
 }
 
@@ -1390,7 +1389,7 @@ workflow assoc_agg {
 				phenotype_file = phenotype_file,
 				out_prefix = out_prefix,
 				rho = rho,
-				segment_file = define_segments_r.define_segments_output, # NOT THE SAME AS SEGMENT IN ZIP
+				segment_file = define_segments_r.define_segments_output,
 				test = wdl_validate_inputs.valid_test,
 				weight_beta = weight_beta,
 				aggregate_type = wdl_validate_inputs.valid_aggregate_type,
