@@ -665,7 +665,7 @@ task sbg_prepare_segments_1 {
 task assoc_aggregate {
 	# This is the meat-and-potatoes of this pipeline. It is parallelized on a segment basis, with
 	# each instance of this task getting a zipped file containing all the files associated with a
-	# segment.
+	# segment. Note that this task contains several workarounds specific to the Terra file system.
 
 	input {
 		File zipped # from the previous task; replaces some of the CWL inputs
@@ -703,15 +703,10 @@ task assoc_aggregate {
 
 	command <<<
 
-		# I do not recommend deleting the debug sections. There are some workarounds to the specifics of the
-		# Terra file system, which may change later down the line. So they may help future maintainers at the
-		# cost of being a bit ugly.
-
-		echo "Copying zipped inputs..."
 		# Unzipping in the inputs directory leads to a host of issues as depending on the platform
 		# they will end up in different places. Copying them to our own directory avoids an awkward
 		# workaround, at the cost of relying on permissions cooperating.
-		
+		echo "Copying zipped inputs..."
 		mkdir ins
 		cp ~{zipped} ./ins
 		cd ins
@@ -721,7 +716,7 @@ task assoc_aggregate {
 
 		if [[ "~{debug}" = "true" ]]
 		then
-			echo "Debug: Contents of our makeshift input directory (NOT the standard Cromwell inputs dir) is:"
+			echo "Debug: Contents of makeshift input dir (NOT the standard Cromwell inputs dir) is:"
 			ls ins/
 			echo "Debug: Contents of current workdir is:"
 			ls
@@ -736,11 +731,11 @@ task assoc_aggregate {
 			dir = os.getcwd()
 			ls = os.listdir(dir)
 			if "~{debug}" == "true":
-				print("Debug: Looking for %s in %s which contains these files: %s" % (extension, dir, ls))
+				print("Debug: Looking for %s in %s which contains %s" % (extension, dir, ls))
 			for i in range(0, len(ls)):
 				debug_split = ls[i].rsplit(".", 1)
 				if "~{debug}" == "true":
-					print("Debug: ls[i].rsplit('.', 1) is %s, we now check its value at index one" % debug_split)
+					print("Debug: ls[i].rsplit('.', 1) is %s" % debug_split)
 				if len(ls[i].rsplit('.', 1)) == 2: # avoid stderr and stdout giving IndexError
 					if ls[i].rsplit(".", 1)[1] == extension:
 						return ls[i].rsplit(".", 1)[0]
@@ -774,8 +769,11 @@ task assoc_aggregate {
 		gds = wdl_find_file("gds") + ".gds"
 		agg = wdl_find_file("RData") + ".RData"
 		seg = int(wdl_find_file("integer").rsplit(".", 1)[0]) # not used in Python context
+
+		# If there is a varinclude dir, then there is a variant include file. We briefly chdir into
+		# the varinclude dir to avoid grabbing the assoc RData file by mistake.
 		if os.path.isdir("varinclude"):
-			os.chdir("varinclude") # search varinclude folder only to avoid getting assoc RData
+			os.chdir("varinclude")
 			name_no_ext = wdl_find_file("RData")
 			os.chdir("..")
 			if type(name_no_ext) != None:
@@ -789,16 +787,16 @@ task assoc_aggregate {
 				os.rename(source, destination)
 				var = destination
 
-		chr = find_chromosome(gds) # runs on FULL PATH in the CWL
+		chr = find_chromosome(gds) # runs on full path in the CWL
 		dir = os.getcwd()
 		if "~{debug}" == "true":
-			print("Debug: Current working directory is %s; config file will be written here" % dir)
+			print("Debug: Current workdir is %s; config file will be written here" % dir)
 		f = open("assoc_aggregate.config", "a")
 		
 		if "~{out_prefix}" != "":
 			f.write("out_prefix '~{out_prefix}_chr%s'\n" % chr)
 		else:
-			data_prefix = os.path.basename(gds).split('chr') # runs on BASENAME in the CWL
+			data_prefix = os.path.basename(gds).split('chr') # runs on basename in the CWL
 			data_prefix2 = os.path.basename(gds).split('.chr')
 			if len(data_prefix) == len(data_prefix2):
 				f.write('out_prefix "' + data_prefix2[0] + '_aggregate_chr' + chr + os.path.basename(gds).split('chr'+chr)[1].split('.gds')[0] + '"'+ "\n")
@@ -816,12 +814,11 @@ task assoc_aggregate {
 			for r in ['~{sep="','" rho}']:
 				f.write("%s " % r)
 			f.write("\n")
-		f.write('segment_file "~{segment_file}"\n') # never optional in WDL
+		f.write('segment_file "~{segment_file}"\n') # optional in CWL, never optional in WDL
 		if "~{test}" != "":
-			f.write('test "~{test}"\n')
-		# cwl has test type, not sure if needed here
+			f.write('test "~{test}"\n') # cwl has test type, not sure if needed here
 		if os.path.isdir("varinclude"):
-			# although moved to the workdir, the folder containing it should still exist
+			# although moved to the workdir, the folder previously containing it should still exist
 			f.write('variant_include_file "%s"\n' % var)
 		if "~{weight_beta}" != "":
 			f.write("weight_beta '~{weight_beta}'\n")
@@ -830,9 +827,12 @@ task assoc_aggregate {
 		if "~{alt_freq_max}" != "":
 			f.write("alt_freq_max ~{alt_freq_max}\n")
 		
-		# pass_only is odd in the CWL. It only gets written to the config file
-		# if the user does not set the value at all.
-		if "~{pass_only}" == "":
+		# pass_only in the CWL:
+		# User sets pass_only to true --> inputs.pass_only = true  --> ! --> pass_only not written
+		# User sets pass_only to false--> inputs.pass_only = false --> ! --> pass_only set to false
+		# User does not set pass_only --> inputs.pass_only = false --> ! --> pass_only not written
+		# This works as intended as pass_only has sbg:toolDefaultValue: 'TRUE'
+		if "~{pass_only}" == "false":
 			f.write("pass_only FALSE\n")
 		
 		if "~{variant_weight_file}" != "":
@@ -841,7 +841,6 @@ task assoc_aggregate {
 			f.write("weight_user '~{weight_user}'\n")
 		if "~{genome_build}" != "":
 			f.write("genome_build '~{genome_build}'\n")
-
 		f.close()
 
 		if "~{debug}" == "true":
@@ -880,9 +879,9 @@ task assoc_aggregate {
 		echo ""
 		echo "Running Rscript..."
 		Rscript /usr/local/analysis_pipeline/R/assoc_aggregate.R assoc_aggregate.config --segment ${SEGMENT_NUM}
-		# The CWL has a commented out method for including --chromosome to this
-		# It's likely been replaced by the inputBinding for segment number, which we have to extract from
-		# a filename rather than an input variable
+		# The CWL has a commented out method for adding --chromosome to this. It's been replaced by
+		# the inputBinding for segment number, which we have to extract from a filename rather than
+		# an input variable.
 
 		if [[ "~{debug}" = "true" ]]
 		then
@@ -891,14 +890,14 @@ task assoc_aggregate {
 			ls
 			echo ""
 			echo "Debug: Checking if output exists..."
-			POSSIBLE_OUTPUT=(`find -name "*.RData"`) # does this need to be find . -name or is find -name okay??
+			POSSIBLE_OUTPUT=(`find -name "*.RData"`)
 			if [ ${#POSSIBLE_OUTPUT[@]} -gt 0 ]
 			then
 				echo "Debug: Output appears to exist."
 			else 
-				echo "Debug: There appears to be no output. This is not necessarily a problem -- some segments "
-				echo "may simply give no output, especially if you have a lot of segments. " 
-				echo "You can verify by checking stdout of the Rscript to see if 'exiting gracefully' appears."
+				echo "Debug: There appears to be no output. This is not necessarily a problem -- "
+				echo "some segments may give no output, especially if you have a lot of segments."
+				echo "Verify by checking stdout of Rscript to see if 'exiting gracefully' appears."
 			fi
 		fi
 
@@ -917,9 +916,10 @@ task assoc_aggregate {
 		preemptibles: "${preempt}"
 	}
 	output {
-		# Do not change this to Array[File?] as that will break everything. The files within the array cannot be
-		# optional, instead, we make the array itself optional to account for segments that do not give output.
-		# Working with Array[File?] is infinitely more difficult than working with Array[File]?, trust me on this.
+		# Do not change this to Array[File?] as that will break everything. The files within the
+		# array cannot be optional, instead, we make the array itself optional to account for 
+		# segments that do not give output. Working with Array[File?] is infinitely more difficult 
+		# than working with Array[File]?, trust me on this.
 		Array[File]? assoc_aggregate = glob("*.RData")
 		File config = glob("ins/*.config")[0]
 	}
@@ -927,12 +927,8 @@ task assoc_aggregate {
 
 task sbg_group_segments_1 {
 	input {
-		# if not scattered
 		Array[String] assoc_files
-		# if scattered
-		#File assoc_file
-
-		Boolean debug = true
+		Boolean debug = false
 
 		# runtime attr
 		Int addldisk = 3
@@ -941,13 +937,8 @@ task sbg_group_segments_1 {
 		Int preempt = 2
 	}
 
-	# if not scattered
 	Int assoc_size = ceil(size(assoc_files, "GB"))
-	# if scattered
-	##Int assoc_size = ceil(size(assoc_file, "GB"))
-	##Int finalDiskSize = 2*assoc_size + addldisk
-
-	Int finalDiskSize = 2*assoc_size
+	Int finalDiskSize = 2*assoc_size+addldisk
 
 	command <<<
 
@@ -993,17 +984,13 @@ task sbg_group_segments_1 {
 		print("Grouping...") # line 116 of CWL
 		
 		python_assoc_files = ['~{sep="','" assoc_files}']
-		if "~{debug}" == "true":
-			print("Debug: Input association files located at %s" % python_assoc_files)
 		python_assoc_files_wkdir = []
 		for file in python_assoc_files:
 			# point to the workdir copies instead to help Terra
 			python_assoc_files_wkdir.append(os.path.basename(file))
-		if "~{debug}" == "true":
-			print("Debug: We will instead work with the workdir duplicates at %s" % python_assoc_files_wkdir)
 		assoc_files_dict = dict() 
-		grouped_assoc_files = [] # line 53 of CWL
-		output_chromosomes = [] # line 96 of CWL
+		grouped_assoc_files = [] # see line 53 of CWL
+		output_chromosomes = []  # see line 96 of CWL
 
 		for i in range(0, len(python_assoc_files)):
 			chr = find_chromosome(python_assoc_files[i])
@@ -1015,10 +1002,9 @@ task sbg_group_segments_1 {
 		if "~{debug}" == "true":
 			print("Debug: Iterating thru keys...")
 		for key in assoc_files_dict.keys():
-			grouped_assoc_files.append(assoc_files_dict[key]) # line 65 in CWL
-			output_chromosomes.append(key) # line 108 in CWL
-			
-		# debugging
+			grouped_assoc_files.append(assoc_files_dict[key]) # see line 65 in CWL
+			output_chromosomes.append(key)                    # see line 108 in CWL
+
 		if "~{debug}" == "true":
 			for list in grouped_assoc_files:
 				print("Debug: List in grouped_assoc_files:")
@@ -1033,8 +1019,6 @@ task sbg_group_segments_1 {
 			i += 1
 			for entry in list:
 				f.write("%s\t" % entry)
-			#if i != len(list):
-			# do not write on last iteration; removing trailing newlines is kind of awkward
 			f.write("\n")
 		f.close()
 
@@ -1043,8 +1027,7 @@ task sbg_group_segments_1 {
 			g.write("%s\n" % chrom)
 		g.close()
 
-		if "~{debug}" == "true":
-			print("Debug: Finished. Executor will now attempt to evaulate outputs.")
+		print("Finished. Executor will now attempt to evaulate outputs.")
 		CODE
 	>>>
 	
@@ -1057,18 +1040,14 @@ task sbg_group_segments_1 {
 	}
 
 	output {
-		File d_filenames = "output_filenames.txt"
-		File d_chrs = "output_chromosomes.txt"
+		File d_filenames = "output_filenames.txt" # debugging output
+		File d_chrs = "output_chromosomes.txt"    # debugging output
 		Array[Array[String]] grouped_files_as_strings = read_tsv("output_filenames.txt")
 	}
 }
 
 task assoc_combine_r {
 	input {
-		#String chr # not used in the WDL
-
-		# to prevent globbing on the wrong RData files as output, we need to give the real output
-		# a very unique filename so we can glob upon it
 		Array[File] assoc_files
 		String? assoc_type
 		String? out_prefix = "" # not the default in CWL
