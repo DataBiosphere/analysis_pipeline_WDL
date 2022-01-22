@@ -67,7 +67,7 @@ task wdl_validate_inputs {
 	>>>
 
 	runtime {
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "ubuntu:jammy-20220101"
 		preemptibles: 3
 	}
 
@@ -149,7 +149,7 @@ task sbg_gds_renamer {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -223,7 +223,7 @@ task define_segments_r {
 	runtime {
 		cpu: cpu
 		disks: "local-disk " + finalDiskSize + " HDD"
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -375,13 +375,12 @@ task aggregate_list {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
 	output {
-		# https://github.com/UW-GAC/analysis_pipeline_cwl/blob/c2eb59b17fac96412961106be1749692bba12bbb/association/tools/aggregate_list.cwl#L118
 		File aggregate_list = glob("aggregate_list*.RData")[0]
 		File config_file = "aggregate_list.config"
 	}
@@ -649,7 +648,7 @@ task sbg_prepare_segments_1 {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + dsk_size + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -909,7 +908,7 @@ task assoc_aggregate {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
@@ -1033,7 +1032,7 @@ task sbg_group_segments_1 {
 	
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + addldisk + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -1166,7 +1165,7 @@ task assoc_combine_r {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -1237,8 +1236,7 @@ task assoc_plots_r {
 
 		f = open("assoc_file.config", "a")
 
-		# CWL has  argument.push('out_prefix "assoc_single"'); but that doesn't seem valid
-		# but we are currently failing so let us try adding it
+		# hardcoded in the CWL
 		f.write('out_prefix "assoc_single"\n')
 
 		a_file = python_assoc_files[0]
@@ -1299,7 +1297,7 @@ task assoc_plots_r {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
