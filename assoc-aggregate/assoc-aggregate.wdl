@@ -1102,19 +1102,14 @@ task assoc_combine_r {
 		g.close()
 		
 		f = open("assoc_combine.config", "a")
-		
 		f.write('assoc_type "~{assoc_type}"\n')
 		data_prefix = os.path.basename(python_assoc_files[0]).split('_chr')[0]
 		if "~{out_prefix}" != "":
 			f.write('out_prefix "~{out_prefix}"\n')
 		else:
 			f.write('out_prefix "%s"\n' % data_prefix)
-
 		if "~{conditional_variant_file}" != "":
 			f.write('conditional_variant_file "~{conditional_variant_file}"\n')
-
-		# CWL then has commented out portion for adding assoc files
-
 		f.close()
 		CODE
 
@@ -1122,48 +1117,50 @@ task assoc_combine_r {
 		# Line numbers reference my fork's commit 196a734c2b40f9ab7183559f57d9824cffec20a1
 		# Position   1: softlink RData ins (line 185 of CWL)
 		# Position   5: Rscript call       (line 176 of CWL)
-		# Position  10: chromosome flag    (line  97 of CWL -- chromosome has type Array[String] in CWL, but always has just 1 value
+		# Position  10: chromosome flag    (line  97 of CWL)
 		# Position 100: config file        (line 172 of CWL)
+		# Note that chromosome has type Array[String] in CWL, but always has just 1 value
 
 		THIS_CHR=`cat output_chromosomes.txt`
 
 		FILES=(~{sep=" " assoc_files})
 		for FILE in ${FILES[@]};
 		do
-			# only link files related to this chromosome; the inability to find inputs that are
+			# Only link files related to this chromosome; the inability to find inputs that are
 			# not softlinked or copied to the workdir actually helps us out here!
 			if [[ "$FILE" =~ "chr$THIS_CHR" ]];
 			then
-				echo "----------------------------"
-				echo "File found with this sha1sum: "
-				sha1sum ${FILE}
-				#echo "And we are softlinking it!"
-				#ln -s ${FILE} . # doesn't seem to be working and CWL does it a little different
-				
-				#$BASE=basename ${FILE}
-				#ln -s ${FILE} ${BASE}
-
+				if [[ "~{debug}" =~ "true" ]];
+				then
+					echo "----------------------------"
+					echo "File found with this sha1sum: "
+					sha1sum ${FILE}
+				fi
 				cp ${FILE} .
 			fi
 		done
 
-		echo "----------------------------"
-		echo "Here's the contents of this directory:"
-		ls -lha
-
-		echo "----------------------------"
-		echo "Now, let's run the Rscript and hope for the best!"
+		if [[ "~{debug}" =~ "true" ]];
+		then
+			echo "----------------------------"
+			echo "Here's the contents of this directory:"
+			ls -lha
+			echo "----------------------------"
+			echo "Now, let's run the Rscript and hope for the best!"
+		fi
 
 		Rscript --verbose /usr/local/analysis_pipeline/R/assoc_combine.R --chromosome $THIS_CHR assoc_combine.config
 
-		# this doesn't work, even if we do terra-specific sudo chmod earlier
-		#for FILE in ${FILES[@]};
-		#do
-		#	rm ${FILE}
-		#done
+		# Ideally we would now for FILE in ${FILES[@]}; do rm ${FILE}... but it does not work even
+		# if we set up the Terra-specific chmod prior. Thankfully, the glob for our output always
+		# grabs the correct file in my testing, but that may not be robust, as in theory it might
+		# grab an input file by
 
-		echo "Final contents of directory: "
-		ls -lha
+		if [[ "~{debug}" =~ "true" ]];
+		then
+			echo "Final contents of directory: "
+			ls -lha
+		fi
 
 	>>>
 
@@ -1176,8 +1173,8 @@ task assoc_combine_r {
 	}
 
 	output {
-		File assoc_combined = glob("*.RData")[0] # CWL considers this optional
-		File config_file = glob("*.config")[0]   # CWL considers this an array but there is always only one
+		File assoc_combined = glob("*.RData")[0]
+		File config_file = glob("*.config")[0]
 	}
 }
 
