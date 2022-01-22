@@ -1403,38 +1403,11 @@ workflow assoc_agg {
 	}
 
 	Array[File] flatten_array = flatten(select_all(assoc_aggregate.assoc_aggregate))
-
-	# CWL has this non-scattered and returns arrays of array(file) paired with arrays of chromosomes.
-	# I struggled to mimic that in WDL, and eventually decided to take the easy route and just scatter
-	# this task. Instead of a non-scattered array(array(file)) plus array(string) I used a scattered
-	# array(file) plus string. Unfortunately, this results in output files cannot be directly compared
-	# to the original CWL: https://github.com/DataBiosphere/analysis_pipeline_WDL/pull/57#issuecomment-951353842
-	# The setup was as follows:
-	
-	#scatter(assoc_file in flatten_array) {
-	#	call sbg_group_segments_1 as oldversion_sbg_group_segments_1 {
-	#		input:
-	#			assoc_file = assoc_file
-	#	}
-	#}
-
-	#scatter(file_set in sbg_group_segments_1.group_out) {
-	#	call assoc_combine_r as oldversion_assoc_combine_r {
-	#		input:
-	#			chr_n_assocfiles = file_set,
-	#			assoc_type = "aggregate"
-	#	}
-	#}
-
-	# The new version is closer the CWL, but it can only scatters on the chromosomes. This means
-	# that every instance of assoc_combine_r gets all of the association files. Is there a way
-	# to avoid this with the pair() type?
 	call sbg_group_segments_1 {
 			input:
 				assoc_files = flatten_array
 	}
 
-	# should try zip() once we confirm if array(file) or array(array(file)) can be passed at all
 	scatter(thing in sbg_group_segments_1.grouped_files_as_strings) {
 		call assoc_combine_r {
 			input:
