@@ -9,7 +9,7 @@ These differences are likely only of interest to maintainers of this repo or tho
 * [vcf-to-gds.wdl](#vcf-to-gdswdl)
 
 ## All Workflows 
-**Javascript vs Python:** The CWL generates config files using an InlineJavascriptRequirement, which is run before the CWL equivivalent of a task's command section begins. The WDL generates them using an inline Python script during the beginning of a task's command section.  
+**JavaScript vs Python:** The CWL generates config files using an InlineJavascriptRequirement, which is run before the CWL equivalent of a task's command section begins. The WDL generates them using an inline Python script during the beginning of a task's command section.  
 
 **Imports:** The CWL appears to be set up such that there is a "main" CWL file for the overall workflow, which imports one additional CWL file per task. A WDL equivalent to this setup exists, but was not used for security reasons. The current recommended best practice is to avoid using imports in workflows except in checker workflows.
 
@@ -20,10 +20,10 @@ These differences are likely only of interest to maintainers of this repo or tho
 ## assoc-aggregate.wdl
 This one has the most significant differences by far. Some tasks have their outputs changed to better comply with the strict output limitations of WDL, and subsequent tasks include processing to account for those changed outputs. As such the input and output of some tasks are not one-to-one of their CWL equivalent tasks.
 
-### Miscellanous
+### Miscellaneous
 * loadContents: Some of the outputs in the CWL at first look like they are globbing .txt files, but they actually are using loadContents, which works like this: For each file matched in glob, read up to the first 64 KiB of text from the file  and place it in the contents field of the file object for manipulation by outputEval. So, the CWL's call for self[0].contents would be the first 64 KiB of the 0th file to match the .txt glob. That would be segments.txt in the prepare segments tasks. Therefore the WDL mimics this by just reading segments.txt
 
-* This pipeline features heavy usage of the twice localized workaround. (Interestingly, some steps in the CWL actually use the same or a similiar workaround, so sometimes this isn't a difference but rather a case of simultaneous invention.)
+* This pipeline features heavy usage of the twice localized workaround. (Interestingly, some steps in the CWL actually use the same or a similar workaround, so sometimes this isn't a difference but rather a case of simultaneous invention.)
 
 ### High-level overview
 ![Table showing high-level overview of tasks in the CWL versus the WDL. Information is summarized in text.](https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/assoc-agg-part2/_documentation_/for%20developers/assoc_agg_cwl_vs_wdl.png)
@@ -53,7 +53,7 @@ The CWL then dot-product scatters on these arrays, meaning that each instance of
 * One aggregate RData file
 * Optional: One variant include RData file
 
-It is theoretically possible to mimic this in a WDL that is compatible in Terra using custom structs, but I had difficulty scattering on such a thing reliably. (The fact that varaint_include_files is an optional array seems to be part of the issue.) In any case, I found it to be less error-prone to simply set this task's output to a single array of zip files and to have the next task scatter on those zip files. Each zip file contains, and will pass into each instance of the subsequent scattered task:
+It is theoretically possible to mimic this in a WDL that is compatible in Terra using custom structs, but I had difficulty scattering on such a thing reliably. (The fact that variant_include_files is an optional array seems to be part of the issue.) In any case, I found it to be less error-prone to simply set this task's output to a single array of zip files and to have the next task scatter on those zip files. Each zip file contains, and will pass into each instance of the subsequent scattered task:
 * One GDS file
 * One file with with the pattern X.integer where X represents the segment number
 * One aggregate RData file
@@ -65,7 +65,7 @@ Why is the variant include output in its own subfolder? The variant include RDat
 **Summary: Both WDL and CWL can output nothing for this task, but in WDL we must be very careful**  
 Each instance of this scattered task represents one segment of the genome. In both the CWL and the WDL, it is possible for a segment to generate no output in this task. This is not an error, and it is more common with a greater number of segments (as that means smaller segments and decreased likelihood of a "hit"). The Rscript will report there is nothing to do and print "exiting gracefully" without generating an RData file.
 
-This is problematic for WDL, as Terra-compatiable WDL has strict limitations on generating and using optional outputs. Thusly we have to set the output to `Array[File]? assoc_aggregate = glob("*.RData")`, which is not to be confused with `Array[File?] assoc_aggregate = glob("*.RData")`.
+This is problematic for WDL, as Terra-compatible WDL has strict limitations on generating and using optional outputs. Thusly we have to set the output to `Array[File]? assoc_aggregate = glob("*.RData")`, which is not to be confused with `Array[File?] assoc_aggregate = glob("*.RData")`.
 
 ### sbg_flatten_lists and `Array[File] flatten_array = flatten(select_all(assoc_aggregate.assoc_aggregate))`
 Completely replace CWL task with a WDL built-in function.  
@@ -100,12 +100,12 @@ The CWL technically has duplicated outputs. The WDL instead returns each file on
 Because everything in null_model_output is already covered by null_model_files, it does not exist as an output in the WDL.
 
 ## pcrelate.wdl
-* The kinship_plots task, in the CWL, takes in an out_prefix input via `valueFrom: ${ return inputs.out_prefix + "_pcrelated` } but WDL does not allow this sort of evaulation during a call task. As such the calculation of this string is instead made at runtime of the task.
+* The kinship_plots task, in the CWL, takes in an out_prefix input via `valueFrom: ${ return inputs.out_prefix + "_pcrelated` } but WDL does not allow this sort of evaluation during a call task. As such the calculation of this string is instead made at runtime of the task.
 * The tasks pcrelate_beta and pcrelate both check each input variable is defined before writing that variable to the config file. Some of these inputs must always be defined, so the WDL skips checks for non-optional inputs.
 
 ## vcf-to-gds.wdl     
 * The twice-localized workaround is used in unique_variant_ids due to permission errors on Terra. See [#2](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/2).
 * The WDL will not start the check_gds task if check_gds is false. The CWL will start the check_gds task regardless and generate a config file, and the true/false only applies to calling the  script.
 	* Reasoning: The way GCS billing works, this has the potential of being cheaper. Otherwise we would spend for having a powerful non-preemptible compute designed for an intense task, then only using that compute for making a text file.
-* The WDL can correctly handle a mixture of file extensions, not so much by design, but due to the specifics of implementation. The CWL will handle such a mixture incorrectly in check_gds (but can correctly handle a homogenous group, such as all being bcf files).
+* The WDL can correctly handle a mixture of file extensions, not so much by design, but due to the specifics of implementation. The CWL will handle such a mixture incorrectly in check_gds (but can correctly handle a homogeneous group, such as all being bcf files).
 * check_gds uses the chromosome file workaround.

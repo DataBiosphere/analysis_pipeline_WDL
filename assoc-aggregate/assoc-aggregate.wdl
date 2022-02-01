@@ -3,6 +3,12 @@ version 1.0
 
 task wdl_validate_inputs {
 	# WDL Only -- Validate inputs that are type enum in the CWL
+	#
+	# It is acceptable for the user to put nothing for these values. The R files
+	# will fall back on the falling defaults if nothing is defined:
+	# * genome_build: "hg38"
+	# * aggregate_type: "allele"
+	# * test: "burden" (note lowercase-B, not uppercase-B as indicated in CWL)
 	
 	input {
 		String? genome_build
@@ -14,8 +20,8 @@ task wdl_validate_inputs {
 
 	command <<<
 		set -eux -o pipefail
-		acceptable_genome_builds=("hg38" "hg19")
-		acceptable_aggreg_types=("allele" "position")
+		#acceptable genome builds: ("hg38" "hg19")
+		#acceptable aggreg types:  ("allele" "position")
 		acceptable_test_values=("burden" "skat" "smmat" "fastskat" "skato")
 
 		if [[ ! ~{genome_build} = "" ]]

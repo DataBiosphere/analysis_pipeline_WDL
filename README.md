@@ -15,7 +15,7 @@ Essentially all workflows which take in chromosome-level files share filename re
 
 The original CWL pipelines had arguments relating to runtime such as `ncores` and `cluster_type` that do not apply to WDL. Please familiarize yourself with the [runtime attributes of WDL](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/) if you are unsure how your settings may transfer. For more information on specific runtime attributes for specific tasks, see [the further reading section](https://github.com/DataBiosphere/analysis_pipeline_WDL/main/README.md#further-reading).  
 
-The original pipeline had arguments relating to runtime such as `ncores` and `cluster_type` that do not apply to WDL. Please familarize yourself with the [runtime attributes of WDL](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/) if you are unsure how your settings may transfer.
+The original pipeline had arguments relating to runtime such as `ncores` and `cluster_type` that do not apply to WDL. Please familiarize yourself with the [runtime attributes of WDL](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/) if you are unsure how your settings may transfer.
 
 ### Terra users
 For Terra users, it is recommended to import via Dockstore. Importing the correct JSON file for your workflow at the workflow field entry page will fill in test data and recommended runtime attributes for said test data. For example, load `vcf-to-gds-terra.json` for `vcf-to-gds.wdl`. If you are using your own data, please be sure to adjust your runtime attributes appropriately.  

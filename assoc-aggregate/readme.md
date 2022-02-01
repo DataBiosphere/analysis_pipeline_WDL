@@ -35,12 +35,12 @@ Aggregate tests are typically used to jointly test rare variants. This workflow 
 * terra-allele, local-allele, and the first part of the checker workflow are based upon [assoc_aggregate_allele.config](https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_allele.config)
 * terra-position, local-position, and the second part of the checker workflow are based upon [assoc_aggregate_position.config](https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_position.config)
 * terra-weights, local-weights, and the third part of the checker workflow are based upon [assoc_aggregate_weights.config](https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_weights.config)
-* terra-big-test is based upon aformentioned position configuation, but it runs on all autosomes plus chrX
+* terra-big-test is based upon aforementioned position configuration, but it runs on all autosomes plus chrX
 
 Running terra-big-test has been timed to take about one hour and 25 minutes with default compute options.
 
 ## Notes to code maintainers
-For an explantion of the code overall, please see `/_documentation_/for developers/cwl-vs-wdl-dev.md` in this repo.  
+For an explanation of the code overall, please see `/_documentation_/for developers/cwl-vs-wdl-dev.md` in this repo.  
 * Local Cromwell allows for modifying input files directly even though the Docker image executes as the topmed user which should not have write permissions on the input files. Terra is technically more correct in blocking this, but this leads to some headaches where an output is supposed to be a modified input file as opposed to a brand new file. For these scenarios Terra support suggested `find . -type d -exec sudo chmod -R 777 {} +` which should allow for modifying any input files as the topmed user. This should probably not be messed with -- we need stderr/stdout to keep their permissions, and something like `sudo chmod 777 ${input_file_to_change}` or `sudo su - root` does not work.
 * Unlike most WDLs in this repository, this one has some major differences in how it works versus the CWL. Care was taken to make the outputs align as much as possible.
 * If debugging anything related to the prepare segments task, it is recommend to test on prepare_segments_1.py instead of the WDL itself to save time. Lots of debugging was needed in that section, so I wrote it in a such a way that it can easily be pulled in/out of the WDL. Because the prepare_segments_1.py file is not in the Docker image itself, it cannot be called as a Python file in the WDL's task section; the WDL instead has a copy of the file's contents.

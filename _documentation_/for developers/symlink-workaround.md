@@ -10,7 +10,7 @@ This situation, wherein a scattered task passes in inputs to a non-scattered tas
 
 <img width="623" alt="Screenshot 2021-04-09 at 3 34 00 PM" src="https://user-images.githubusercontent.com/27784612/114250466-a9331f80-9952-11eb-9e09-f114f9d89e4f.png">
 
-That is to say, each GDS file now lives in its own folder within /inputs/. On both Terra and the local filesystem, this is preceeded by a folder name which includes random integers/characters, thereby preventing the full path from being predicted before runtime -- in other words, the full path cannot just be hardcoded.
+That is to say, each GDS file now lives in its own folder within /inputs/. On both Terra and the local filesystem, this is preceded by a folder name which includes random integers/characters, thereby preventing the full path from being predicted before runtime -- in other words, the full path cannot just be hardcoded.
 
 This is problematic with how the R scripts use configuration files. These configuration files expect one line to represent a given pattern for an input file, such as 
 
@@ -39,6 +39,6 @@ The null model workflow generates a parameters file in its first task, which mus
 Therefore, we must use relative paths in the params file, and we additionally must symlink files from the input directory to the working directory for these relative paths to function with the R scripts.
 
 ## Reason 2½: Outputs that are directly based upon input files
-There are some circumstances where outputs of a task are not just a function of input files, but literally the input files themselves. In these cases it is often far easier to duplicate inputs that get modified to the workdir, work on those copies, and set up the output to pull from the files in just the workdir. There are scenarios where *not* softlinking/duplicating inputs to the workdir works fine when the pipeline is run locally, but is error-prone on Terra. When in doubt, I err on the side of maximum compatiability even at the cost of more disk space.
+There are some circumstances where outputs of a task are not just a function of input files, but literally the input files themselves. In these cases it is often far easier to duplicate inputs that get modified to the workdir, work on those copies, and set up the output to pull from the files in just the workdir. There are scenarios where *not* softlinking/duplicating inputs to the workdir works fine when the pipeline is run locally, but is error-prone on Terra. When in doubt, I err on the side of maximum compatibility even at the cost of more disk space.
 
 
