@@ -3,13 +3,20 @@ import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/as
 import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v1.0.0/checker_tasks/arraycheck_task.wdl" as verify_array
 
 workflow aggie_checker {
+	# If run as-is, this checker workflow will go through four configurations.
+	# And it should indeed be run as-is, unless you wish to remove a task entirely, and/or
+	# are willing to create new truth files. Even if you change something small like 
+	# n_segments, without remaking the truth files, you will likely get a mismatch.
+	#
+	# The one exception to this are runtime attributes (disk size, memory, preempts, etc)
+	# but even then, I recommend against swapping out the Docker image. That being said,
+	# truth files generated on 2.12.0 seem to pass against test files generated on 2.10.0
 	input {
-		# do not make any changes, including n_segments, without remaking the truth files
 		Array[File]  input_gds_files
 		File         null_model_file
 		File         phenotype_file
 		Array[File]  variant_group_files_coding # used for weights_test and allele_test
-		Array[File]  variant_group_files_genes  # used for position_test
+		Array[File]  variant_group_files_genes  # used for position_test only
 		Array[File]  variant_include_files
 
 		# variant_weight_file is not included in any of the assoc-aggregate configs
