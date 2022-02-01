@@ -28,7 +28,7 @@ Cromwell does not manage resources well on local executions -- parameters such a
 * Linkage disequilibrium pruning: [ld-pruning](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/ld-pruning/README.md)
 * Null model generation: [null-model](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/null-model/README.md)
 * [pc-air](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/pc-air/README.md)
-* [pc-related](https://github.com/DataBiosphere/analysis_pipeline_WDL/tree/main/pc-relate/README.md)
+* [pc-relate](https://github.com/DataBiosphere/analysis_pipeline_WDL/tree/main/pc-relate/README.md)
 * VCF to GDS file conversion: [vcf-to-gds](https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/main/vcf-to-gds/README.md)
 
 
