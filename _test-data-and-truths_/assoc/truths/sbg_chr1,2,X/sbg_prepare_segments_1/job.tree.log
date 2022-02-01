@@ -1,0 +1,19 @@
+.
+├── [-rwxrwxrwx  71K Jan 11  1:05.21 UTC]  1KG_phase3_subset_chr1.gds
+├── [-rwxrwxrwx  75K Jan 11  1:05.26 UTC]  1KG_phase3_subset_chr2.gds
+├── [-rwxrwxrwx  67K Jan 11  1:05.24 UTC]  1KG_phase3_subset_chrX.gds
+├── [-rw-r--r-- 4.8K Jan 11  1:05.26 UTC]  aggregate_list_chr1.RData
+├── [-rw-r--r-- 4.1K Jan 11  1:05.27 UTC]  aggregate_list_chr2.RData
+├── [-rw-r--r-- 2.6K Jan 11  1:05.24 UTC]  aggregate_list_chrX.RData
+├── [drwx------ 8.0K Jan 11  1:05.54 UTC]  assoc_agg_inputs
+│   ├── [-rw------- 2.0K Jan 11  1:05.42 UTC]  variant_include_chr1.RData
+│   └── [-rw------- 2.0K Jan 11  1:05.42 UTC]  variant_include_chr2.RData
+├── [-rw-------  162 Jan 11  1:05.42 UTC]  cmd.log
+├── [-rw------- 136K Jan 11  1:05.54 UTC]  cwl.output.json
+├── [-rw-------    0 Jan 11  1:05.54 UTC]  job.err.log
+├── [-rw-------  17K Jan 11  1:05.42 UTC]  job.json
+├── [-rw-------    0 Jan 11  1:05.55 UTC]  job.tree.log
+├── [-rw-rw-r-- 6.4K Jan 11  1:05.43 UTC]  segments.txt
+└── [-rw------- 2.0K Jan 11  1:05.42 UTC]  variant_include_chrX.RData
+
+ 398K used in 1 directory, 15 files

@@ -29,8 +29,15 @@ workflows:
    - subclass: WDL
      primaryDescriptorPath: /king/king.wdl
      testParameterFiles:
-         - /king/king-terra.json
+        - /king/king-terra.json
      name: king-wdl
+   - subclass: WDL
+     primaryDescriptorPath: /assoc-aggregate/assoc-aggregate.wdl
+     testParameterFiles:
+        - /assoc-aggregate/assoc-aggregate-terra-allele.json
+        - /assoc-aggregate/assoc-aggregate-terra-position.json
+        - /assoc-aggregate/assoc-aggregate-terra-weights.json
+     name: assocation-aggregate-wdl
    - subclass: WDL
      primaryDescriptorPath: /pc-air/pc-air.wdl
      testParameterFiles:

@@ -1,4 +1,4 @@
-This is not intended to be an exhaustive list of things to check when updating, just guidance, should I be taken up and maintence of this pipeline falls to someone else.
+This is not intended to be an exhaustive list of things to check when updating, just guidance, should I be taken up and maintenance of this pipeline falls to someone else.
 
 ## Updates to existing workflows
 When implementing an update that could reasonably change outputs (such as changing the Docker container)...

@@ -10,7 +10,7 @@ This situation, wherein a scattered task passes in inputs to a non-scattered tas
 
 <img width="623" alt="Screenshot 2021-04-09 at 3 34 00 PM" src="https://user-images.githubusercontent.com/27784612/114250466-a9331f80-9952-11eb-9e09-f114f9d89e4f.png">
 
-That is to say, each GDS file now lives in its own folder within /inputs/. On both Terra and the local filesystem, this is preceeded by a folder name which includes random integers/characters, thereby preventing the full path from being predicted before runtime -- in other words, the full path cannot just be hardcoded.
+That is to say, each GDS file now lives in its own folder within /inputs/. On both Terra and the local filesystem, this is preceded by a folder name which includes random integers/characters, thereby preventing the full path from being predicted before runtime -- in other words, the full path cannot just be hardcoded.
 
 This is problematic with how the R scripts use configuration files. These configuration files expect one line to represent a given pattern for an input file, such as 
 
@@ -37,3 +37,8 @@ More information: https://github.com/DataBiosphere/analysis_pipeline_WDL/blob/ma
 The null model workflow generates a parameters file in its first task, which must use a general path, because the next tasks that same parameters file to generate its own output. If it used absolute paths, the path would point to the first task's inputs directory, which is not available in the second task. This is because, when running on Terra, each task is running inside of a Docker container. (The local version of Cromwell technically does not need Docker, but for Terra it is a hard requirement.) Files that are not explicitly passed in or out of that container cannot be accessed by other tasks. In other words, in the WDL context, each task has its own file system. Additionally, the input directory's name is not consistent across tasks even if they are based upon the same Docker image, nor can it be predicted before runtime.
 
 Therefore, we must use relative paths in the params file, and we additionally must symlink files from the input directory to the working directory for these relative paths to function with the R scripts.
+
+## Reason 2½: Outputs that are directly based upon input files
+There are some circumstances where outputs of a task are not just a function of input files, but literally the input files themselves. In these cases it is often far easier to duplicate inputs that get modified to the workdir, work on those copies, and set up the output to pull from the files in just the workdir. There are scenarios where *not* softlinking/duplicating inputs to the workdir works fine when the pipeline is run locally, but is error-prone on Terra. When in doubt, I err on the side of maximum compatibility even at the cost of more disk space.
+
+
