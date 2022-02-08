@@ -1,6 +1,6 @@
 version 1.0
 import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/v7.0.0/assoc-aggregate/assoc-aggregate.wdl" as assoc_agg_wf
-import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v1.0.0/checker_tasks/arraycheck_task.wdl" as verify_array
+import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v1.1.0/checker_tasks/arraycheck_task.wdl" as verify_array
 
 workflow aggie_checker {
 	# If run as-is, this checker workflow will go through four configurations.
