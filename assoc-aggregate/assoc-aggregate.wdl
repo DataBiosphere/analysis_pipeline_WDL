@@ -1,5 +1,7 @@
 version 1.0
-# Author: Ash O'Farrell (UCSC)
+# WDL Author: Ash O'Farrell (UCSC)
+# Based on code from the University of Washington Genome Analysis Center
+# Please see https://doi.org/10.1093/bioinformatics/btz567
 
 task wdl_validate_inputs {
 	# WDL Only -- Validate inputs that are type enum in the CWL
