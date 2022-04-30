@@ -7,7 +7,7 @@ workflows:
       - /vcf-to-gds/vcf-to-gds-local.json
     authors:
       - orcid: 0000-0003-4896-1858
-     name: vcf-to-gds-wdl
+    name: vcf-to-gds-wdl
   - subclass: WDL
     primaryDescriptorPath: /ld-pruning/ld-pruning.wdl
     testParameterFiles:
