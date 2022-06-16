@@ -16,12 +16,20 @@ task wdl_validate_inputs {
 		String? genome_build
 		String? aggregate_type
 		String? test
+		Int num_gds_files
 
 		# no runtime attr because this is a trivial task that does not scale
 	}
 
 	command <<<
 		set -eux -o pipefail
+
+		echo "~{num_gds_files}"
+
+		if [ "~{num_gds_files}" = "1" ]; then
+			echo "Wrong number of files given - make sure to include more than one GDS file."
+			exit 22
+
 		#acceptable genome builds: ("hg38" "hg19")
 		#acceptable aggreg types:  ("allele" "position")
 		acceptable_test_values=("burden" "skat" "smmat" "fastskat" "skato")
@@ -96,6 +104,10 @@ task sbg_gds_renamer {
 
 	input {
 		File in_variant
+
+		# this is ignored by the script itself, but including this stops this task from firing
+		# before wdl_validate_inputs finishes
+		String? noop
 
 		Boolean debug = false
 
@@ -619,7 +631,7 @@ task sbg_prepare_segments_1 {
 		# make a bunch of zip files
 		for i in range(0, max(output_segments)):
 			plusone = i+1
-			this_zip = ZipFile("dotprod%s.zip" % plusone, "w")
+			this_zip = ZipFile("dotprod%s.zip" % plusone, "w", allowZip64=True)
 			this_zip.write("%s" % output_gdss[i])
 			this_zip.write("%s.integer" % output_segments[i])
 			this_zip.write("%s" % output_aggregate_files[i])
@@ -1346,19 +1358,23 @@ workflow assoc_agg {
 		String?      weight_user
 	}
 
+	Int num_gds_files = length(input_gds_files)
+
 	# In order to force this to run first, all other tasks that use these "psuedoenums"
 	# (Strings that mimic type Enum from CWL) will take them in via outputs of this task
 	call wdl_validate_inputs {
 		input:
 			genome_build = genome_build,
 			aggregate_type = aggregate_type,
-			test = test
+			test = test,
+			num_gds_files = num_gds_files
 	}
 
 	scatter(gds_file in input_gds_files) {
 		call sbg_gds_renamer {
 			input:
-				in_variant = gds_file
+				in_variant = gds_file,
+				noop = wdl_validate_inputs.valid_genome_build
 		}
 	}
 	

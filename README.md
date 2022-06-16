@@ -13,9 +13,9 @@ This project is a Workflow Description Language (WDL) implementation of several 
 * Documentation of inputs, how each workflow works, and WDL-specific workarounds
 
 ## Usage
-These workflows are tested on both Terra and the local Cromwell execution engine. Example files are provided in `test-data-and-truths` and in `gs://topmed_workflow_testing/UWGAC_WDL/`.  
+These workflows are tested on both Terra and the local Cromwell execution engine. Example files are provided in `test-data-and-truths` and in `gs://topmed_workflow_testing/UWGAC_WDL/`.   
 
-Essentially all workflows which take in chromosome-level files share filename requirements. For these files, the chromosome must be included in the filename with the format `chr##` where `##` is the name of the chromosome (1-24 or X, Y). Chromosome can be included at any part of the filename provided they follow this format. For instance, data_subset_chr1.gds, data_chr1_subset.gds, and chr1_data_subset.gds are all valid names, while data_chromosome1_subset.gds and data_subset_c1.gds are not valid.  
+Essentially all workflows which take in chromosome-level files share filename requirements. For these files, the chromosome must be included in the filename with the format `chr##` where `##` is the name of the chromosome (1-24 or X, Y). Chromosome can be included at any part of the filename provided they follow this format. For instance, data_subset_chr1.gds, data_chr1_subset.gds, and chr1_data_subset.gds are all valid names, while data_chromosome1_subset.gds and data_subset_c1.gds are not valid. Note that the association aggregate, LD prune, and null model workflows additionally require that you have greater than one input GDS file (ie, input at least chr1 and chr2).  
 
 The original CWL pipelines had arguments relating to runtime such as `ncores` and `cluster_type` that do not apply to WDL. Please familiarize yourself with the [runtime attributes of WDL](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/) if you are unsure how your settings may transfer. For more information on specific runtime attributes for specific tasks, see [the further reading section](https://github.com/DataBiosphere/analysis_pipeline_WDL/main/README.md#further-reading).  
 
