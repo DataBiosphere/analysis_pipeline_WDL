@@ -429,7 +429,7 @@ task sbg_prepare_segments_1 {
 		Int addldisk = 50
 		Int cpu = 12
 		Int memory = 16
-		Int preempt = 1
+		Int preempt = 0
 	}
 
 	# estimate disk size required
