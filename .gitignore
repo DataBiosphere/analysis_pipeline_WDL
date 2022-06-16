@@ -13,3 +13,4 @@ assoc-aggregate/cromwell-68.1.jar
 *.zip
 cwl.output.json
 job.json
+_test-data-and-truths_/assoc/big_silly_file_chr1.gds
