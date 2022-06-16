@@ -466,7 +466,8 @@ task sbg_prepare_segments_1 {
 			done
 		fi
 
-		python << CODE
+		# python3, because we need zip64
+		python3 << CODE
 		IIsegments_fileII = "~{segments_file}"
 		IIinput_gds_filesII = ['~{sep="','" input_gds_files}']
 		IIvariant_include_filesII = ['~{sep="','" variant_include_files}']
