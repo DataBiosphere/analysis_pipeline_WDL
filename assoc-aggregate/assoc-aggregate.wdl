@@ -426,14 +426,14 @@ task sbg_prepare_segments_1 {
 		Array[File]? variant_include_files
 
 		# runtime attr
-		Int addldisk = 10
-		Int cpu = 8
-		Int memory = 8
-		Int preempt = 2
+		Int addldisk = 50
+		Int cpu = 12
+		Int memory = 16
+		Int preempt = 1
 	}
 
 	# estimate disk size required
-	Int gds_size = 2 * ceil(size(input_gds_files, "GB"))
+	Int gds_size = 5 * ceil(size(input_gds_files, "GB"))
 	Int seg_size = 2 * ceil(size(segments_file, "GB"))
 	Int agg_size = 2 * ceil(size(aggregate_files, "GB"))
 	Int dsk_size = gds_size + seg_size + agg_size + addldisk
@@ -725,10 +725,10 @@ task assoc_aggregate {
 		String? genome_build # acts as enum
 
 		# runtime attr
-		Int addldisk = 1
-		Int cpu = 1
-		Int memory = 8
-		Int preempt = 0
+		Int addldisk = 50
+		Int cpu = 4
+		Int memory = 16
+		Int preempt = 1
 
 		Boolean debug = false
 	}
