@@ -426,7 +426,7 @@ task sbg_prepare_segments_1 {
 		Array[File]? variant_include_files
 
 		# runtime attr
-		Int addldisk = 50
+		Int addldisk = 100
 		Int cpu = 12
 		Int memory = 16
 		Int preempt = 0
@@ -691,7 +691,7 @@ task sbg_prepare_segments_1 {
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
-		disks: "local-disk " + dsk_size + " HDD"
+		disks: "local-disk " + dsk_size + " SSD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
