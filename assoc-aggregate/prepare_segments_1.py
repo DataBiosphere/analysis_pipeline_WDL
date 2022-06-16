@@ -13,6 +13,7 @@ IIaggregate_filesII = ["_test-data-and-truths_/assoc/aggregate_list_chr1.RData",
 from zipfile import ZipFile
 import os
 import shutil
+import datetime
 
 def find_chromosome(file):
 	chr_array = []
@@ -66,7 +67,10 @@ def wdl_get_segments():
 	segments = segments[1:] # remove first line
 	return segments
 
-# prepare GDS output
+######################
+# prepare GDS output #
+######################
+beginning = datetime.datetime.now()
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 output_gdss = []
 gds_segments = wdl_get_segments()
@@ -80,8 +84,12 @@ for i in range(0, len(gds_segments)): # for(var i=0;i<segments.length;i++){
 gds_output_hack = open("gds_output_debug.txt", "w")
 gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
 gds_output_hack.close()
+print("Info: GDS output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
-# prepare segment output
+######################
+# prepare seg output #
+######################
+beginning = datetime.datetime.now()
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 output_segments = []
 actual_segments = wdl_get_segments()
@@ -106,12 +114,16 @@ if max(output_segments) != len(output_segments):
 segs_output_hack = open("segs_output_debug.txt", "w")
 segs_output_hack.writelines(["%s " % thing for thing in output_segments])
 segs_output_hack.close()
+print("Info: Segment output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
-# prepare aggregate output
+######################
+# prepare agg output #
+######################
 # The CWL accounts for there being no aggregate files as the CWL considers them an optional
 # input. We don't need to account for that because the way WDL works means it they are a
 # required output of a previous task and a required input of this task. That said, if this
 # code is reused for other WDLs, it may need some adjustments right around here.
+beginning = datetime.datetime.now()
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 agg_segments = wdl_get_segments()
 if 'chr' in os.path.basename(IIaggregate_filesII[0]):
@@ -128,8 +140,12 @@ for i in range(0, len(agg_segments)): # for(var i=0;i<segments.length;i++){
 		output_aggregate_files.append(input_aggregate_files[chr])
 	elif (chr in input_gdss):
 		output_aggregate_files.append(None)
+print("Info: Aggregate output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
-# prepare variant include output
+#########################
+# prepare varinc output #
+#########################
+beginning = datetime.datetime.now()
 input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 var_segments = wdl_get_segments()
 if IIvariant_include_filesII != [""]:
@@ -159,6 +175,7 @@ else:
 var_output_hack = open("variant_output_debug.txt", "w")
 var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
 var_output_hack.close()
+print("Info: Variant include output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
 # We can only consistently tell output files apart by their extension. If var include files 
 # and agg files are both outputs, this is problematic, as they both share the RData ext.
@@ -168,9 +185,11 @@ if IIvariant_include_filesII != [""]:
 	os.mkdir("temp")
 
 # make a bunch of zip files
+print("Preparing zip file outputs...")
 for i in range(0, max(output_segments)):
+	beginning = datetime.datetime.now()
 	plusone = i+1
-	this_zip = ZipFile("dotprod%s.zip" % plusone, "w")
+	this_zip = ZipFile("dotprod%s.zip" % plusone, "w", allowZip64=True)
 	this_zip.write("%s" % output_gdss[i])
 	this_zip.write("%s.integer" % output_segments[i])
 	this_zip.write("%s" % output_aggregate_files[i])
@@ -202,3 +221,4 @@ for i in range(0, max(output_segments)):
 		
 		this_zip.write("varinclude/%s" % output_variant_files[i])
 	this_zip.close()
+	print("Info: Wrote dotprod%s.zip in %s minutes" % [plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]])

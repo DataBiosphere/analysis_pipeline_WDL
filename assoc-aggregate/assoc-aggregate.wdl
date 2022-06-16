@@ -416,7 +416,7 @@ task sbg_prepare_segments_1 {
 	# Although the format of the outputs are different from the CWL, the actual contents of each
 	# component (gds, segment number, and agg file) should match the CWL perfectly (barring compute
 	# platform differences, etc). The format is a zip file containing each segment's components in
-	# order to work around WDL's limitations. Essentially, CWL easily scatters on the dot-product
+	# order to work around WDL's limitations. Essentially, CWL easily scatters on the dot-product of
 	# multiple arrays, but trying to that in WDL is painful. See cwl-vs-wdl-dev.md for more info.
 
 	input {
@@ -475,6 +475,7 @@ task sbg_prepare_segments_1 {
 		from zipfile import ZipFile
 		import os
 		import shutil
+		import datetime
 
 		def find_chromosome(file):
 			chr_array = []
@@ -528,7 +529,10 @@ task sbg_prepare_segments_1 {
 			segments = segments[1:] # remove first line
 			return segments
 
-		# prepare GDS output
+		######################
+		# prepare GDS output #
+		######################
+		beginning = datetime.datetime.now()
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 		output_gdss = []
 		gds_segments = wdl_get_segments()
@@ -542,8 +546,12 @@ task sbg_prepare_segments_1 {
 		gds_output_hack = open("gds_output_debug.txt", "w")
 		gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
 		gds_output_hack.close()
+		print("Info: GDS output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
-		# prepare segment output
+		######################
+		# prepare seg output #
+		######################
+		beginning = datetime.datetime.now()
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 		output_segments = []
 		actual_segments = wdl_get_segments()
@@ -556,7 +564,7 @@ task sbg_prepare_segments_1 {
 				seg_num = i+1
 				output_segments.append(seg_num)
 				output_seg_as_file = open("%s.integer" % seg_num, "w")
-		
+
 		# I don't know for sure if this case is actually problematic, but I suspect it will be.
 		if max(output_segments) != len(output_segments):
 			print("ERROR: output_segments needs to be a list of consecutive integers.")
@@ -564,15 +572,20 @@ task sbg_prepare_segments_1 {
 				[max(output_segments), len(output_segments)])
 			print("Debug: List is as follows:\n\t%s" % output_segments)
 			exit(1)
+
 		segs_output_hack = open("segs_output_debug.txt", "w")
 		segs_output_hack.writelines(["%s " % thing for thing in output_segments])
 		segs_output_hack.close()
+		print("Info: Segment output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
-		# prepare aggregate output
+		######################
+		# prepare agg output #
+		######################
 		# The CWL accounts for there being no aggregate files as the CWL considers them an optional
 		# input. We don't need to account for that because the way WDL works means it they are a
 		# required output of a previous task and a required input of this task. That said, if this
 		# code is reused for other WDLs, it may need some adjustments right around here.
+		beginning = datetime.datetime.now()
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 		agg_segments = wdl_get_segments()
 		if 'chr' in os.path.basename(IIaggregate_filesII[0]):
@@ -589,8 +602,12 @@ task sbg_prepare_segments_1 {
 				output_aggregate_files.append(input_aggregate_files[chr])
 			elif (chr in input_gdss):
 				output_aggregate_files.append(None)
+		print("Info: Aggregate output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
-		# prepare variant include output
+		#########################
+		# prepare varinc output #
+		#########################
+		beginning = datetime.datetime.now()
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 		var_segments = wdl_get_segments()
 		if IIvariant_include_filesII != [""]:
@@ -620,6 +637,7 @@ task sbg_prepare_segments_1 {
 		var_output_hack = open("variant_output_debug.txt", "w")
 		var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
 		var_output_hack.close()
+		print("Info: Variant include output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
 		# We can only consistently tell output files apart by their extension. If var include files 
 		# and agg files are both outputs, this is problematic, as they both share the RData ext.
@@ -631,6 +649,7 @@ task sbg_prepare_segments_1 {
 		# make a bunch of zip files
 		print("Preparing zip file outputs...")
 		for i in range(0, max(output_segments)):
+			beginning = datetime.datetime.now()
 			plusone = i+1
 			this_zip = ZipFile("dotprod%s.zip" % plusone, "w", allowZip64=True)
 			this_zip.write("%s" % output_gdss[i])
@@ -664,6 +683,7 @@ task sbg_prepare_segments_1 {
 				
 				this_zip.write("varinclude/%s" % output_variant_files[i])
 			this_zip.close()
+			print("Info: Wrote dotprod%s.zip in %s minutes" % [plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]])
 		CODE
 	>>>
 
