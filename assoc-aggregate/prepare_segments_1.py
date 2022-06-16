@@ -221,4 +221,5 @@ for i in range(0, max(output_segments)):
 		
 		this_zip.write("varinclude/%s" % output_variant_files[i])
 	this_zip.close()
-	print("Info: Wrote dotprod%s.zip in %s minutes" % [plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]])
+	print("Info: Wrote dotprod%s.zip" % plusone)
+	print("Info: This took %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
