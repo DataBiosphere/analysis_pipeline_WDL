@@ -16,7 +16,7 @@ task wdl_validate_inputs {
 		String? genome_build
 		String? aggregate_type
 		String? test
-		Int num_gds_files
+		Int? num_gds_files
 
 		# no runtime attr because this is a trivial task that does not scale
 	}
@@ -24,11 +24,11 @@ task wdl_validate_inputs {
 	command <<<
 		set -eux -o pipefail
 
-		echo "~{num_gds_files}"
-
-		if [ "~{num_gds_files}" = "1" ]; then
-			echo "Wrong number of files given - make sure to include more than one GDS file."
-			exit 22
+		if [[ ~{num_gds_files} = 1 ]]
+		then
+			echo "Invalid input - you need to put it at least two GDS files (preferably consecutive ones, like chr1 and chr2)"
+			exit 1
+		fi
 
 		#acceptable genome builds: ("hg38" "hg19")
 		#acceptable aggreg types:  ("allele" "position")
