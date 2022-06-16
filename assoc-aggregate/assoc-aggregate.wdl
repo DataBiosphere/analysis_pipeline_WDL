@@ -427,8 +427,8 @@ task sbg_prepare_segments_1 {
 
 		# runtime attr
 		Int addldisk = 10
-		Int cpu = 2
-		Int memory = 4
+		Int cpu = 8
+		Int memory = 8
 		Int preempt = 2
 	}
 
@@ -630,6 +630,7 @@ task sbg_prepare_segments_1 {
 			os.mkdir("temp")
 
 		# make a bunch of zip files
+		print("Preparing zip file outputs...")
 		for i in range(0, max(output_segments)):
 			plusone = i+1
 			this_zip = ZipFile("dotprod%s.zip" % plusone, "w", allowZip64=True)
