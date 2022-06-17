@@ -31,6 +31,10 @@ Aggregate tests are typically used to jointly test rare variants. This workflow 
 
 * Do not use this pipeline with non-consecutive chromosomes. A run containing chr1, chr2, and chr3 will work. A run containing chr1, chr20, and chr13 may not. (Non-autosomes excluded -- a run containing chr1, chr2, and chrX will not error out, but as noted above chrX will be dropped.)
 
+* Do not use this pipeline on only one chromosome.
+
+* If your data consists of GDS files that are >10 GB, it is *recommended* to set a lower number of segments in order to decrease delocalization time in the prepare segments task. For reference, it took almost two hours for a 25-segment output of 4.3 GB GDS files to finish delocalizing in prepare segments. I am currently seeking additional guidance from Cromwell and Terra devs on handling this bottleneck better.
+
 ## Sample Inputs
 * terra-allele, local-allele, and the first part of the checker workflow are based upon [assoc_aggregate_allele.config](https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_allele.config)
 * terra-position, local-position, and the second part of the checker workflow are based upon [assoc_aggregate_position.config](https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_position.config)

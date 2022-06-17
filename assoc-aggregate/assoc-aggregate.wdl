@@ -16,12 +16,20 @@ task wdl_validate_inputs {
 		String? genome_build
 		String? aggregate_type
 		String? test
+		Int? num_gds_files
 
 		# no runtime attr because this is a trivial task that does not scale
 	}
 
 	command <<<
 		set -eux -o pipefail
+
+		if [[ ~{num_gds_files} = 1 ]]
+		then
+			echo "Invalid input - you need to put it at least two GDS files (preferably consecutive ones, like chr1 and chr2)"
+			exit 1
+		fi
+
 		#acceptable genome builds: ("hg38" "hg19")
 		#acceptable aggreg types:  ("allele" "position")
 		acceptable_test_values=("burden" "skat" "smmat" "fastskat" "skato")
@@ -96,6 +104,10 @@ task sbg_gds_renamer {
 
 	input {
 		File in_variant
+
+		# this is ignored by the script itself, but including this stops this task from firing
+		# before wdl_validate_inputs finishes
+		String? noop
 
 		Boolean debug = false
 
@@ -404,7 +416,7 @@ task sbg_prepare_segments_1 {
 	# Although the format of the outputs are different from the CWL, the actual contents of each
 	# component (gds, segment number, and agg file) should match the CWL perfectly (barring compute
 	# platform differences, etc). The format is a zip file containing each segment's components in
-	# order to work around WDL's limitations. Essentially, CWL easily scatters on the dot-product
+	# order to work around WDL's limitations. Essentially, CWL easily scatters on the dot-product of
 	# multiple arrays, but trying to that in WDL is painful. See cwl-vs-wdl-dev.md for more info.
 
 	input {
@@ -414,14 +426,14 @@ task sbg_prepare_segments_1 {
 		Array[File]? variant_include_files
 
 		# runtime attr
-		Int addldisk = 10
-		Int cpu = 2
-		Int memory = 4
-		Int preempt = 2
+		Int addldisk = 100
+		Int cpu = 12
+		Int memory = 16
+		Int preempt = 0
 	}
 
 	# estimate disk size required
-	Int gds_size = 2 * ceil(size(input_gds_files, "GB"))
+	Int gds_size = 5 * ceil(size(input_gds_files, "GB"))
 	Int seg_size = 2 * ceil(size(segments_file, "GB"))
 	Int agg_size = 2 * ceil(size(aggregate_files, "GB"))
 	Int dsk_size = gds_size + seg_size + agg_size + addldisk
@@ -463,6 +475,7 @@ task sbg_prepare_segments_1 {
 		from zipfile import ZipFile
 		import os
 		import shutil
+		import datetime
 
 		def find_chromosome(file):
 			chr_array = []
@@ -516,7 +529,10 @@ task sbg_prepare_segments_1 {
 			segments = segments[1:] # remove first line
 			return segments
 
-		# prepare GDS output
+		######################
+		# prepare GDS output #
+		######################
+		beginning = datetime.datetime.now()
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 		output_gdss = []
 		gds_segments = wdl_get_segments()
@@ -530,8 +546,12 @@ task sbg_prepare_segments_1 {
 		gds_output_hack = open("gds_output_debug.txt", "w")
 		gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
 		gds_output_hack.close()
+		print("Info: GDS output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
-		# prepare segment output
+		######################
+		# prepare seg output #
+		######################
+		beginning = datetime.datetime.now()
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 		output_segments = []
 		actual_segments = wdl_get_segments()
@@ -544,7 +564,7 @@ task sbg_prepare_segments_1 {
 				seg_num = i+1
 				output_segments.append(seg_num)
 				output_seg_as_file = open("%s.integer" % seg_num, "w")
-		
+
 		# I don't know for sure if this case is actually problematic, but I suspect it will be.
 		if max(output_segments) != len(output_segments):
 			print("ERROR: output_segments needs to be a list of consecutive integers.")
@@ -552,15 +572,20 @@ task sbg_prepare_segments_1 {
 				[max(output_segments), len(output_segments)])
 			print("Debug: List is as follows:\n\t%s" % output_segments)
 			exit(1)
+
 		segs_output_hack = open("segs_output_debug.txt", "w")
 		segs_output_hack.writelines(["%s " % thing for thing in output_segments])
 		segs_output_hack.close()
+		print("Info: Segment output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
-		# prepare aggregate output
+		######################
+		# prepare agg output #
+		######################
 		# The CWL accounts for there being no aggregate files as the CWL considers them an optional
 		# input. We don't need to account for that because the way WDL works means it they are a
 		# required output of a previous task and a required input of this task. That said, if this
 		# code is reused for other WDLs, it may need some adjustments right around here.
+		beginning = datetime.datetime.now()
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 		agg_segments = wdl_get_segments()
 		if 'chr' in os.path.basename(IIaggregate_filesII[0]):
@@ -577,8 +602,12 @@ task sbg_prepare_segments_1 {
 				output_aggregate_files.append(input_aggregate_files[chr])
 			elif (chr in input_gdss):
 				output_aggregate_files.append(None)
+		print("Info: Aggregate output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
-		# prepare variant include output
+		#########################
+		# prepare varinc output #
+		#########################
+		beginning = datetime.datetime.now()
 		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 		var_segments = wdl_get_segments()
 		if IIvariant_include_filesII != [""]:
@@ -608,6 +637,7 @@ task sbg_prepare_segments_1 {
 		var_output_hack = open("variant_output_debug.txt", "w")
 		var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
 		var_output_hack.close()
+		print("Info: Variant include output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
 		# We can only consistently tell output files apart by their extension. If var include files 
 		# and agg files are both outputs, this is problematic, as they both share the RData ext.
@@ -617,9 +647,11 @@ task sbg_prepare_segments_1 {
 			os.mkdir("temp")
 
 		# make a bunch of zip files
+		print("Preparing zip file outputs...")
 		for i in range(0, max(output_segments)):
+			beginning = datetime.datetime.now()
 			plusone = i+1
-			this_zip = ZipFile("dotprod%s.zip" % plusone, "w")
+			this_zip = ZipFile("dotprod%s.zip" % plusone, "w", allowZip64=True)
 			this_zip.write("%s" % output_gdss[i])
 			this_zip.write("%s.integer" % output_segments[i])
 			this_zip.write("%s" % output_aggregate_files[i])
@@ -651,13 +683,15 @@ task sbg_prepare_segments_1 {
 				
 				this_zip.write("varinclude/%s" % output_variant_files[i])
 			this_zip.close()
+			print("Info: Wrote dotprod%s.zip" % plusone)
+			print("Info: This took %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 		CODE
 	>>>
 
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
-		disks: "local-disk " + dsk_size + " HDD"
+		disks: "local-disk " + dsk_size + " SSD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -692,10 +726,10 @@ task assoc_aggregate {
 		String? genome_build # acts as enum
 
 		# runtime attr
-		Int addldisk = 1
-		Int cpu = 1
-		Int memory = 8
-		Int preempt = 0
+		Int addldisk = 50
+		Int cpu = 4
+		Int memory = 16
+		Int preempt = 1
 
 		Boolean debug = false
 	}
@@ -1346,19 +1380,23 @@ workflow assoc_agg {
 		String?      weight_user
 	}
 
+	Int num_gds_files = length(input_gds_files)
+
 	# In order to force this to run first, all other tasks that use these "psuedoenums"
 	# (Strings that mimic type Enum from CWL) will take them in via outputs of this task
 	call wdl_validate_inputs {
 		input:
 			genome_build = genome_build,
 			aggregate_type = aggregate_type,
-			test = test
+			test = test,
+			num_gds_files = num_gds_files
 	}
 
 	scatter(gds_file in input_gds_files) {
 		call sbg_gds_renamer {
 			input:
-				in_variant = gds_file
+				in_variant = gds_file,
+				noop = wdl_validate_inputs.valid_genome_build
 		}
 	}
 	

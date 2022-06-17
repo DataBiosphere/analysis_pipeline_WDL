@@ -18,9 +18,9 @@ task ld_pruning {
 		String? out_prefix
 		
 		# runtime attributes
-		Int addldisk = 5
-		Int cpu = 2
-		Int memory = 4
+		Int addldisk = 10
+		Int cpu = 4
+		Int memory = 8
 		Int preempt = 3
 	}
 
@@ -201,7 +201,7 @@ task merge_gds {
 		# runtime attributes
 		Int addldisk = 5
 		Int cpu = 2
-		Int memory = 4
+		Int memory = 8
 		Int preempt = 3
 	}
 

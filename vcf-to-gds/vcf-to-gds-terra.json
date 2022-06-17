@@ -25,7 +25,10 @@
  "gs://topmed_workflow_testing/UWGAC_WDL/1KG_phase3_subset_chrX.vcf.gz"
 ],
   "vcftogds.vcf2gds.addldisk": 1,
+  "vcftogds.vcf2gds.cpu": 2,
+  "vcftogds.vcf2gds.memory": 4,
   "vcftogds.unique_variant_id.addldisk": 1,
+  "vcftogds.unique_variant_id.memory": 4,
   "vcftogds.check_gds": true,
   "vcftogds.check_gds.addldisk": 1,
   "vcftogds.check_gds.preempt": 1

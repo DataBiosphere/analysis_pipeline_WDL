@@ -7,10 +7,11 @@ task vcf2gds {
 		String debug_basename = basename(vcf)
 		String debug_basenamesub = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
 		Array[String] format # vcf formats to keep
+
 		# runtime attributes
 		Int addldisk = 1
-		Int cpu = 2
-		Int memory = 4
+		Int cpu = 4
+		Int memory = 8
 		Int preempt = 3
 	}
 	command {
@@ -73,10 +74,11 @@ task vcf2gds {
 task unique_variant_id {
 	input {
 		Array[File] gdss
+
 		# runtime attr
 		Int addldisk = 1
 		Int cpu = 2
-		Int memory = 4
+		Int memory = 8
 		Int preempt = 2
 	}
 	command <<<
