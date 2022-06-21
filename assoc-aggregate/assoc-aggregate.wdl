@@ -424,6 +424,7 @@ task sbg_prepare_segments_1 {
 		File segments_file
 		Array[File] aggregate_files
 		Array[File]? variant_include_files
+		Int? n_segments
 
 		# runtime attr
 		Int addldisk = 100
@@ -688,8 +689,7 @@ task sbg_prepare_segments_1 {
 				
 				this_zip.write("varinclude/%s" % output_variant_files[i])
 			this_zip.close()
-			print("Info: Wrote dotprod%s.zip" % plusone)
-			print("Info: This took %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+			print("Info: Wrote dotprod%s.zip in %s minutes" % (plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]))
 		CODE
 	>>>
 
@@ -736,7 +736,7 @@ task assoc_aggregate {
 		Int memory = 16
 		Int preempt = 1
 
-		Boolean debug = false
+		Boolean debug = true
 	}
 	
 	# estimate disk size required
@@ -748,6 +748,7 @@ task assoc_aggregate {
 	Int finalDiskSize = zipped_size + segment_size + null_size + pheno_size + varweight_size + addldisk
 
 	command <<<
+		set -eux -o pipefail
 
 		# Unzipping in the inputs directory leads to a host of issues as depending on the platform
 		# they will end up in different places. Copying them to our own directory avoids an awkward
@@ -1426,7 +1427,8 @@ workflow assoc_agg {
 			input_gds_files = sbg_gds_renamer.renamed_variants,
 			segments_file = define_segments_r.define_segments_output,
 			aggregate_files = aggregate_list.aggregate_list,
-			variant_include_files = variant_include_files
+			variant_include_files = variant_include_files,
+			n_segments = n_segments
 	}
  
     # gds, aggregate, segments, and variant include are represented as a zip file here
