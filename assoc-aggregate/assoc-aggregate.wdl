@@ -434,9 +434,9 @@ task sbg_prepare_segments_1 {
 	}
 
 	# estimate disk size required
-	Int gds_size = n_segments * ceil(size(input_gds_files, "GB"))
+	Int gds_size = select_first([n_segments, 50]) * ceil(size(input_gds_files, "GB"))
 	Int seg_size = ceil(size(segments_file, "GB"))
-	Int agg_size = n_segments * ceil(size(aggregate_files, "GB"))
+	Int agg_size = select_first([n_segments, 50]) * ceil(size(aggregate_files, "GB"))
 	Int dsk_size = gds_size + seg_size + agg_size + addldisk
 	
 	command <<<
@@ -731,7 +731,7 @@ task assoc_aggregate {
 		Int memory = 16
 		Int preempt = 1
 
-		Boolean debug = false
+		Boolean debug = true
 	}
 	
 	# estimate disk size required
@@ -743,6 +743,7 @@ task assoc_aggregate {
 	Int finalDiskSize = zipped_size + segment_size + null_size + pheno_size + varweight_size + addldisk
 
 	command <<<
+		set -eux -o pipefail
 
 		# Unzipping in the inputs directory leads to a host of issues as depending on the platform
 		# they will end up in different places. Copying them to our own directory avoids an awkward
