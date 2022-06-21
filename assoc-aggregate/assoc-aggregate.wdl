@@ -424,6 +424,7 @@ task sbg_prepare_segments_1 {
 		File segments_file
 		Array[File] aggregate_files
 		Array[File]? variant_include_files
+		Int? n_segments
 
 		# runtime attr
 		Int addldisk = 100
@@ -433,9 +434,9 @@ task sbg_prepare_segments_1 {
 	}
 
 	# estimate disk size required
-	Int gds_size = 5 * ceil(size(input_gds_files, "GB"))
-	Int seg_size = 2 * ceil(size(segments_file, "GB"))
-	Int agg_size = 2 * ceil(size(aggregate_files, "GB"))
+	Int gds_size = n_segments * ceil(size(input_gds_files, "GB"))
+	Int seg_size = ceil(size(segments_file, "GB"))
+	Int agg_size = n_segments * ceil(size(aggregate_files, "GB"))
 	Int dsk_size = gds_size + seg_size + agg_size + addldisk
 	
 	command <<<
@@ -683,8 +684,7 @@ task sbg_prepare_segments_1 {
 				
 				this_zip.write("varinclude/%s" % output_variant_files[i])
 			this_zip.close()
-			print("Info: Wrote dotprod%s.zip" % plusone)
-			print("Info: This took %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+			print("Info: Wrote dotprod%s.zip in %s minutes" % (plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]))
 		CODE
 	>>>
 
@@ -1421,7 +1421,8 @@ workflow assoc_agg {
 			input_gds_files = sbg_gds_renamer.renamed_variants,
 			segments_file = define_segments_r.define_segments_output,
 			aggregate_files = aggregate_list.aggregate_list,
-			variant_include_files = variant_include_files
+			variant_include_files = variant_include_files,
+			n_segments = n_segments
 	}
  
     # gds, aggregate, segments, and variant include are represented as a zip file here
