@@ -169,7 +169,7 @@ task sbg_gds_renamer {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -243,7 +243,7 @@ task define_segments_r {
 	runtime {
 		cpu: cpu
 		disks: "local-disk " + finalDiskSize + " HDD"
-		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -395,7 +395,7 @@ task aggregate_list {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -690,7 +690,7 @@ task sbg_prepare_segments_1 {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + dsk_size + " SSD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -950,7 +950,7 @@ task assoc_aggregate {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + finalDiskSize + " SSD"
 		bootDiskSizeGb: 6
 		memory: "${memory} GB"
@@ -1074,7 +1074,7 @@ task sbg_group_segments_1 {
 	
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + addldisk + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -1207,7 +1207,7 @@ task assoc_combine_r {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -1339,7 +1339,7 @@ task assoc_plots_r {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + finalDiskSize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
