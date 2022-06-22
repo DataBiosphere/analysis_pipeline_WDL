@@ -433,12 +433,16 @@ task sbg_prepare_segments_1 {
 		Int preempt = 0
 	}
 
-	# estimate disk size required
-	# size(input_gds_files, "GB") returns size of the entire array, ie all 23 chrs
-	# if we wanted the average of all chrs, we could multiply by 0.0434ish, but that'd assume
-	# running on all 23 chrs, which we often don't do. people tend to test with only 2 chrs.
-	# the largest chromosome, chr1, should be no more than 10% of the total size
-	# but to account for people running on only chr1 and chr2, we set the multiplier to 0.5
+	# Disk size estimation gets really tricky in this task, due to its zip workaround.
+	#
+	# size(input_gds_files, "GB") returns size of the entire array, ie all 23 chrs.
+	# If we wanted the average of all chrs, we could multiply by 0.0434ish, but that'd assume
+	# running on all 23 chrs, which we often don't do; people tend to test with only 2 chrs.
+	# The largest chromosome, chr1, should be no more than 10% of the total size of the whole
+	# genome, but to account for people running on only chr1 and chr2, we set the multiplier to 0.5
+	# This is a huge overestimate for the n_segments-is-defined case, since n_segments is applied
+	# on the entire genome, so if n_segments = 100 and you run on only chr 1 and 2, you're only going
+	# to have something like 18 segments. But disk size is not super expensive to scale up.
 	Int gds_size = select_first([n_segments, 50]) * ceil(size(input_gds_files, "GB") * 0.5)
 	Int seg_size = ceil(size(segments_file, "GB"))
 	Int agg_size = select_first([n_segments, 50]) * ceil(size(aggregate_files, "GB"))

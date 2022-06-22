@@ -53,13 +53,15 @@ The CWL then dot-product scatters on these arrays, meaning that each instance of
 * One aggregate RData file
 * Optional: One variant include RData file
 
-It is theoretically possible to mimic this in a WDL that is compatible in Terra using custom structs, but I had difficulty scattering on such a thing reliably. (The fact that variant_include_files is an optional array seems to be part of the issue.) In any case, I found it to be less error-prone to simply set this task's output to a single array of zip files and to have the next task scatter on those zip files. Each zip file contains, and will pass into each instance of the subsequent scattered task:
+~It is theoretically possible to mimic this in a WDL that is compatible in Terra using custom structs, but I had difficulty scattering on such a thing reliably. (The fact that variant_include_files is an optional array seems to be part of the issue.)~ *Update: It may not be possible with structs after all. WDL does not officially support scattering on the dot-product of more than two arrays, optional or otherwise. However, there may be some workarounds by nesting zip() or scatter(), or playing with JSON file outputs, combined with select_first() to handle the optional array* In any case, I found it to be less error-prone to simply set this task's output to a single array of zip files and to have the next task scatter on those zip files. Each zip file contains, and will pass into each instance of the subsequent scattered task:
 * One GDS file
 * One file with with the pattern X.integer where X represents the segment number
 * One aggregate RData file
 * Optional: One variant include RData file, in its own subfolder in order to differentiate it from the other RData file
 
 Why is the variant include output in its own subfolder? The variant include RData file does not have a predictable file name, nor does the aggregate RData file -- all we know is their extension, which they share. The CWL "keeps track" of them by assigning them to output variables of type file. We are unable to do that, nor can we easily assign unpredictable file names to an output variable of type string in WDL ("easily" because in theory this could be done with using read_file() to output a variable of type string but I have found it to be error-prone), therefore we are using the filesystem itself to keep track of which RData file is which.
+
+Wen running on very large files, the delocalization segment of this task is extremely slow, which is one reason why I hope to replace this workaround eventually.
 
 ### assoc_aggregate
 **Summary: Both WDL and CWL can output nothing for this task, but in WDL we must be very careful**  
