@@ -24,7 +24,7 @@ task wdl_validate_inputs {
 	command <<<
 		set -eux -o pipefail
 
-		if [[ ~{num_gds_files} = 1 ]]
+		if [[ "~{num_gds_files}" = "1" ]]
 		then
 			echo "Invalid input - you need to put it at least two GDS files (preferably consecutive ones, like chr1 and chr2)"
 			exit 1
@@ -34,7 +34,7 @@ task wdl_validate_inputs {
 		#acceptable aggreg types:  ("allele" "position")
 		acceptable_test_values=("burden" "skat" "smmat" "fastskat" "skato")
 
-		if [[ ! ~{genome_build} = "" ]]
+		if [[ ! "~{genome_build}" = "" ]]
 		then
 			if [[ ! "hg38" = "~{genome_build}" ]]
 			then
