@@ -433,9 +433,14 @@ task sbg_prepare_segments_1 {
 	}
 
 	# estimate disk size required
-	Int gds_size = 5 * ceil(size(input_gds_files, "GB"))
-	Int seg_size = 2 * ceil(size(segments_file, "GB"))
-	Int agg_size = 2 * ceil(size(aggregate_files, "GB"))
+	# size(input_gds_files, "GB") returns size of the entire array, ie all 23 chrs
+	# if we wanted the average of all chrs, we could multiply by 0.0434ish, but that'd assume
+	# running on all 23 chrs, which we often don't do. people tend to test with only 2 chrs.
+	# the largest chromosome, chr1, should be no more than 10% of the total size
+	# but to account for people running on only chr1 and chr2, we set the multiplier to 0.5
+	Int gds_size = select_first([n_segments, 50]) * ceil(size(input_gds_files, "GB") * 0.5)
+	Int seg_size = ceil(size(segments_file, "GB"))
+	Int agg_size = select_first([n_segments, 50]) * ceil(size(aggregate_files, "GB"))
 	Int dsk_size = gds_size + seg_size + agg_size + addldisk
 	
 	command <<<
