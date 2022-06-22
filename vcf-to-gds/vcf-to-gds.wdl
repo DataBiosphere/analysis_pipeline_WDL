@@ -11,8 +11,9 @@ task vcf2gds {
 		# runtime attributes
 		Int addldisk = 1
 		Int cpu = 4
+		Int retries = 3
 		Int memory = 8
-		Int preempt = 3
+		Int preempt = 2
 	}
 	command {
 		set -eux -o pipefail
@@ -59,6 +60,7 @@ task vcf2gds {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -79,6 +81,7 @@ task unique_variant_id {
 		Int addldisk = 1
 		Int cpu = 2
 		Int memory = 8
+		Int retries = 2
 		Int preempt = 2
 	}
 	command <<<
@@ -154,6 +157,7 @@ task unique_variant_id {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -168,10 +172,12 @@ task check_gds {
 	input {
 		File gds
 		Array[File] vcfs
+
 		# runtime attr
 		Int addldisk = 1
 		Int cpu = 8
 		Int memory = 12
+		Int retries = 3
 		Int preempt = 0
 	}
 
@@ -254,7 +260,7 @@ task check_gds {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
 		disks: "local-disk " + finalDiskSize + " SSD"
-		bootDiskSizeGb: 6
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}

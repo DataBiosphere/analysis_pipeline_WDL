@@ -171,6 +171,7 @@ task sbg_gds_renamer {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: 1
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -244,6 +245,7 @@ task define_segments_r {
 		cpu: cpu
 		disks: "local-disk " + finalDiskSize + " HDD"
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
+		maxRetries: 1
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -397,6 +399,7 @@ task aggregate_list {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: 1
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -429,6 +432,7 @@ task sbg_prepare_segments_1 {
 		# runtime attr
 		Int addldisk = 100
 		Int cpu = 12
+		Int retries = 1
 		Int memory = 16
 		Int preempt = 0
 	}
@@ -701,6 +705,7 @@ task sbg_prepare_segments_1 {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + dsk_size + " SSD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -737,6 +742,7 @@ task assoc_aggregate {
 		# runtime attr
 		Int addldisk = 50
 		Int cpu = 4
+		Int retries = 2
 		Int memory = 16
 		Int preempt = 1
 
@@ -962,7 +968,7 @@ task assoc_aggregate {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " SSD"
-		bootDiskSizeGb: 6
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -985,6 +991,7 @@ task sbg_group_segments_1 {
 		Int addldisk = 3
 		Int cpu = 8
 		Int memory = 8
+		Int retries = 1
 		Int preempt = 2
 	}
 
@@ -1086,6 +1093,7 @@ task sbg_group_segments_1 {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + addldisk + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -1110,6 +1118,7 @@ task assoc_combine_r {
 		Int addldisk = 3
 		Int cpu = 8
 		Int memory = 8
+		Int retries = 1
 		Int preempt = 2
 	}
 	Int assoc_size = ceil(size(assoc_files, "GB"))
@@ -1219,6 +1228,7 @@ task assoc_combine_r {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -1247,6 +1257,7 @@ task assoc_plots_r {
 		Int addldisk = 3
 		Int cpu = 8
 		Int memory = 8
+		Int retries = 1
 		Int preempt = 2
 	}
 	Int assoc_size = ceil(size(assoc_files, "GB"))
@@ -1351,6 +1362,7 @@ task assoc_plots_r {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
