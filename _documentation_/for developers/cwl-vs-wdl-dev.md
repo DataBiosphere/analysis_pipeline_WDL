@@ -25,9 +25,6 @@ This one has the most significant differences by far. Some tasks have their outp
 
 * This pipeline features heavy usage of the twice localized workaround. (Interestingly, some steps in the CWL actually use the same or a similar workaround, so sometimes this isn't a difference but rather a case of simultaneous invention.)
 
-### High-level overview
-![Table showing high-level overview of tasks in the CWL versus the WDL. Information is summarized in text.](https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/assoc-agg-part2/_documentation_/for%20developers/assoc_agg_cwl_vs_wdl.png)
-
 ### wdl_validate_inputs
 **Summary: New task to validate inputs**  
 This is a simple to task to validate if three String? inputs are valid. The CWL sets them as type enum, which limits what values they can be. WDL does not have this type, so this task performs the validation to ensure inputs are valid. We do this before anything else runs as these inputs are not used until about halfway down the pipeline, and we don't want to waste user's time doing the first half if the second is doomed to fail.
@@ -73,9 +70,9 @@ This is problematic for WDL, as Terra-compatible WDL has strict limitations on g
 Completely replace CWL task with a WDL built-in function.  
 
 ### sbg_group_segments_1
-The CWL has this as a scattered task. Each instance of the scattered task takes in an Array[File] and outputs an Array[Array[File?]] plus an Array[String?].
+In the CWL, this task takes in an Array[File] and outputs grouped_assoc_files with type Array[Array[File?]] and chromosome with type Array[String?].
 
-The WDL has this a non-scattered task. The task takes in a Array[File] and outputs list of strings a list of the grouped files as Array[String] (along with two debug files). Previous versions of this code attempted to output a complex object containing one Array[File] and one Array[String], but this has issues on Terra. Therefore, the current version is not actually passing any files to the next task. This has the unfortunate side effect of the next task needing to duplicate some of the work done in this task.
+In the WDL, this task takes in a Array[File] and outputs list of strings a list of the grouped files as Array[String] (along with two debug files). In other words, the WDL version is not actually passing any files to the next task, just strings pointing to existing files. Previous versions of this code attempted to output a complex object containing one Array[File] and one Array[String], but this has issues on Terra. This has the unfortunate side effect of the next task, assoc_combine_r, needing to duplicate some of the work done in this task.
 
 ### assoc_combine_r
 In this task we have a bunch of RData input files in the workdir. If we did not need to run on Terra, we could write the output filename to a text file, then read that as a WDL task-level output and then glob upon that as another WDL task output, but Google-Cromwell doesn't allow for such workarounds. Thankfully, `assoc_combined = glob("*.RData")[0]` *appears* to always grab the correct RData file in its output, although I fear this may not be robust.
