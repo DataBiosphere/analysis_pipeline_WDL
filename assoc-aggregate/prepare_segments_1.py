@@ -27,15 +27,7 @@ logging.basicConfig(level=logging.DEBUG)
 def find_chromosome(file):
 	chr_array = []
 	chrom_num = split_on_chromosome(file)
-	if len(chrom_num) == 1:
-		acceptable_chrs = [str(integer) for integer in list(range(1,22))]
-		acceptable_chrs.extend(["X","Y","M"])
-		if chrom_num in acceptable_chrs:
-			return chrom_num
-		else:
-			logging.error("%s appears to be an invalid chromosome number." % chrom_num)
-			exit(1)
-	elif (unicode(str(chrom_num[1])).isnumeric()):
+	if (unicode(str(chrom_num[1])).isnumeric()):
 		# two digit number
 		chr_array.append(chrom_num[0])
 		chr_array.append(chrom_num[1])
@@ -52,15 +44,8 @@ def pair_chromosome_gds(file_array):
 	gdss = dict() # forced to use constructor due to WDL syntax issues
 	for i in range(0, len(file_array)): 
 		# Key is chr number, value is associated GDS file
-		this_chr = find_chromosome(file_array[i])
-		if this_chr == "X":
-			gdss['X'] = os.path.basename(file_array[i])
-		elif this_chr == "Y":
-			gdss['Y'] = os.path.basename(file_array[i])
-		elif this_chr == "M":
-			gdss['M'] = os.path.basename(file_array[i])
-		else:
-			gdss[int(this_chr)] = os.path.basename(file_array[i])
+		gdss[find_chromosome(file_array[i])] = os.path.basename(file_array[i])
+	logging.debug("pair_chromosome_gds returning %s" % gdss)
 	return gdss
 
 def pair_chromosome_gds_special(file_array, agg_file):
@@ -73,7 +58,7 @@ def wdl_get_segments():
 	segfile = open(IIsegments_fileII, 'rb')
 	segments = str((segfile.read(64000))).split('\n') # CWL x.contents only gets 64000 bytes
 	segfile.close()
-	segments = segments[1:] # remove first line
+	segments = segments[1:] # segments = segments.slice(1) in CWL; removes first line
 	return segments
 
 ######################
@@ -84,12 +69,9 @@ input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 output_gdss = []
 gds_segments = wdl_get_segments()
 for i in range(0, len(gds_segments)): # for(var i=0;i<segments.length;i++){
-	try:
-		chr = int(gds_segments[i].split('\t')[0])
-	except ValueError: # chr X, Y, M
 		chr = gds_segments[i].split('\t')[0]
-	if(chr in input_gdss):
-		output_gdss.append(input_gdss[chr])
+		if(chr in input_gdss):
+			output_gdss.append(input_gdss[chr])
 
 logging.debug("GDS output prepared in %s minutes, resulting GDSes are as follows:" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 logging.debug(["%s " % thing for thing in output_gdss])
@@ -102,15 +84,11 @@ input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 output_segments = []
 actual_segments = wdl_get_segments()
 for i in range(0, len(actual_segments)): # for(var i=0;i<segments.length;i++){
-	try:
-		chr = int(actual_segments[i].split('\t')[0])
-	except ValueError: # chr X, Y, M
-		chr = actual_segments[i].split('\t')[0]
-	logging.debug(chr)
+	chr = actual_segments[i].split('\t')[0]
 	if(chr in input_gdss):
 		seg_num = i+1
 		logging.debug("seg_num %s" % seg_num)
-		output_segments.append(seg_num)
+		output_segments.append(int(seg_num))
 		output_seg_as_file = open("%s.integer" % seg_num, "w")
 
 # I don't know for sure if this case is actually problematic, but I suspect it will be.
