@@ -20,6 +20,9 @@ from zipfile import ZipFile
 import os
 import shutil
 import datetime
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 def find_chromosome(file):
 	chr_array = []
@@ -30,7 +33,7 @@ def find_chromosome(file):
 		if chrom_num in acceptable_chrs:
 			return chrom_num
 		else:
-			print("%s appears to be an invalid chromosome number." % chrom_num)
+			logging.error("%s appears to be an invalid chromosome number." % chrom_num)
 			exit(1)
 	elif (unicode(str(chrom_num[1])).isnumeric()):
 		# two digit number
@@ -87,10 +90,9 @@ for i in range(0, len(gds_segments)): # for(var i=0;i<segments.length;i++){
 		chr = gds_segments[i].split('\t')[0]
 	if(chr in input_gdss):
 		output_gdss.append(input_gdss[chr])
-gds_output_hack = open("gds_output_debug.txt", "w")
-gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
-gds_output_hack.close()
-print("Info: GDS output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+
+logging.debug("GDS output prepared in %s minutes, resulting GDSes are as follows:" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+logging.debug(["%s " % thing for thing in output_gdss])
 
 ######################
 # prepare seg output #
@@ -104,8 +106,10 @@ for i in range(0, len(actual_segments)): # for(var i=0;i<segments.length;i++){
 		chr = int(actual_segments[i].split('\t')[0])
 	except ValueError: # chr X, Y, M
 		chr = actual_segments[i].split('\t')[0]
+	logging.debug(chr)
 	if(chr in input_gdss):
 		seg_num = i+1
+		logging.debug("seg_num %s" % seg_num)
 		output_segments.append(seg_num)
 		output_seg_as_file = open("%s.integer" % seg_num, "w")
 
@@ -120,12 +124,10 @@ try:
 except TypeError:
 	# due to a quirk of the formatting strings above, TypeError gets thrown if chr X/Y/M are present
 	# this allows us to warn the user that our check for nonconsecutives won't work in those cases
-	print("WARNING: Check for nonconsecutive integer chromosomes is being skipped.")
+	logging.warning("Check for nonconsecutive integer chromosomes is being skipped.")
 
-segs_output_hack = open("segs_output_debug.txt", "w")
-segs_output_hack.writelines(["%s " % thing for thing in output_segments])
-segs_output_hack.close()
-print("Info: Segment output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+logging.debug("Segment output prepared in %s minutes, resulting segs are as follows:" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+logging.debug(["%s " % thing for thing in output_segments])
 
 ######################
 # prepare agg output #
@@ -151,7 +153,7 @@ for i in range(0, len(agg_segments)): # for(var i=0;i<segments.length;i++){
 		output_aggregate_files.append(input_aggregate_files[chr])
 	elif (chr in input_gdss):
 		output_aggregate_files.append(None)
-print("Info: Aggregate output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+logging.debug("Aggregate output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
 
 #########################
 # prepare varinc output #
@@ -183,10 +185,9 @@ else:
 		if(chr in input_gdss):
 			null_outputs.append(None)
 	output_variant_files = null_outputs
-var_output_hack = open("variant_output_debug.txt", "w")
-var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
-var_output_hack.close()
-print("Info: Variant include output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+
+logging.debug("Variant include output prepared in %s minutes, output is as follows:" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+logging.debug(["%s " % thing for thing in output_variant_files])
 
 # We can only consistently tell output files apart by their extension. If var include files 
 # and agg files are both outputs, this is problematic, as they both share the RData ext.
@@ -196,7 +197,7 @@ if IIvariant_include_filesII != [""]:
 	os.mkdir("temp")
 
 # make a bunch of zip files
-print("Preparing zip file outputs...")
+logging.info("Preparing zip file outputs (this might take a while)...")
 for i in range(0, max(output_segments)):
 	beginning = datetime.datetime.now()
 	plusone = i+1
@@ -205,7 +206,7 @@ for i in range(0, max(output_segments)):
 	this_zip.write("%s.integer" % output_segments[i])
 	this_zip.write("%s" % output_aggregate_files[i])
 	if IIvariant_include_filesII != [""]:
-		print("We detected %s as an output variant file." % output_variant_files[i])
+		logging.debug("We detected %s as an output variant file." % output_variant_files[i])
 		try:
 			# Both the CWL and the WDL basically have duplicated output wherein each
 			# segment for a given chromosome get the same var include output. If you
@@ -227,9 +228,9 @@ for i in range(0, max(output_segments)):
 			# Variant include for this chr has already been taken up and zipped.
 			# The earlier copy should stop this but permissions can get iffy on
 			# Terra, so we should at least catch the error here for debugging.
-			print("Variant include file appears unavailable. Exiting disgracefully...")
+			logging.error("Variant include file appears unavailable.")
 			exit(1)
 		
 		this_zip.write("varinclude/%s" % output_variant_files[i])
 	this_zip.close()
-	print("Info: Wrote dotprod%s.zip in %s minutes" % (plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]))
+	logging.info("Wrote dotprod%s.zip in %s minutes" % (plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]))
