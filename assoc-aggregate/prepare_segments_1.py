@@ -1,3 +1,5 @@
+# Author: Ash O'Farrell (aofarrel@ucsc.edu)
+#
 # Notes:
 # 1. This needs to be run in Python2
 # 2. This expects the input files to be in the workdir
@@ -12,7 +14,7 @@ IIinput_gds_filesII = ["_test-data-and-truths_/assoc/1KG_phase3_subset_chr1.gds"
 IIvariant_include_filesII = [""]
 
 #['~{sep="','" aggregate_files}']
-IIaggregate_filesII = ["_test-data-and-truths_/assoc/aggregate_list_chr1.RData", "_test-data-and-truths_/assoc/aggregate_list_chr2.RData", "_test-data-and-truths_/assoc/aggregate_list_chrX_bogus.RData" ]
+IIaggregate_filesII = ["_test-data-and-truths_/assoc/aggregate_list_chr1.RData", "_test-data-and-truths_/assoc/aggregate_list_chr2.RData", "_test-data-and-truths_/assoc/aggregate_list_chrX_bogus.RData"]
 
 from zipfile import ZipFile
 import os
@@ -49,11 +51,11 @@ def pair_chromosome_gds(file_array):
 		# Key is chr number, value is associated GDS file
 		this_chr = find_chromosome(file_array[i])
 		if this_chr == "X":
-			gdss[23] = os.path.basename(file_array[i])
+			gdss['X'] = os.path.basename(file_array[i])
 		elif this_chr == "Y":
-			gdss[24] = os.path.basename(file_array[i])
+			gdss['Y'] = os.path.basename(file_array[i])
 		elif this_chr == "M":
-			gdss[25] = os.path.basename(file_array[i])
+			gdss['M'] = os.path.basename(file_array[i])
 		else:
 			gdss[int(this_chr)] = os.path.basename(file_array[i])
 	return gdss
@@ -108,12 +110,17 @@ for i in range(0, len(actual_segments)): # for(var i=0;i<segments.length;i++){
 		output_seg_as_file = open("%s.integer" % seg_num, "w")
 
 # I don't know for sure if this case is actually problematic, but I suspect it will be.
-if max(output_segments) != len(output_segments):
-	print("ERROR: output_segments needs to be a list of consecutive integers.")
-	print("Debug: Max of list: %s. Len of list: %s." % 
-		[max(output_segments), len(output_segments)])
-	print("Debug: List is as follows:\n\t%s" % output_segments)
-	exit(1)
+try:
+	if max(output_segments) != len(output_segments):
+		print("Debug: Max of list: %s. Len of list: %s." % 
+			[max(output_segments), len(output_segments)])
+		print("Debug: List is as follows:\n\t%s" % output_segments)
+		print("ERROR: output_segments needs to be a list of consecutive integers.")
+		exit(1)
+except TypeError:
+	# due to a quirk of the formatting strings above, TypeError gets thrown if chr X/Y/M are present
+	# this allows us to warn the user that our check for nonconsecutives won't work in those cases
+	print("WARNING: Check for nonconsecutive integer chromosomes is being skipped.")
 
 segs_output_hack = open("segs_output_debug.txt", "w")
 segs_output_hack.writelines(["%s " % thing for thing in output_segments])
