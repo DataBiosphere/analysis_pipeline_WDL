@@ -83,6 +83,8 @@ In this task we have a bunch of RData input files in the workdir. If we did not 
 ## ld-pruning.wdl
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().
 * check_merged_gds uses the chromosome file workaround.
+* The CWL and the WDL can optionally take in a user-provided variant_include_file in the first step. If included, it is used as a vector of variants to consider for LD pruning. LD pruning then outputs an RData file, which in the CWL version of this pipeline is *also* called variant_include_file. So, after the LD pruning task, the CWL version of this pipeline uses a variable called variant_include_file in the subset task, but it takes in the output of the previous task's RData file, **not** the file you input for the first task. The WDL, not being able to dot-product scatter without zip(), happens to avoid this potentially confusing input naming.
+
 
 ## null-model.wdl
 The CWL technically has duplicated outputs. The WDL instead returns each file once. On SB, cwl.output.json sets the outputs as the following, where ! indicates a duplicated output, inverse norm transformation is applied, and the output_prefix is set to `test`:
