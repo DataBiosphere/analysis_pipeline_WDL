@@ -2,19 +2,19 @@
 #
 # Notes:
 # 1. This needs to be run in Python2
-# 2. This expects the input files to be in the workdir
+# 2. This expects the input files to be in the workdir, or else it'll fail when making the zips
 
 #~{segments_file}
-IIsegments_fileII = "_test-data-and-truths_/assoc/segments.txt"
+IIsegments_fileII = "segments.txt"
 
 # ['~{sep="','" input_gds_files}']
-IIinput_gds_filesII = ["_test-data-and-truths_/assoc/1KG_phase3_subset_chr1.gds", "_test-data-and-truths_/gds/a_vcf2gds/1KG_phase3_subset_chr2_butwithadifferentname.gds", "_test-data-and-truths_/gds/a_vcf2gds/1KG_phase3_subset_chrX.gds"]
+IIinput_gds_filesII = ["1KG_phase3_subset_chr1.gds", "1KG_phase3_subset_chr2_butwithadifferentname.gds", "1KG_phase3_subset_chrX.gds"]
 
 #['~{sep="','" variant_include_files}']
 IIvariant_include_filesII = [""]
 
 #['~{sep="','" aggregate_files}']
-IIaggregate_filesII = ["_test-data-and-truths_/assoc/aggregate_list_chr1.RData", "_test-data-and-truths_/assoc/aggregate_list_chr2.RData", "_test-data-and-truths_/assoc/aggregate_list_chrX_bogus.RData"]
+IIaggregate_filesII = ["aggregate_list_chr1.RData", "aggregate_list_chr2.RData", "aggregate_list_chrX.RData"]
 
 from zipfile import ZipFile
 import os
@@ -87,7 +87,6 @@ for i in range(0, len(actual_segments)): # for(var i=0;i<segments.length;i++){
 	chr = actual_segments[i].split('\t')[0]
 	if(chr in input_gdss):
 		seg_num = i+1
-		logging.debug("seg_num %s" % seg_num)
 		output_segments.append(int(seg_num))
 		output_seg_as_file = open("%s.integer" % seg_num, "w")
 
@@ -179,6 +178,8 @@ logging.info("Preparing zip file outputs (this might take a while)...")
 for i in range(0, max(output_segments)):
 	beginning = datetime.datetime.now()
 	plusone = i+1
+	logging.debug("Writing dotprod%s.zip" % plusone)
+	logging.debug(output_aggregate_files)
 	this_zip = ZipFile("dotprod%s.zip" % plusone, "w", allowZip64=True)
 	this_zip.write("%s" % output_gdss[i])
 	this_zip.write("%s.integer" % output_segments[i])
@@ -212,3 +213,6 @@ for i in range(0, max(output_segments)):
 		this_zip.write("varinclude/%s" % output_variant_files[i])
 	this_zip.close()
 	logging.info("Wrote dotprod%s.zip in %s minutes" % (plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]))
+logging.info("Finished. WDL executor will now attempt to delocalize the outputs. This step might take a long time.")
+logging.info("If delocalization is very slow, try running the task again with more disk space (which increases IO speed on Google backends),")
+logging.info("or you can try decreasing the number of segments.")

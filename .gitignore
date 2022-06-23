@@ -14,3 +14,10 @@ assoc-aggregate/cromwell-68.1.jar
 cwl.output.json
 job.json
 _test-data-and-truths_/assoc/big_silly_file_chr1.gds
+assoc-aggregate/aggregate_list_chrX.RData
+assoc-aggregate/aggregate_list_chr2.RData
+assoc-aggregate/aggregate_list_chr1.RData
+assoc-aggregate/1KG_phase3_subset_chrX.gds
+assoc-aggregate/1KG_phase3_subset_chr2.gds
+assoc-aggregate/1KG_phase3_subset_chr1.gds
+assoc-aggregate/segments.txt
