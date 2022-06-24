@@ -11,7 +11,7 @@ IIsegments_fileII = "segments.txt"
 IIinput_gds_filesII = ["1KG_phase3_subset_chr1.gds", "1KG_phase3_subset_chr2_butwithadifferentname.gds", "1KG_phase3_subset_chrX.gds"]
 
 #['~{sep="','" variant_include_files}']
-IIvariant_include_filesII = ["variant_include_chr1.RData", "variant_include_chr2.RData", "variant_include_chrX.RData"]
+IIvariant_include_filesII = []
 
 #['~{sep="','" aggregate_files}']
 IIaggregate_filesII = ["aggregate_list_chr1.RData", "aggregate_list_chr2.RData", "aggregate_list_chrX.RData"]
@@ -161,17 +161,15 @@ for i in range(0, len(output_segments)):
 	# ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '71', '72', '73', '74']
 	beginning = datetime.datetime.now()
 	plusone = i+1
-	logging.debug("Writing dotprod%s.zip with contents:\n\t*%s\n\t*%s\n\t*%s\n\t*%s" % 
+	logging.debug("Writing dotprod%s.zip for %s, segment %s" % 
 		(plusone, 
 		output_gdss[i], 
-		output_segments[i], 
-		output_aggregate_files[i], 
-		output_variant_files[i] if type(output_variant_files[i]) is not None else "no var include"))
+		output_segments[i]))
 	this_zip = ZipFile("dotprod%s.zip" % plusone, "w", allowZip64=True)
 	this_zip.write("%s" % output_gdss[i])
 	this_zip.write("%s.integer" % output_segments[i])
 	this_zip.write("%s" % output_aggregate_files[i])
-	if IIvariant_include_filesII != [""]:
+	if output_variant_files[i] is not None:
 		try:
 			# Both the CWL and the WDL basically have duplicated output wherein each
 			# segment for a given chromosome get the same var include output. If you
