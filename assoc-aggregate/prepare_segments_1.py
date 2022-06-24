@@ -25,6 +25,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 def find_chromosome(file):
+	# Corresponds with find_chromosome() in CWL
 	chr_array = []
 	chrom_num = split_on_chromosome(file)
 	if (unicode(str(chrom_num[1])).isnumeric()):
@@ -41,6 +42,7 @@ def split_on_chromosome(file):
 	return chrom_num
 
 def pair_chromosome_gds(file_array):
+	# Corresponds with pair_chromosome_gds() in CWL
 	gdss = dict() # forced to use constructor due to WDL syntax issues
 	for i in range(0, len(file_array)): 
 		# Key is chr number, value is associated GDS file
@@ -49,9 +51,10 @@ def pair_chromosome_gds(file_array):
 	return gdss
 
 def pair_chromosome_gds_special(file_array, agg_file):
+	# Corresponds with pair_chromosome_gds_special() in CWL
 	gdss = dict()
 	for i in range(0, len(file_array)):
-		gdss[int(find_chromosome(file_array[i]))] = os.path.basename(agg_file)
+		gdss[find_chromosome(file_array[i])] = os.path.basename(agg_file)
 	return gdss
 
 def wdl_get_segments():
@@ -179,7 +182,6 @@ for i in range(0, max(output_segments)):
 	beginning = datetime.datetime.now()
 	plusone = i+1
 	logging.debug("Writing dotprod%s.zip" % plusone)
-	logging.debug(output_aggregate_files)
 	this_zip = ZipFile("dotprod%s.zip" % plusone, "w", allowZip64=True)
 	this_zip.write("%s" % output_gdss[i])
 	this_zip.write("%s.integer" % output_segments[i])
