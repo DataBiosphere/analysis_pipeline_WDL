@@ -1,5 +1,5 @@
 version 1.0
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/main/assoc-aggregate/assoc-aggregate.wdl" as assoc_agg_wf
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/v7.2.0/assoc-aggregate/assoc-aggregate.wdl" as assoc_agg_wf
 #import "../assoc-aggregate.wdl" as assoc_agg_wf # use this if you want to test a local version
 import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v1.1.0/checker_tasks/arraycheck_task.wdl" as verify_array
 

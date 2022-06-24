@@ -21,3 +21,7 @@ assoc-aggregate/aggregate_list_chr1.RData
 assoc-aggregate/1KG_phase3_subset_chrX.gds
 assoc-aggregate/1KG_phase3_subset_chr2.gds
 assoc-aggregate/1KG_phase3_subset_chr1.gds
+assoc-aggregate/1KG_phase3_subset_chr2_butwithadifferentname.gds
+assoc-aggregate/variant_include_chr1.RData
+assoc-aggregate/variant_include_chr2.RData
+assoc-aggregate/variant_include_chrX.RData
