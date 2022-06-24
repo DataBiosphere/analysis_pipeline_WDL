@@ -10,15 +10,11 @@ Original CWL description:
 Some variable descriptions have been pulled from the CWL.
 
 ## Inputs
-Note that this pipeline only directly takes in variant_include_file in the first step. If you pass in variant_include_file, that is used as a vector of variants to consider for LD pruning. LD pruning outputs an RData file. After the LD pruning task, a variable called variant_include_file is also used in the subset task, but it takes in the output of the previous task's RData file, **not** the file you input for the first task.
-
-Due to [how](https://github.com/zhengxwen/SeqArray/blob/828cbb5d06d85581119aaf9ab854e1d2497c65c5/R/UtilsMerge.R#L282) [SeqArray](https://github.com/zhengxwen/SeqArray/blob/828cbb5d06d85581119aaf9ab854e1d2497c65c5/R/UtilsMerge.R#L299) [works](https://github.com/zhengxwen/SeqArray/blob/828cbb5d06d85581119aaf9ab854e1d2497c65c5/R/UtilsMerge.R#L358), you **must** input more than one file into gds_files. Otherwise, the pipeline will (likely incorrectly) claim that you have repeating variants IDs and/or repeating sample IDs.
-
 ### Input Files
 * gds_files
 	* Required
 	* An array of GDS files, with names that contain "chr" + the number/letter of the chromosome, such as ["chr1.gds", "chr2.gds"]
-	* Must contain at least two files
+	* Must contain at least two files if you want to run the merge and check merged tasks
 * sample_include_file
 	* Optional
 	* RData file with vector of sample.id to use for LD pruning (unrelated samples are recommended)

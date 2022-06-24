@@ -374,6 +374,8 @@ workflow ldpruning {
 		File? variant_include_file
 	}
 
+	Int num_gds_files = length(gds_files)
+
 	scatter(gds_file in gds_files) {
 		call ld_pruning {
 			input:
@@ -394,21 +396,22 @@ workflow ldpruning {
 		}
 	}
 
-	call merge_gds {
-		input:
-			gdss = subset_gds.subset_output,
-			out_prefix = out_prefix
-	}
-
-	scatter(subset_gds in subset_gds.subset_output) {
-		call check_merged_gds {
+	if (num_gds_files > 1) {
+		call merge_gds {
 			input:
-				gds_file = subset_gds,
-				merged_gds_file = merge_gds.merged_gds_output
+				gdss = subset_gds.subset_output,
+				out_prefix = out_prefix
+		}
+		
+		scatter(subset_gds in subset_gds.subset_output) {
+			call check_merged_gds {
+				input:
+					gds_file = subset_gds,
+					merged_gds_file = merge_gds.merged_gds_output
 
+			}
 		}
 	}
-
 
 	meta {
 		author: "Ash O'Farrell"

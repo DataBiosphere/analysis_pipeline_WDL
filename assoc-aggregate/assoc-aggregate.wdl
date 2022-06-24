@@ -24,7 +24,7 @@ task wdl_validate_inputs {
 	command <<<
 		set -eux -o pipefail
 
-		if [[ ~{num_gds_files} = 1 ]]
+		if [[ "~{num_gds_files}" = "1" ]]
 		then
 			echo "Invalid input - you need to put it at least two GDS files (preferably consecutive ones, like chr1 and chr2)"
 			exit 1
@@ -34,7 +34,7 @@ task wdl_validate_inputs {
 		#acceptable aggreg types:  ("allele" "position")
 		acceptable_test_values=("burden" "skat" "smmat" "fastskat" "skato")
 
-		if [[ ! ~{genome_build} = "" ]]
+		if [[ ! "~{genome_build}" = "" ]]
 		then
 			if [[ ! "hg38" = "~{genome_build}" ]]
 			then
@@ -104,12 +104,11 @@ task sbg_gds_renamer {
 
 	input {
 		File in_variant
+		Boolean debug
 
 		# this is ignored by the script itself, but including this stops this task from firing
 		# before wdl_validate_inputs finishes
 		String? noop
-
-		Boolean debug = false
 
 		# runtime attributes, which you shouldn't need to adjust as this is a very light task
 		Int addldisk = 3
@@ -171,6 +170,7 @@ task sbg_gds_renamer {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: 1
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -244,6 +244,7 @@ task define_segments_r {
 		cpu: cpu
 		disks: "local-disk " + finalDiskSize + " HDD"
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
+		maxRetries: 1
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -397,6 +398,7 @@ task aggregate_list {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: 1
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -424,18 +426,31 @@ task sbg_prepare_segments_1 {
 		File segments_file
 		Array[File] aggregate_files
 		Array[File]? variant_include_files
+		Int? n_segments
+
+		Boolean debug
 
 		# runtime attr
 		Int addldisk = 100
 		Int cpu = 12
+		Int retries = 1
 		Int memory = 16
 		Int preempt = 0
 	}
 
-	# estimate disk size required
-	Int gds_size = 5 * ceil(size(input_gds_files, "GB"))
-	Int seg_size = 2 * ceil(size(segments_file, "GB"))
-	Int agg_size = 2 * ceil(size(aggregate_files, "GB"))
+	# Disk size estimation gets really tricky in this task, due to its zip workaround.
+	#
+	# size(input_gds_files, "GB") returns size of the entire array, ie all 23 chrs.
+	# If we wanted the average of all chrs, we could multiply by 0.0434ish, but that'd assume
+	# running on all 23 chrs, which we often don't do; people tend to test with only 2 chrs.
+	# The largest chromosome, chr1, should be no more than 10% of the total size of the whole
+	# genome, but to account for people running on only chr1 and chr2, we set the multiplier to 0.5
+	# This is a huge overestimate for the n_segments-is-defined case, since n_segments is applied
+	# on the entire genome, so if n_segments = 100 and you run on only chr 1 and 2, you're only going
+	# to have something like 18 segments. But disk size is not super expensive to scale up.
+	Int gds_size = select_first([n_segments, 50]) * ceil(size(input_gds_files, "GB") * 0.5)
+	Int seg_size = ceil(size(segments_file, "GB"))
+	Int agg_size = select_first([n_segments, 50]) * ceil(size(aggregate_files, "GB"))
 	Int dsk_size = gds_size + seg_size + agg_size + addldisk
 	
 	command <<<
@@ -683,8 +698,7 @@ task sbg_prepare_segments_1 {
 				
 				this_zip.write("varinclude/%s" % output_variant_files[i])
 			this_zip.close()
-			print("Info: Wrote dotprod%s.zip" % plusone)
-			print("Info: This took %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+			print("Info: Wrote dotprod%s.zip in %s minutes" % (plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]))
 		CODE
 	>>>
 
@@ -692,6 +706,7 @@ task sbg_prepare_segments_1 {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + dsk_size + " SSD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -728,10 +743,12 @@ task assoc_aggregate {
 		# runtime attr
 		Int addldisk = 50
 		Int cpu = 4
+		Int retries = 2
 		Int memory = 16
 		Int preempt = 1
 
-		Boolean debug = false
+		# WDL only
+		Boolean debug
 	}
 	
 	# estimate disk size required
@@ -743,6 +760,7 @@ task assoc_aggregate {
 	Int finalDiskSize = zipped_size + segment_size + null_size + pheno_size + varweight_size + addldisk
 
 	command <<<
+		set -eux -o pipefail
 
 		# Unzipping in the inputs directory leads to a host of issues as depending on the platform
 		# they will end up in different places. Copying them to our own directory avoids an awkward
@@ -952,7 +970,7 @@ task assoc_aggregate {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " SSD"
-		bootDiskSizeGb: 6
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -969,12 +987,13 @@ task assoc_aggregate {
 task sbg_group_segments_1 {
 	input {
 		Array[String] assoc_files
-		Boolean debug = false
+		Boolean debug
 
 		# runtime attr
 		Int addldisk = 3
 		Int cpu = 8
 		Int memory = 8
+		Int retries = 1
 		Int preempt = 2
 	}
 
@@ -1076,6 +1095,7 @@ task sbg_group_segments_1 {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + addldisk + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -1094,12 +1114,13 @@ task assoc_combine_r {
 		String? out_prefix = "" # not the default in CWL
 		File? conditional_variant_file
 
-		Boolean debug = true
+		Boolean debug
 		
 		# runtime attr
 		Int addldisk = 3
 		Int cpu = 8
 		Int memory = 8
+		Int retries = 1
 		Int preempt = 2
 	}
 	Int assoc_size = ceil(size(assoc_files, "GB"))
@@ -1209,6 +1230,7 @@ task assoc_combine_r {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -1231,12 +1253,13 @@ task assoc_plots_r {
 		Int? plot_mac_threshold
 		Float? truncate_pval_threshold
 
-		Boolean debug = false
+		Boolean debug
 
 		# runtime attr
 		Int addldisk = 3
 		Int cpu = 8
 		Int memory = 8
+		Int retries = 1
 		Int preempt = 2
 	}
 	Int assoc_size = ceil(size(assoc_files, "GB"))
@@ -1341,6 +1364,7 @@ task assoc_plots_r {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -1356,6 +1380,7 @@ workflow assoc_agg {
 	input {
 		String?      aggregate_type
 		Float?       alt_freq_max
+		Boolean      debug = false  # WDL only, turns on debug prints
 		Boolean?     disable_thin
 		String?      genome_build
 		String?      group_id
@@ -1396,6 +1421,7 @@ workflow assoc_agg {
 		call sbg_gds_renamer {
 			input:
 				in_variant = gds_file,
+				debug = debug,
 				noop = wdl_validate_inputs.valid_genome_build
 		}
 	}
@@ -1421,7 +1447,9 @@ workflow assoc_agg {
 			input_gds_files = sbg_gds_renamer.renamed_variants,
 			segments_file = define_segments_r.define_segments_output,
 			aggregate_files = aggregate_list.aggregate_list,
-			variant_include_files = variant_include_files
+			variant_include_files = variant_include_files,
+			n_segments = n_segments,
+			debug = debug
 	}
  
     # gds, aggregate, segments, and variant include are represented as a zip file here
@@ -1441,7 +1469,8 @@ workflow assoc_agg {
 				pass_only = pass_only,
 				variant_weight_file = variant_weight_file,
 				weight_user = weight_user,
-				genome_build = wdl_validate_inputs.valid_genome_build
+				genome_build = wdl_validate_inputs.valid_genome_build,
+				debug = debug
 	
 		}
 	}
@@ -1449,14 +1478,16 @@ workflow assoc_agg {
 	Array[File] flatten_array = flatten(select_all(assoc_aggregate.assoc_aggregate))
 	call sbg_group_segments_1 {
 			input:
-				assoc_files = flatten_array
+				assoc_files = flatten_array,
+				debug = debug
 	}
 
 	scatter(thing in sbg_group_segments_1.grouped_files_as_strings) {
 		call assoc_combine_r {
 			input:
 				assoc_files = thing,
-				assoc_type = "aggregate"
+				assoc_type = "aggregate",
+				debug = debug
 		}
 	}
 
@@ -1470,7 +1501,8 @@ workflow assoc_agg {
 			thin_npoints = thin_npoints,
 			thin_nbins = thin_nbins,
 			plot_mac_threshold = plot_mac_threshold,
-			truncate_pval_threshold = truncate_pval_threshold
+			truncate_pval_threshold = truncate_pval_threshold,
+			debug = debug
 	}
 
 	output {

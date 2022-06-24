@@ -1,3 +1,7 @@
+# Notes:
+# 1. This needs to be run in Python2
+# 2. This expects the input files to be in the workdir
+
 #~{segments_file}
 IIsegments_fileII = "_test-data-and-truths_/assoc/segments.txt"
 
@@ -221,5 +225,4 @@ for i in range(0, max(output_segments)):
 		
 		this_zip.write("varinclude/%s" % output_variant_files[i])
 	this_zip.close()
-	print("Info: Wrote dotprod%s.zip" % plusone)
-	print("Info: This took %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+	print("Info: Wrote dotprod%s.zip in %s minutes" % (plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]))

@@ -13,6 +13,8 @@ When running a burden test, the effect estimate is for each additional unit of b
 
 This workflow utilizes the *assocTestAggregate* function from the GENESIS<sup>[6](#GENESIS)</sup> software.
 
+The runtime attribute **retries** sets maxRetries, and therefore benefits from Terra's "retry with more memory" feature.
+
 ### Use case
 Aggregate tests are typically used to jointly test rare variants. This workflow is designed to perform multi-variant association testing on a user-defined groups of variants.
 
@@ -21,7 +23,7 @@ Aggregate tests are typically used to jointly test rare variants. This workflow 
 
 * If **Weight Beta** parameter is set, it needs to follow proper convention: two space-delimited floating point numbers.
 
-* **Number of segments** parameter, if provided, needs to be equal or higher than number of chromosomes.
+* **Number of segments** (n_segments) parameter, if provided, needs to be equal or higher than number of chromosomes. If it is lower than the number of chromosomes, it is effectively ignored.
 
 * Testing showed that default parameters for **CPU** and **memory GB** (8GB) are sufficient for testing studies (up to 50k samples), however different null models might increase the requirements.
 
@@ -33,7 +35,7 @@ Aggregate tests are typically used to jointly test rare variants. This workflow 
 
 * Do not use this pipeline on only one chromosome.
 
-* If your data consists of GDS files that are >10 GB, it is *recommended* to set a lower number of segments in order to decrease delocalization time in the prepare segments task. For reference, it took almost two hours for a 25-segment output of 4.3 GB GDS files to finish delocalizing in prepare segments. I am currently seeking additional guidance from Cromwell and Terra devs on handling this bottleneck better.
+* If your data consists of GDS files that are >10 GB, it is *recommended* to set a lower number of segments in order to decrease delocalization time in the prepare segments task.
 
 ## Sample Inputs
 * terra-allele, local-allele, and the first part of the checker workflow are based upon [assoc_aggregate_allele.config](https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_allele.config)
