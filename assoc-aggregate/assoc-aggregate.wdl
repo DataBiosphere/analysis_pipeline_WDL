@@ -104,12 +104,11 @@ task sbg_gds_renamer {
 
 	input {
 		File in_variant
+		Boolean debug
 
 		# this is ignored by the script itself, but including this stops this task from firing
 		# before wdl_validate_inputs finishes
 		String? noop
-
-		Boolean debug = false
 
 		# runtime attributes, which you shouldn't need to adjust as this is a very light task
 		Int addldisk = 3
@@ -429,6 +428,8 @@ task sbg_prepare_segments_1 {
 		Array[File]? variant_include_files
 		Int? n_segments
 
+		Boolean debug
+
 		# runtime attr
 		Int addldisk = 100
 		Int cpu = 12
@@ -734,7 +735,8 @@ task assoc_aggregate {
 		Int memory = 16
 		Int preempt = 1
 
-		Boolean debug = true
+		# WDL only
+		Boolean debug
 	}
 	
 	# estimate disk size required
@@ -973,7 +975,7 @@ task assoc_aggregate {
 task sbg_group_segments_1 {
 	input {
 		Array[String] assoc_files
-		Boolean debug = false
+		Boolean debug
 
 		# runtime attr
 		Int addldisk = 3
@@ -1100,7 +1102,7 @@ task assoc_combine_r {
 		String? out_prefix = "" # not the default in CWL
 		File? conditional_variant_file
 
-		Boolean debug = true
+		Boolean debug
 		
 		# runtime attr
 		Int addldisk = 3
@@ -1239,7 +1241,7 @@ task assoc_plots_r {
 		Int? plot_mac_threshold
 		Float? truncate_pval_threshold
 
-		Boolean debug = false
+		Boolean debug
 
 		# runtime attr
 		Int addldisk = 3
@@ -1366,6 +1368,7 @@ workflow assoc_agg {
 	input {
 		String?      aggregate_type
 		Float?       alt_freq_max
+		Boolean      debug = false  # WDL only, turns on debug prints
 		Boolean?     disable_thin
 		String?      genome_build
 		String?      group_id
@@ -1406,6 +1409,7 @@ workflow assoc_agg {
 		call sbg_gds_renamer {
 			input:
 				in_variant = gds_file,
+				debug = debug,
 				noop = wdl_validate_inputs.valid_genome_build
 		}
 	}
@@ -1432,7 +1436,8 @@ workflow assoc_agg {
 			segments_file = define_segments_r.define_segments_output,
 			aggregate_files = aggregate_list.aggregate_list,
 			variant_include_files = variant_include_files,
-			n_segments = n_segments
+			n_segments = n_segments,
+			debug = debug
 	}
  
     # gds, aggregate, segments, and variant include are represented as a zip file here
@@ -1452,7 +1457,8 @@ workflow assoc_agg {
 				pass_only = pass_only,
 				variant_weight_file = variant_weight_file,
 				weight_user = weight_user,
-				genome_build = wdl_validate_inputs.valid_genome_build
+				genome_build = wdl_validate_inputs.valid_genome_build,
+				debug = debug
 	
 		}
 	}
@@ -1460,14 +1466,16 @@ workflow assoc_agg {
 	Array[File] flatten_array = flatten(select_all(assoc_aggregate.assoc_aggregate))
 	call sbg_group_segments_1 {
 			input:
-				assoc_files = flatten_array
+				assoc_files = flatten_array,
+				debug = debug
 	}
 
 	scatter(thing in sbg_group_segments_1.grouped_files_as_strings) {
 		call assoc_combine_r {
 			input:
 				assoc_files = thing,
-				assoc_type = "aggregate"
+				assoc_type = "aggregate",
+				debug = debug
 		}
 	}
 
@@ -1481,7 +1489,8 @@ workflow assoc_agg {
 			thin_npoints = thin_npoints,
 			thin_nbins = thin_nbins,
 			plot_mac_threshold = plot_mac_threshold,
-			truncate_pval_threshold = truncate_pval_threshold
+			truncate_pval_threshold = truncate_pval_threshold,
+			debug = debug
 	}
 
 	output {
