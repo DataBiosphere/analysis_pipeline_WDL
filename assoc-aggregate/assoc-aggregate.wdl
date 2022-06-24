@@ -604,10 +604,7 @@ task sbg_prepare_segments_1 {
 			input_variant_files = pair_chromosome_gds(IIvariant_include_filesII)
 			output_variant_files = []
 			for i in range(0, len(var_segments)):
-				try:
-					chr = int(var_segments[i].split('\t')[0])
-				except ValueError: # chr X, Y, M
-					chr = var_segments[i].split('\t')[0]
+				chr = var_segments[i].split('\t')[0]
 				if(chr in input_variant_files):
 					output_variant_files.append(input_variant_files[chr])
 				elif(chr in input_gdss):
@@ -617,14 +614,11 @@ task sbg_prepare_segments_1 {
 		else:
 			null_outputs = []
 			for i in range(0, len(var_segments)):
-				try:
-					chr = int(var_segments[i].split('\t')[0])
-				except ValueError: # chr X, Y, M
-					chr = var_segments[i].split('\t')[0]
+				chr = var_segments[i].split('\t')[0]
 				if(chr in input_gdss):
 					null_outputs.append(None)
 			output_variant_files = null_outputs
-		logging.debug("Variant include output prepared (len: %s)" % len(output_aggregate_files))
+		logging.debug("Variant include output prepared (len: %s)" % len(output_variant_files))
 		logging.debug(["%s " % thing for thing in output_variant_files])
 
 		# We can only consistently tell output files apart by their extension. If var include files 
@@ -641,13 +635,15 @@ task sbg_prepare_segments_1 {
 			# ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '71', '72', '73', '74']
 			beginning = datetime.datetime.now()
 			plusone = i+1
-			logging.debug("Writing dotprod%s.zip" % plusone)
+			logging.debug("Writing dotprod%s.zip for %s, segment %s" % 
+				(plusone, 
+				output_gdss[i], 
+				output_segments[i]))
 			this_zip = ZipFile("dotprod%s.zip" % plusone, "w", allowZip64=True)
 			this_zip.write("%s" % output_gdss[i])
 			this_zip.write("%s.integer" % output_segments[i])
 			this_zip.write("%s" % output_aggregate_files[i])
-			if IIvariant_include_filesII != [""]:
-				logging.debug("We detected %s as an output variant file." % output_variant_files[i])
+			if output_variant_files[i] is not None:
 				try:
 					# Both the CWL and the WDL basically have duplicated output wherein each
 					# segment for a given chromosome get the same var include output. If you
