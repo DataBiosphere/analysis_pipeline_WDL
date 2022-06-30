@@ -1355,7 +1355,7 @@ workflow assoc_agg {
 	input {
 		String?      aggregate_type
 		Float?       alt_freq_max
-		Boolean      debug = true  # WDL only, turns on debug prints
+		Boolean      debug = false  # WDL only, turns on debug prints
 		Boolean?     disable_thin
 		String?      genome_build
 		String?      group_id
