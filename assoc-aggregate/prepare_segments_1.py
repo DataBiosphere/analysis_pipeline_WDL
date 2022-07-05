@@ -70,9 +70,9 @@ input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
 output_gdss = []
 gds_segments = wdl_get_segments()
 for i in range(0, len(gds_segments)): # for(var i=0;i<segments.length;i++){
-		chr = gds_segments[i].split('\t')[0]
-		if(chr in input_gdss):
-			output_gdss.append(input_gdss[chr])
+	chr = gds_segments[i].split('\t')[0]
+	if(chr in input_gdss):
+		output_gdss.append(input_gdss[chr])
 logging.debug("GDS output prepared (len: %s)" % len(output_gdss))
 logging.debug(["%s " % thing for thing in output_gdss])
 
