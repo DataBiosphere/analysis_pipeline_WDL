@@ -4,9 +4,14 @@ version 1.0
 # Please see https://doi.org/10.1093/bioinformatics/btz567
 
 task wdl_validate_inputs {
-	# WDL Only -- Validate inputs that are type enum in the CWL
+	# WDL Only -- Validate inputs
 	#
-	# It is acceptable for the user to put nothing for these values. The R files
+	# This task:
+	# * mimics CWL type enum for three input variables by ensuring they're valid
+	# * makes sure more than one GDS file was input
+	# * sets up proper disk scaling for the prepare segments task
+	#
+	# It is acceptable for the user to put nothing for the enums. The R scripts
 	# will fall back on the falling defaults if nothing is defined:
 	# * genome_build: "hg38"
 	# * aggregate_type: "allele"
@@ -24,7 +29,7 @@ task wdl_validate_inputs {
 	command <<<
 		set -eux -o pipefail
 
-		if [[ "~{num_gds_files}" = "1" ]]
+		if [[ ~{num_gds_files} = 1 ]]
 		then
 			echo "Invalid input - you need to put it at least two GDS files (preferably consecutive ones, like chr1 and chr2)"
 			exit 1
@@ -238,6 +243,11 @@ task define_segments_r {
 			fi
 		fi
 
+		# get the actual number of segments so we can scale sbg_prepare_segments_1 
+		lines=$(wc -l < "segments.txt")
+		segs="$((lines-2))"
+		echo $segs > "Iwishtopassthisbashvariableasanoutput.txt"
+
 	>>>
 	
 	runtime {
@@ -249,6 +259,7 @@ task define_segments_r {
 		preemptibles: "${preempt}"
 	}
 	output {
+		Int actual_number_of_segments = read_int("Iwishtopassthisbashvariableasanoutput.txt")
 		File config_file = "define_segments.config"
 		File define_segments_output = "segments.txt"
 	}
@@ -426,32 +437,32 @@ task sbg_prepare_segments_1 {
 		File segments_file
 		Array[File] aggregate_files
 		Array[File]? variant_include_files
-		Int? n_segments
 
+		Int actual_number_of_segments
+		Int num_gds_files
 		Boolean debug
 
 		# runtime attr
 		Int addldisk = 100
 		Int cpu = 12
-		Int retries = 1
 		Int memory = 16
+		Int retries = 1
 		Int preempt = 0
 	}
 
 	# Disk size estimation gets really tricky in this task, due to its zip workaround.
 	#
-	# size(input_gds_files, "GB") returns size of the entire array, ie all 23 chrs.
-	# If we wanted the average of all chrs, we could multiply by 0.0434ish, but that'd assume
-	# running on all 23 chrs, which we often don't do; people tend to test with only 2 chrs.
-	# The largest chromosome, chr1, should be no more than 10% of the total size of the whole
-	# genome, but to account for people running on only chr1 and chr2, we set the multiplier to 0.5
-	# This is a huge overestimate for the n_segments-is-defined case, since n_segments is applied
-	# on the entire genome, so if n_segments = 100 and you run on only chr 1 and 2, you're only going
-	# to have something like 18 segments. But disk size is not super expensive to scale up.
-	Int gds_size = select_first([n_segments, 50]) * ceil(size(input_gds_files, "GB") * 0.5)
+	# Considerations:
+	#  * size(input_gds_files, "GB") returns size of the entire array, ie all 23 chrs.
+	#  * If we wanted the average of all chrs, we could multiply by 0.0434ish, but that'd assume
+	#    running on all 23 chrs, which we often don't do; people tend to test with only 2 chrs.
+	#  * The largest chromosome, chr1, should be >10% of the total size of the whole genome.
+	#  * Bigger chrs have bigger gds files AND more segments
+	Int gds_size = ceil(size(input_gds_files, "GB")) / num_gds_files
 	Int seg_size = ceil(size(segments_file, "GB"))
-	Int agg_size = select_first([n_segments, 50]) * ceil(size(aggregate_files, "GB"))
-	Int dsk_size = gds_size + seg_size + agg_size + addldisk
+	Int agg_size = ceil(size(aggregate_files, "GB"))
+	Int each_segment_size = gds_size + seg_size + agg_size
+	Int disk_size = addldisk + actual_number_of_segments * each_segment_size
 	
 	command <<<
 		set -eux -o pipefail
@@ -630,6 +641,7 @@ task sbg_prepare_segments_1 {
 
 		# make a bunch of zip files
 		logging.info("Preparing zip file outputs (this might take a while)...")
+		os.system('df -H')
 		for i in range(0, len(output_segments)):
 			# If the chromosomes are not consecutive, i != segment number, such as:
 			# ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '71', '72', '73', '74']
@@ -671,6 +683,7 @@ task sbg_prepare_segments_1 {
 				this_zip.write("varinclude/%s" % output_variant_files[i])
 			this_zip.close()
 			logging.info("Wrote dotprod%s.zip in %s minutes" % (plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]))
+			os.system('df -H')
 		logging.info("Finished. WDL executor will now attempt to delocalize the outputs. This step might take a long time.")
 		logging.info("If delocalization is very slow, try running the task again with more disk space (which increases IO speed on Google backends),")
 		logging.info("or you can try decreasing the number of segments.")
@@ -680,7 +693,7 @@ task sbg_prepare_segments_1 {
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:c564d54f5a3b9daed7a7677f860155f3b8c310b0771212c2eef1d6338f5c2600" # uwgac/topmed-master:2.12.0
-		disks: "local-disk " + dsk_size + " SSD"
+		disks: "local-disk " + disk_size + " SSD"
 		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -1423,7 +1436,8 @@ workflow assoc_agg {
 			segments_file = define_segments_r.define_segments_output,
 			aggregate_files = aggregate_list.aggregate_list,
 			variant_include_files = variant_include_files,
-			n_segments = n_segments,
+			actual_number_of_segments = define_segments_r.actual_number_of_segments,
+			num_gds_files = num_gds_files,
 			debug = debug
 	}
  

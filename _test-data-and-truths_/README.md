@@ -21,6 +21,8 @@ Test files pulled from [UWGAC Github](https://github.com/UW-GAC/analysis_pipelin
 * segments.txt
 * aggregate_list_chr1, aggregate_list_chr2, and aggregate_list_chrX
 
+My copy of this repo includes a large bogus chr1 file that was created by concatinating chr1 to itself until it was over 4 GB in size. Not wanting to make this repo huge, it is not included in remote, but it may appear in checksums.md5
+
 ## gds/
 GDS files included in the gds/ folder are NOT mirrors of the files included in the original UWGAC repo. They were instead created using an up-to-date version of the pipeline.
 
@@ -46,3 +48,7 @@ In addition to the vcf.gz files stored in `vcfs/`, the following additional test
 * 1KG_phase3_subset_chrX.vcf
 * unfiltered1KG_phase3_subset_chrX.vcf.gz -- the original chrX in the UWGAC repo
 * unfiltered1KG_phase3_subset_chrX.vcf -- the original chrX in the UWGAC repo, unzipped
+
+
+# Miscellanous tips
+* github.com is pretty good for determining when a file was added, but you could also use `git log --diff-filter=A -- WHATEVERFILENAMEHERE | head -n 3 | tail -n 1` from the command line
