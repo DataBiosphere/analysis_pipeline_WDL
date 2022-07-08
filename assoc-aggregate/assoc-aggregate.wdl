@@ -493,10 +493,10 @@ task sbg_prepare_segments_1 {
 		fi
 
 		python << CODE
-		IIsegments_fileII = "~{segments_file}"
-		IIinput_gds_filesII = ['~{sep="','" input_gds_files}']
-		IIvariant_include_filesII = ['~{sep="','" variant_include_files}']
-		IIaggregate_filesII = ['~{sep="','" aggregate_files}']
+		segments_file_py = "~{segments_file}"
+		input_gds_files_py = ['~{sep="','" input_gds_files}']
+		variant_include_files_py = ['~{sep="','" variant_include_files}']
+		aggregate_files_py = ['~{sep="','" aggregate_files}']
 
 		from zipfile import ZipFile
 		import os
@@ -544,14 +544,14 @@ task sbg_prepare_segments_1 {
 			return gdss
 
 		def wdl_get_segments():
-			segfile = open(IIsegments_fileII, 'rb')
+			segfile = open(segments_file_py, 'rb')
 			segments = str((segfile.read(64000))).split('\n') # CWL x.contents only gets 64000 bytes
 			segfile.close()
 			segments = segments[1:] # segments = segments.slice(1) in CWL; removes first line
 			return segments
 
 		logging.debug("\n######################\n# prepare gds output #\n######################")
-		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
+		input_gdss = pair_chromosome_gds(input_gds_files_py)
 		output_gdss = []
 		gds_segments = wdl_get_segments()
 		for i in range(0, len(gds_segments)): # for(var i=0;i<segments.length;i++){
@@ -562,7 +562,7 @@ task sbg_prepare_segments_1 {
 		logging.debug(["%s " % thing for thing in output_gdss])
 
 		logging.debug("\n######################\n# prepare seg output #\n######################")
-		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
+		input_gdss = pair_chromosome_gds(input_gds_files_py)
 		output_segments = []
 		actual_segments = wdl_get_segments()
 		for i in range(0, len(actual_segments)): # for(var i=0;i<segments.length;i++){
@@ -592,12 +592,12 @@ task sbg_prepare_segments_1 {
 		# input. We don't need to account for that because the way WDL works means it they are a
 		# required output of a previous task and a required input of this task. That said, if this
 		# code is reused for other WDLs, it may need some adjustments right around here.
-		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
+		input_gdss = pair_chromosome_gds(input_gds_files_py)
 		agg_segments = wdl_get_segments()
-		if 'chr' in os.path.basename(IIaggregate_filesII[0]):
-			input_aggregate_files = pair_chromosome_gds(IIaggregate_filesII)
+		if 'chr' in os.path.basename(aggregate_files_py[0]):
+			input_aggregate_files = pair_chromosome_gds(aggregate_files_py)
 		else:
-			input_aggregate_files = pair_chromosome_gds_special(IIinput_gds_filesII, IIaggregate_filesII[0])
+			input_aggregate_files = pair_chromosome_gds_special(input_gds_files_py, aggregate_files_py[0])
 		output_aggregate_files = []
 		for i in range(0, len(agg_segments)): # for(var i=0;i<segments.length;i++){
 			chr = agg_segments[i].split('\t')[0] # chr = segments[i].split('\t')[0]
@@ -609,10 +609,10 @@ task sbg_prepare_segments_1 {
 		logging.debug(["%s " % thing for thing in output_aggregate_files])
 
 		logging.debug("\n#########################\n# prepare varinc output #\n##########################")
-		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
+		input_gdss = pair_chromosome_gds(input_gds_files_py)
 		var_segments = wdl_get_segments()
-		if IIvariant_include_filesII != [""]:
-			input_variant_files = pair_chromosome_gds(IIvariant_include_filesII)
+		if variant_include_files_py != [""]:
+			input_variant_files = pair_chromosome_gds(variant_include_files_py)
 			output_variant_files = []
 			for i in range(0, len(var_segments)):
 				chr = var_segments[i].split('\t')[0]
@@ -635,7 +635,7 @@ task sbg_prepare_segments_1 {
 		# We can only consistently tell output files apart by their extension. If var include files 
 		# and agg files are both outputs, this is problematic, as they both share the RData ext.
 		# Therefore we put var include files in a subdir.
-		if IIvariant_include_filesII != [""]:
+		if variant_include_files_py != [""]:
 			os.mkdir("varinclude")
 			os.mkdir("temp")
 
