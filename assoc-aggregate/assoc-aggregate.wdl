@@ -503,6 +503,7 @@ task sbg_prepare_segments_1 {
 		import shutil
 		import datetime
 		import logging
+		import subprocess
 
 		if "~{debug}" == "true":
 			logging.basicConfig(level=logging.DEBUG)

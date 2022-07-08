@@ -1,28 +1,52 @@
 # Author: Ash O'Farrell (aofarrel@ucsc.edu)
 #
+# This is a standalone version of the Pythonic aspect of assoc-aggregate.wdl's
+# sbg_prepare_segments_1 task, which is by far the most complicated WDL task in the pipeline.
+# If you intend on just using the WDL, this .py file is likely not useful to you.
+#
 # Notes:
-# 1. This needs to be run in Python2
+# 1. This needs Python2 - yeah, I know that's bad, but I don't wanna relitigate unicode right now
 # 2. This expects the input files to be in the workdir, or else it'll fail when making the zips
+#    (you can copy over test data from elsewhere in the repo easily with copytestdata.sh)
+#    Most WDLs would do fine with softlinks but afaik the zipping makes that not feasible
+# 3. Although this code has a lot of comments, it only makes sense in the context of the overall
+#    pipeline
+# 4. As always, an effort was made to mimic the CWL as much as possible, but the limitations
+#    of WDL means there's a lot of additional workarounds necessary
+# 5. Yes, this code results in duplicating dozens of files - I don't like it either, but this
+#    seems to be the least error-prone method for working within WDL's limitations
+# 6. Run cleanup.sh after this code as it will drop tons of zips into the workdir
 
 #~{segments_file}
 segments_file_py = "segments.txt"
 
 # ['~{sep="','" input_gds_files}']
-input_gds_files_py = ["1KG_phase3_subset_chr1.gds", "1KG_phase3_subset_chr2_butwithadifferentname.gds", "1KG_phase3_subset_chrX.gds"]
+input_gds_files_py = [
+"1KG_phase3_subset_chr1.gds",
+"1KG_phase3_subset_chr2_butwithadifferentname.gds",
+"1KG_phase3_subset_chr12.gds",
+"1KG_phase3_subset_chrX.gds"]
 
 #['~{sep="','" variant_include_files}']
 variant_include_files_py = []
 
 #['~{sep="','" aggregate_files}']
-aggregate_files_py = ["aggregate_list_chr1.RData", "aggregate_list_chr2.RData", "aggregate_list_chrX.RData"]
+aggregate_files_py = [
+"aggregate_list_chr1.RData",
+"aggregate_list_chr2.RData",
+"aggregate_list_chr12.RData",
+"aggregate_list_chrX.RData"]
 
 from zipfile import ZipFile
 import os
 import shutil
 import datetime
 import logging
+import subprocess
 
 logging.basicConfig(level=logging.DEBUG)
+
+############## everything after this line should be mirroed in the WDL ##############
 
 def find_chromosome(file):
 	# Corresponds with find_chromosome() in CWL
