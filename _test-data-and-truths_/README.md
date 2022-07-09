@@ -34,25 +34,23 @@ GDS files created as the output of the unique_variant_IDs task. They were instea
 #### gds/output_ldpruning
 The merged GDS file as the output of the merge_gds task, which also underwent LD pruning on the default settings.
 
-#### gds/input_assocagg
-Mirrors of `1KG_phase3_subset_chr*.gds` from [UWGAC testdata](https://github.com/UW-GAC/analysis_pipeline/tree/master/testdata). Not to be used as truth files -- these are inputs for assoc_aggregate.
+#### gds/2017_versions
+Mirrors of `1KG_phase3_subset_chr*.gds` from [UWGAC testdata](https://github.com/UW-GAC/analysis_pipeline/tree/master/testdata). Appear to be from 2017, possibly created via an old version of vcf2gds. Not to be used as truth files for modern pipelines, but they can be used as inputs for assoc_aggregate.
 
 #### Lineage of GDS files
 |   	|                                                                                                                      	|   	|                   	|   	|                                                                          	|
 |---	|----------------------------------------------------------------------------------------------------------------------	|---	|-------------------	|---	|--------------------------------------------------------------------------	|
-|   	| 1KG_phase3_subset_chr*.vcf.gz files in `vcfs/`, Stephanie's `testdata/`, and gs://topmed_workflow_testing/UWGAC_WDL/ 	| - 	| *unknown process* 	| → 	| 1KG_phase3_subset_chr*.gds files in `assoc/` and Stephanie's `testdata/` 	|
-|   	| ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\|                                                                                                    	|   	|                   	|   	|                                                                          	|
+|   	| 1KG_phase3_subset_chr*.vcf.gz in `vcfs/`, UWGAC's `testdata/`, and gs://topmed_workflow_testing/UWGAC_WDL/ 		| - 	| *unknown process* 	| → 	| 1KG_phase3_subset_chr*.gds files in `gds/2017_versions/` and UWGAC's `testdata/` 		|
+|   	| ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\|                                                                                                   	|   	|                   	|   	|                                                                          	|
 |   	| *Terra WDL run of vcf2gds on uwgac/topmed-master:2.10.0*                                                             	|   	|                   	|   	|                                                                          	|
-|   	| ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀↓                                                                                                     	|   	|                   	|   	|                                                                          	|
-|   	| 1KG_phase3_subset_chr*.gds files† in `gds/a_vcf2gds/` and gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/  	|   	|                   	|   	|                                                                          	|
-|   	| ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\|                                                                                                    	|   	|                   	|   	|                                                                          	|
+|   	| ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀↓                                                                                                    	|   	|                   	|   	|                                                                          	|
+|   	| 1KG_phase3_subset_chr*.gds in<sup>†</sup> `gds/output_vcf2gds/` and gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/  	|   	|                   	|   	|                                                                          	|
+|   	| ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\|                                                                                                   	|   	|                   	|   	|                                                                          	|
 |   	| *Terra WDL run of ld_pruning on uwgac/topmed-master:2.10.0*                                                          	|   	|                   	|   	|                                                                          	|
-|   	| ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀↓                                                                                                     	|   	|                   	|   	|                                                                          	|
-|   	| `gds/b_ldpruning/merged.gds` and gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/merged.gds               	|   	|                   	|   	|                                                                          	|
-|   	|                                                                                                                      	|   	|                   	|   	|                                                                          	|
-|   	|                                                                                                                      	|   	|                   	|   	|                                                                          	|
-⠀   
-† chrX is among the files in `gds/a_vcf2gds`, but was not used to generate the files in `gds/b_ldpruning` due to [#8](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/8).
+|   	| ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀↓                                                                                                    	|   	|                   	|   	|                                                                          	|
+|   	| `gds/output_ldpruning/merged.gds` and gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/merged.gds           |   	|                   	|   	|                                                                          	|
+ 
+† chrX is among the files in `gds/output_vcf2gds/`, but was not used to generate the files in `gds/output_ldpruning/` due to [#8](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/8).
 
 ## null_model/
 Test files pulled from [UWGAC Github](https://github.com/UW-GAC/analysis_pipeline/tree/master/testdata), with the exception of the two *Null_model_mixed* files which came from the GENESIS Null Model sample workspace, based upon Revision 17 of the CWL null model workflow, on Seven Bridges. All files are based upon older versions of 1000 Genomes data but may have undergone additional processing, the details of which are unknown due to the age of the files. *It is not recommended to use any of these for real analysis, as they are made for a specific test data set.*
