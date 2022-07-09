@@ -1,5 +1,5 @@
 {
-  "checker_pcrelate.gds_file": "_test-data-and-truths_/gds/b_ldpruning/merged.gds",
+  "checker_pcrelate.gds_file": "_test-data-and-truths_/gds/output_ldpruning/merged.gds",
   "checker_pcrelate.pca_file": "_test-data-and-truths_/null_model/pcair.RData",
   "checker_pcrelate.n_sample_blocks": 1,
   "checker_pcrelate.phenotype_file": "_test-data-and-truths_/null_model/1KG_phase3_subset_annot.RData",
