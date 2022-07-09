@@ -50,7 +50,7 @@ Mirrors of `1KG_phase3_subset_chr*.gds` from [UWGAC testdata](https://github.com
 |   	| ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀↓                                                                                                    	|   	|                   	|   	|                                                                          	|
 |   	| `gds/output_ldpruning/merged.gds` and gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/merged.gds           |   	|                   	|   	|                                                                          	|
  
-† chrX is among the files in `gds/output_vcf2gds/`, but was not used to generate the files in `gds/output_ldpruning/` due to [#8](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/8).
+<sup>†</sup>chrX is among the files in `gds/output_vcf2gds/`, but was not used to generate the files in `gds/output_ldpruning/` due to [#8](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/8).
 
 ## null_model/
 Test files pulled from [UWGAC Github](https://github.com/UW-GAC/analysis_pipeline/tree/master/testdata), with the exception of the two *Null_model_mixed* files which came from the GENESIS Null Model sample workspace, based upon Revision 17 of the CWL null model workflow, on Seven Bridges. All files are based upon older versions of 1000 Genomes data but may have undergone additional processing, the details of which are unknown due to the age of the files. *It is not recommended to use any of these for real analysis, as they are made for a specific test data set.*
