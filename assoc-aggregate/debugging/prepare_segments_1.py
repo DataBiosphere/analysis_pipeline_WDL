@@ -46,7 +46,12 @@ import subprocess
 
 logging.basicConfig(level=logging.DEBUG)
 
-############## everything after this line should be mirroed in the WDL ##############
+############## everything after this line should be mirrored in the WDL ##############
+
+def print_disk_usage():
+	if logging.root.level <= logging.INFO:
+		disk = subprocess.check_output(["df", "-H"])
+		print(disk)
 
 def find_chromosome(file):
 	# Corresponds with find_chromosome() in CWL
@@ -89,6 +94,7 @@ def wdl_get_segments():
 	segments = segments[1:] # segments = segments.slice(1) in CWL; removes first line
 	return segments
 
+print_disk_usage()
 logging.debug("\n######################\n# prepare gds output #\n######################")
 input_gdss = pair_chromosome_gds(input_gds_files_py)
 output_gdss = []
@@ -99,6 +105,7 @@ for i in range(0, len(gds_segments)): # for(var i=0;i<segments.length;i++){
 		output_gdss.append(input_gdss[chr])
 logging.debug("GDS output prepared (len: %s)" % len(output_gdss))
 logging.debug(["%s " % thing for thing in output_gdss])
+print_disk_usage()
 
 logging.debug("\n######################\n# prepare seg output #\n######################")
 input_gdss = pair_chromosome_gds(input_gds_files_py)
@@ -111,20 +118,14 @@ for i in range(0, len(actual_segments)): # for(var i=0;i<segments.length;i++){
 		output_segments.append(int(seg_num))
 		output_seg_as_file = open("%s.integer" % seg_num, "w")
 
-# I don't know for sure if this case is actually problematic, but I suspect it will be.
-try:
-	if max(output_segments) != len(output_segments):
-		print("Debug: Max of list: %s. Len of list: %s." % 
-			[max(output_segments), len(output_segments)])
-		print("Debug: List is as follows:\n\t%s" % output_segments)
-		print("ERROR: output_segments needs to be a list of consecutive integers.")
-		exit(1)
-except TypeError:
-	# due to a quirk of the formatting strings above, TypeError gets thrown if chr X/Y/M present
-	# this allows us to warn user that our check for nonconsecutives won't work in those cases
-	logging.warning("Check for nonconsecutive integer chromosomes is being skipped.")
+# This shouldn't cause problems anymore, but just in case...
+if max(output_segments) != len(output_segments):
+	logging.warning("Maximum (%s) doesn't equal length (%s) of segment array. "
+		"This usually isn't an issue, so we'll continue..." % 
+		(max(output_segments), len(output_segments)))
 logging.debug("Segment output prepared (len: %s)" % len(output_segments))
-logging.debug(["%i" % thing for thing in output_segments])
+logging.debug("%s" % output_segments)
+print_disk_usage()
 
 logging.debug("\n######################\n# prepare agg output #\n######################")
 # The CWL accounts for there being no aggregate files as the CWL considers them an optional
@@ -146,6 +147,7 @@ for i in range(0, len(agg_segments)): # for(var i=0;i<segments.length;i++){
 		output_aggregate_files.append(None)
 logging.debug("Aggregate output prepared (len: %s)" % len(output_aggregate_files))
 logging.debug(["%s " % thing for thing in output_aggregate_files])
+print_disk_usage()
 
 logging.debug("\n#########################\n# prepare varinc output #\n##########################")
 input_gdss = pair_chromosome_gds(input_gds_files_py)
@@ -170,6 +172,7 @@ else:
 	output_variant_files = null_outputs
 logging.debug("Variant include output prepared (len: %s)" % len(output_variant_files))
 logging.debug(["%s " % thing for thing in output_variant_files])
+print_disk_usage()
 
 # We can only consistently tell output files apart by their extension. If var include files 
 # and agg files are both outputs, this is problematic, as they both share the RData ext.
@@ -181,6 +184,7 @@ if variant_include_files_py != [""]:
 # make a bunch of zip files
 logging.info("Preparing zip file outputs (this might take a while)...")
 for i in range(0, len(output_segments)):
+	print_disk_usage()
 	# If the chromosomes are not consecutive, i != segment number, such as:
 	# ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '71', '72', '73', '74']
 	beginning = datetime.datetime.now()
@@ -221,6 +225,7 @@ for i in range(0, len(output_segments)):
 		this_zip.write("varinclude/%s" % output_variant_files[i])
 	this_zip.close()
 	logging.info("Wrote dotprod%s.zip in %s minutes" % (plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]))
+print_disk_usage()
 logging.info("Finished. WDL executor will now attempt to delocalize the outputs. This step might take a long time.")
 logging.info("If delocalization is very slow, try running the task again with more disk space (which increases IO speed on Google backends),")
 logging.info("or you can try decreasing the number of segments.")
