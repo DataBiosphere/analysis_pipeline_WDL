@@ -58,7 +58,7 @@ def print_disk_usage(dotprod=-1):
 		if dotprod > -1:
 			disk += "After creating dotprod%s, disk space is " % dotprod
 		disk += subprocess.check_output(["du", "-hs"])
-		print(disk)
+		logging.info(disk)
 
 def find_chromosome(file):
 	'''Corresponds with find_chromosome() in CWL'''
