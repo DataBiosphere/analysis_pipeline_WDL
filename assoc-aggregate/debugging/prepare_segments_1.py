@@ -48,13 +48,20 @@ logging.basicConfig(level=logging.DEBUG)
 
 ############## everything after this line should be mirrored in the WDL ##############
 
-def print_disk_usage():
+def print_disk_usage(dotprod=-1):
+	'''Prints disk storage information, useful for debugging'''
 	if logging.root.level <= logging.INFO:
-		disk = subprocess.check_output(["df", "-H"])
+		disk = ""
+		# this might be more helpful on certain backends
+		#if logging.root.level == logging.DEBUG:
+			#disk += subprocess.check_output(["df", "-H"])
+		if dotprod > -1:
+			disk += "After creating dotprod%s, disk space is " % dotprod
+		disk += subprocess.check_output(["du", "-hs"])
 		print(disk)
 
 def find_chromosome(file):
-	# Corresponds with find_chromosome() in CWL
+	'''Corresponds with find_chromosome() in CWL'''
 	chr_array = []
 	chrom_num = split_on_chromosome(file)
 	if (unicode(str(chrom_num[1])).isnumeric()):
@@ -71,7 +78,7 @@ def split_on_chromosome(file):
 	return chrom_num
 
 def pair_chromosome_gds(file_array):
-	# Corresponds with pair_chromosome_gds() in CWL
+	'''Corresponds with pair_chromosome_gds() in CWL'''
 	gdss = dict() # forced to use constructor due to WDL syntax issues
 	for i in range(0, len(file_array)): 
 		# Key is chr number, value is associated GDS file
@@ -80,7 +87,7 @@ def pair_chromosome_gds(file_array):
 	return gdss
 
 def pair_chromosome_gds_special(file_array, agg_file):
-	# Corresponds with pair_chromosome_gds_special() in CWL
+	'''Corresponds with pair_chromosome_gds_special() in CWL'''
 	gdss = dict()
 	for i in range(0, len(file_array)):
 		gdss[find_chromosome(file_array[i])] = os.path.basename(agg_file)
@@ -88,6 +95,7 @@ def pair_chromosome_gds_special(file_array, agg_file):
 	return gdss
 
 def wdl_get_segments():
+	'''Corresponds with CWL's segments = self[0].contents.split("\n")'''
 	segfile = open(segments_file_py, 'rb')
 	segments = str((segfile.read(64000))).split('\n') # CWL x.contents only gets 64000 bytes
 	segfile.close()
@@ -105,7 +113,6 @@ for i in range(0, len(gds_segments)): # for(var i=0;i<segments.length;i++){
 		output_gdss.append(input_gdss[chr])
 logging.debug("GDS output prepared (len: %s)" % len(output_gdss))
 logging.debug(["%s " % thing for thing in output_gdss])
-print_disk_usage()
 
 logging.debug("\n######################\n# prepare seg output #\n######################")
 input_gdss = pair_chromosome_gds(input_gds_files_py)
@@ -125,7 +132,6 @@ if max(output_segments) != len(output_segments):
 		(max(output_segments), len(output_segments)))
 logging.debug("Segment output prepared (len: %s)" % len(output_segments))
 logging.debug("%s" % output_segments)
-print_disk_usage()
 
 logging.debug("\n######################\n# prepare agg output #\n######################")
 # The CWL accounts for there being no aggregate files as the CWL considers them an optional
@@ -147,7 +153,6 @@ for i in range(0, len(agg_segments)): # for(var i=0;i<segments.length;i++){
 		output_aggregate_files.append(None)
 logging.debug("Aggregate output prepared (len: %s)" % len(output_aggregate_files))
 logging.debug(["%s " % thing for thing in output_aggregate_files])
-print_disk_usage()
 
 logging.debug("\n#########################\n# prepare varinc output #\n##########################")
 input_gdss = pair_chromosome_gds(input_gds_files_py)
@@ -172,7 +177,6 @@ else:
 	output_variant_files = null_outputs
 logging.debug("Variant include output prepared (len: %s)" % len(output_variant_files))
 logging.debug(["%s " % thing for thing in output_variant_files])
-print_disk_usage()
 
 # We can only consistently tell output files apart by their extension. If var include files 
 # and agg files are both outputs, this is problematic, as they both share the RData ext.
@@ -184,7 +188,6 @@ if variant_include_files_py != [""]:
 # make a bunch of zip files
 logging.info("Preparing zip file outputs (this might take a while)...")
 for i in range(0, len(output_segments)):
-	print_disk_usage()
 	# If the chromosomes are not consecutive, i != segment number, such as:
 	# ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '71', '72', '73', '74']
 	beginning = datetime.datetime.now()
@@ -225,7 +228,7 @@ for i in range(0, len(output_segments)):
 		this_zip.write("varinclude/%s" % output_variant_files[i])
 	this_zip.close()
 	logging.info("Wrote dotprod%s.zip in %s minutes" % (plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]))
-print_disk_usage()
+	print_disk_usage(plusone)
 logging.info("Finished. WDL executor will now attempt to delocalize the outputs. This step might take a long time.")
 logging.info("If delocalization is very slow, try running the task again with more disk space (which increases IO speed on Google backends),")
 logging.info("or you can try decreasing the number of segments.")
