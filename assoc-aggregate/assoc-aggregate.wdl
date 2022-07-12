@@ -558,7 +558,7 @@ task sbg_prepare_segments_1 {
 			return gdss
 
 		def wdl_get_segments():
-			'''Corresponds with CWL's segments = self[0].contents.split("\n")'''
+			'''Corresponds with CWLs segments = self[0].contents.split("\n")'''
 			segfile = open(segments_file_py, 'rb')
 			segments = str((segfile.read(64000))).split('\n') # CWL x.contents only gets 64000 bytes
 			segfile.close()
