@@ -1,5 +1,5 @@
 {
-  "pcrel.gds_file": "_test-data-and-truths_/gds/b_ldpruning/merged.gds",
+  "pcrel.gds_file": "_test-data-and-truths_/gds/output_ldpruning/merged.gds",
   "pcrel.pca_file": "_test-data-and-truths_/null_model/pcair.RData",
   "pcrel.n_sample_blocks": 1,
   "pcrel.phenotype_file": "_test-data-and-truths_/null_model/1KG_phase3_subset_annot.RData"

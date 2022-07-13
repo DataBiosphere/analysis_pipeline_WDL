@@ -1,6 +1,6 @@
 {
   "assoc_agg.out_prefix": "weights",
-  "assoc_agg.input_gds_files": ["_test-data-and-truths_/assoc/1KG_phase3_subset_chr1.gds", "_test-data-and-truths_/gds/a_vcf2gds/1KG_phase3_subset_chr2_butwithadifferentname.gds"],
+  "assoc_agg.input_gds_files": ["_test-data-and-truths_/assoc/1KG_phase3_subset_chr1.gds", "_test-data-and-truths_/gds/output_vcf2gds/1KG_phase3_subset_chr2_butwithadifferentname.gds"],
   "assoc_agg.phenotype_file": "_test-data-and-truths_/null_model/1KG_phase3_subset_annot.RData",
   "assoc_agg.null_model_file": "_test-data-and-truths_/assoc/null_model.RData",
   "assoc_agg.alt_freq_max": 0.1,
