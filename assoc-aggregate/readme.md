@@ -3,15 +3,13 @@
 ## Introduction
 *Authorship note: This paraphrases earlier documentation by Stephanie Gogarten.*
 
-**Aggregate Association Testing workflow** runs aggregate association tests, using Burden, SKAT<sup>[1](#SKAT)</sup>, fastSKAT<sup>[2](#fastSKAT)</sup>, SMMAT<sup>[3](#SMMAT)</sup>, or SKAT-O<sup>[4](#SKATO)</sup> to aggregate a user-defined set of variants. Association tests are parallelized by segments within chromosomes.
-
-The define segments tasks splits the genome into segments and assigns each aggregate unit to a segment based on the position of its first variant. Note that n_segments is based upon the entire genome *regardless of the number of chromosomes you are running on.*<sup>[5](#segs)</sup> Association testing is then performed for each segment in parallel, before combining results on chromosome level. Finally, the last step creates QQ and Manhattan plots.
+**Aggregate Association Testing workflow** runs aggregate association tests, using Burden, SKAT<sup>[1](#SKAT)</sup>, fastSKAT<sup>[2](#fastSKAT)</sup>, SMMAT<sup>[3](#SMMAT)</sup>, or SKAT-O<sup>[4](#SKATO)</sup> to aggregate a user-defined set of variants. Association tests are parallelized by segments within chromosomes. The define segments tasks splits the genome into segments and assigns each aggregate unit to a segment based on the position of its first variant. Association testing is then performed for each segment in parallel, before combining results on chromosome level. Finally, the last step creates QQ and Manhattan plots.
 
 The **alt freq max** parameter allows specification of the maximum alternate allele frequency allowable for inclusion in the joint variant test. Included variants are usually weighted using either a function of allele frequency (specified via the **weight beta** parameter). Note that the association aggregate version of this pipeline does not support the inclusion of the variant weight file, as the CWL it is based upon only uses that file in the association-window version of the pipeline.
 
 When running a burden test, the effect estimate is for each additional unit of burden; there are no effect size estimates for the other tests. Multiple alternate alleles for a single variant are treated separately.
 
-This workflow utilizes the *assocTestAggregate* function from the GENESIS<sup>[6](#GENESIS)</sup> software.
+This workflow utilizes the *assocTestAggregate* function from the GENESIS<sup>[5](#GENESIS)</sup> software.
 
 The runtime attribute **retries** sets maxRetries, and therefore benefits from Terra's "retry with more memory" feature.
 
@@ -23,19 +21,18 @@ Aggregate tests are typically used to jointly test rare variants. This workflow 
 
 * If **Weight Beta** parameter is set, it needs to follow proper convention: two space-delimited floating point numbers.
 
-* **Number of segments** (n_segments) parameter, if provided, needs to be equal or higher than number of chromosomes. If it is lower than the number of chromosomes, it is effectively ignored.
-
-* Testing showed that default parameters for **CPU** and **memory GB** (8GB) are sufficient for testing studies (up to 50k samples), however different null models might increase the requirements.
-
 * The user can ommit known hits using `known_hits_file`, an RData file with data.frame containing columns `chr` and `pos`. If provided, 1 Mb regions surrounding each variant listed will be omitted from the QQ and manhattan plots.
-
-* This pipeline tends to drop non-autosomes about halfway through (it will not thrown an error). The CWL implementation likewise handles non-autosomes oddly, but in a different way. We are working with the SBG team for more information, but for now, I gently advise against using this for non-autosomes.
-
-* Do not use this pipeline with non-consecutive chromosomes. A run containing chr1, chr2, and chr3 will work. A run containing chr1, chr20, and chr13 may not. (Non-autosomes excluded -- a run containing chr1, chr2, and chrX will not error out, but as noted above chrX will be dropped.)
 
 * Do not use this pipeline on only one chromosome.
 
 * If your data consists of GDS files that are >10 GB, it is *recommended* to set a lower number of segments in order to decrease delocalization time in the prepare segments task.
+
+### Understanding segmentation
+If you set segment_length: This is the length, in kb, that each segment will try to be. Some segments will be shorter as not all chrs are the same length.
+
+If you set n_segments: The genome will be divided into the number of segments you provided. Note that this is based upon the entire genome *regardless of the number of chromosomes you are running on.* For instance, if you set n_segments = 100 and run on just chr1 and chr2, you can expect there to be about 15 segments because chr1 and chr2 together make up about 15% of the human genome. Furthermore, at a minimum, the code always create at least 1 segment per chromosome. As a result, any value of n_segments between 1 and 23 will have the same effect -- ex, n_segments = 1 is not meaningfully different from n_segments = 12.
+
+If you set neither: [define_segments.R](https://github.com/UW-GAC/analysis_pipeline/blob/master/R/define_segments.R) will set segment_length to 10000 kb.
 
 ## Sample Inputs
 * terra-allele, local-allele, and the first part of the checker workflow are based upon [assoc_aggregate_allele.config](https://github.com/UW-GAC/analysis_pipeline/blob/master/testdata/assoc_aggregate_allele.config)
@@ -56,5 +53,4 @@ For an explanation of the code overall, please see `/_documentation_/for develop
 <a name="fastSKAT">[2]</a>  [fastSKAT](https://doi.org/10.1002/gepi.22136)  
 <a name="SMMAT">[3]</a>  [SMMAT](https://doi.org/10.1016/j.ajhg.2018.12.012)  
 <a name="SKATO">[4]</a>  [SKAT-O](https://doi.org/10.1093/biostatistics/kxs014)  
-<a name="segs">[5]</a>  For instance, if you set n_segments = 100 and run on just chr1 and chr2, you can expect there to be about 15 segments because chr1 and chr2 together make up about 15% of the human genome. Furthermore, at a minimum, the code automatically will create 1 segment per chromosome, so setting n_segments = 2, 4, or 10 when running on just chr1 and chr2 will each result in just two segments even though you might expect dividing the entire genome into 2, 4, or 10 pieces would result in one segment covering all of chr1 and chr2.  
-<a name="GENESIS">[6]</a>  [GENESIS](https://f4c.sbgenomics.com/u/boris_majic/genesis-pipelines-dev/apps/doi.org/10.1093/bioinformatics/btz567)
+<a name="GENESIS">[5]</a>  [GENESIS](https://f4c.sbgenomics.com/u/boris_majic/genesis-pipelines-dev/apps/doi.org/10.1093/bioinformatics/btz567)

@@ -1,24 +1,29 @@
 {
   "aggie_checker.input_gds_files": [
     "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr1.gds",
-    "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr2.gds"],  
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr2.gds",
+    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/1KG_phase3_subset_chrX.gds"],  
   "aggie_checker.phenotype_file": "gs://topmed_workflow_testing/UWGAC_WDL/null_model/1KG_phase3_subset_annot.RData",
   "aggie_checker.null_model_file": "gs://topmed_workflow_testing/UWGAC_WDL/assoc/null_model.RData",
   "aggie_checker.variant_include_files": [
     "gs://topmed_workflow_testing/UWGAC_WDL/assoc/variant_include_chr1.RData",
-    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/variant_include_chr2.RData"],
+    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/variant_include_chr2.RData",
+    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/variant_include_chrX.RData"],
   "aggie_checker.variant_group_files_coding": [
     "gs://topmed_workflow_testing/UWGAC_WDL/assoc/coding_variants_chr1.RData", 
-    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/coding_variants_chr2.RData"],
+    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/coding_variants_chr2.RData",
+    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/coding_variants_chrX.RData"],
   "aggie_checker.variant_group_files_genes": [
     "gs://topmed_workflow_testing/UWGAC_WDL/assoc/genes_chr1.RData",
-    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/genes_chr2.RData"],
+    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/genes_chr2.RData",
+    "gs://topmed_workflow_testing/UWGAC_WDL/assoc/genes_chrX.RData"],
   "aggie_checker.truths_allele": [
     "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/allele_chr1.RData",
     "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/allele_chr2.RData"],
   "aggie_checker.truths_position": [
-    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/position_chr1.RData",
-    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/position_chr2.RData"],
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/with_chr_X/position_chr1.RData",
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/with_chr_X/position_chr2.RData",
+    "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/with_chr_X/position_chrX.RData"],
   "aggie_checker.truths_weights": [
     "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/weights_chr1.RData",
     "gs://topmed_workflow_testing/UWGAC_WDL/checker/assoc/aggregate/weights_chr2.RData"]
