@@ -456,7 +456,7 @@ task sbg_prepare_segments_1 {
 	#  * size(input_gds_files, "GB") returns size of the entire array, ie all 23 chrs.
 	#  * If we wanted the average of all chrs, we could multiply by 0.0434ish, but that'd assume
 	#    running on all 23 chrs, which we often don't do; people tend to test with only 2 chrs.
-	#  * The largest chromosome, chr1, should be >10% of the total size of the whole genome.
+	#  * The largest chromosome, chr1, should be <10% of the total size of the whole genome.
 	#  * Bigger chrs have bigger gds files AND more segments
 	Int gds_size = ceil(size(input_gds_files, "GB")) / num_gds_files
 	Int seg_size = ceil(size(segments_file, "GB"))
