@@ -4,8 +4,6 @@ version 1.0
 task vcf2gds {
 	input {
 		File vcf
-		String debug_basename = basename(vcf)
-		String debug_basenamesub = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
 		Array[String] format # vcf formats to keep
 
 		# runtime attributes
@@ -15,6 +13,14 @@ task vcf2gds {
 		Int memory = 8
 		Int preempt = 2
 	}
+	# Estimate disk size required
+	Int vcf_size = ceil(size(vcf, "GB"))
+	Int finalDiskSize = 4*vcf_size + addldisk
+
+	# Use some variables
+	String debug_basename = basename(vcf)
+	String debug_basenamesub = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
+
 	command {
 		set -eux -o pipefail
 
@@ -52,10 +58,6 @@ task vcf2gds {
 		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R vcf2gds.config
 	}
 	
-	# Estimate disk size required
-	Int vcf_size = ceil(size(vcf, "GB"))
-	Int finalDiskSize = 4*vcf_size + addldisk
-	
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
@@ -65,7 +67,7 @@ task vcf2gds {
 		preemptibles: "${preempt}"
 	}
 	output {
-		File vcf_output = glob("*.vcf*")[0]  # workaround for check_gds issues with drs URIs
+		String vcf_output = vcf
 		File gds_output = glob("*.gds")[0]
 		File config_file = "vcf2gds.config"
 		File debug_basneames = "debug.txt"
