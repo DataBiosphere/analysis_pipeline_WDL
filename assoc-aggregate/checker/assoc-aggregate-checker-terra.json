@@ -1,7 +1,7 @@
 {
   "aggie_checker.input_gds_files": [
-    "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr1.gds",
-    "gs://topmed_workflow_testing/UWGAC_WDL/checker/a_vcf2gds/1KG_phase3_subset_chr2.gds",
+    "gs://topmed_workflow_testing/UWGAC_WDL/vcf2gds/outs/1KG_phase3_subset_chr1.gds",
+    "gs://topmed_workflow_testing/UWGAC_WDL/vcf2gds/outs/1KG_phase3_subset_chr2.gds",
     "gs://topmed_workflow_testing/UWGAC_WDL/assoc/1KG_phase3_subset_chrX.gds"],  
   "aggie_checker.phenotype_file": "gs://topmed_workflow_testing/UWGAC_WDL/null_model/1KG_phase3_subset_annot.RData",
   "aggie_checker.null_model_file": "gs://topmed_workflow_testing/UWGAC_WDL/assoc/null_model.RData",
