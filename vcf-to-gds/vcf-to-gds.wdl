@@ -17,7 +17,7 @@ task vcf2gds {
 	Int vcf_size = ceil(size(vcf, "GB"))
 	Int finalDiskSize = 4*vcf_size + addldisk
 
-	# Use some variables
+	# Useful for diagnosing rare Terra permission bugs
 	String debug_basename = basename(vcf)
 	String debug_basenamesub = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
 
@@ -60,7 +60,7 @@ task vcf2gds {
 	
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428"
 		disks: "local-disk " + finalDiskSize + " HDD"
 		maxRetries: "${retries}"
 		memory: "${memory} GB"
@@ -157,7 +157,7 @@ task unique_variant_id {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428"
 		disks: "local-disk " + finalDiskSize + " HDD"
 		maxRetries: "${retries}"
 		memory: "${memory} GB"
@@ -260,7 +260,7 @@ task check_gds {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428"
 		disks: "local-disk " + finalDiskSize + " SSD"
 		maxRetries: "${retries}"
 		memory: "${memory} GB"
