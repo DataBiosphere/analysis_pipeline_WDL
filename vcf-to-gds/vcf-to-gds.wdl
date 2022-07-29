@@ -60,7 +60,7 @@ task vcf2gds {
 	
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428"
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428"  # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + finalDiskSize + " HDD"
 		maxRetries: "${retries}"
 		memory: "${memory} GB"
