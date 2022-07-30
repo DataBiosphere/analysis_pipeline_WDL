@@ -75,7 +75,7 @@ workflow checker_ldprune {
 		Float option_nondefault_maf_threshold = 0.05
 		Float option_nondefault_missing_threshold = 0.02
 		#Boolean option_nondefault_exclude_pca_corr = false  # skipped due to CWL bug
-		String? option_nondefault_out_prefix = "includePCA_hg19_10.1win_0.3r_0.05MAF_0.02missing"
+		String? option_nondefault_out_prefix = "hg19_10.1win_0.3r_0.05MAF_0.02missing"
 
 	}
 

@@ -48,7 +48,7 @@ Mirrors of `1KG_phase3_subset_chr*.gds` from [UWGAC testdata](https://github.com
 |   	| ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\|                                                                                                   	|   	|                   	|   	|                                                                          	|
 |   	| *Terra WDL run of ld_pruning on uwgac/topmed-master:2.10.0*                                                          	|   	|                   	|   	|                                                                          	|
 |   	| ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀↓                                                                                                    	|   	|                   	|   	|                                                                          	|
-|   	| `gds/output_ldpruning/merged.gds` and gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/merged.gds           |   	|                   	|   	|                                                                          	|
+|   	| `gds/output_ldpruning/merged.gds` and gs://topmed_workflow_testing/UWGAC_WDL/ld_prune/outs/merged.gds           |   	|                   	|   	|                                                                          	|
  
 <sup>†</sup>chrX is among the files in `gds/output_vcf2gds/`, but was not used to generate the files in `gds/output_ldpruning/` due to [#8](https://github.com/DataBiosphere/analysis_pipeline_WDL/issues/8).
 
