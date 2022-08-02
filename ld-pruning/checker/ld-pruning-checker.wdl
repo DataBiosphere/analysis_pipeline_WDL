@@ -103,7 +103,8 @@ workflow checker_ldprune {
 	scatter(gds_n_varinc in zip(gds_with_unique_var_ids, nondef_step1_prune.ld_pruning_output)) {
 		call test_run_ldpruning.subset_gds as nondef_step2_subset {
 			input:
-				gds_n_varinc = gds_n_varinc
+				gds_n_varinc = gds_n_varinc,
+				out_prefix = option_nondefault_out_prefix
 		}
 	}
 
