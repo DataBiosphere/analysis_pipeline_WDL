@@ -19,7 +19,7 @@ workflows:
       - name: Ash O'Farrell
   - subclass: WDL
     primaryDescriptorPath: /null-model/null-model.wdl
-    testParameterFiles:
+    testParameterFiles: 
       - /null-model/null-model.json
       - /null-model/null-model-binary.json
       - /null-model/null-model-conditional.json
