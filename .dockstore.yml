@@ -16,10 +16,9 @@ workflows:
     name: ld-pruning-wdl
     authors:
       - orcid: 0000-0003-4896-1858
-      - name: Ash O'Farrell
   - subclass: WDL
     primaryDescriptorPath: /null-model/null-model.wdl
-    testParameterFiles: 
+    testParameterFiles:
       - /null-model/null-model.json
       - /null-model/null-model-binary.json
       - /null-model/null-model-conditional.json
