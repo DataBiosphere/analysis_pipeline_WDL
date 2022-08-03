@@ -163,11 +163,11 @@ task subset_gds {
 
 		if ("~{out_prefix}" != ""):
 			chromosome = py_rootPlusChr(gds)[1]
-			py_filename = "~{out_prefix}" + "_chr" + chromosome + ".gds"
+			py_filename = "\"~{out_prefix}" + "_chr" + chromosome + ".gds\""
 		else:
 			chromosome = py_rootPlusChr(gds)[1]
 			basename = os.path.basename(py_rootPlusChr(gds)[0])
-			py_filename = basename + "subset_chr" + chromosome + ".gds"
+			py_filename = "\"" + basename + "subset_chr" + chromosome + ".gds\""
 
 		f.write("subset_gds_file " + py_filename)
 		f.close()
