@@ -1,0 +1,11 @@
+Container:	uwgac/topmed-master:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428
+Platform:	Terra
+Date updated:	July 29 2022
+------------------------------------------
+Current maintainer: Ash O'Farrell at UCSC.
+
+These files were made to test default inputs. merged.gds was generated from the WDL version due to Seven Bridges's CWL version seeming to order numbers differently. Please see the readme on GitHub for more information.
+
+Different Docker containers may use different versions of the R scripts, as well as different versions of R itself. As such, these truth files should be updated when the Docker container is updated.
+
+The first three lines of this document form a pattern that is parsed by the checker workflow in order to print information to the user. Please don't break the checker workflow when updating this file.
