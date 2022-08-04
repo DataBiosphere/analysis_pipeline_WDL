@@ -1,6 +1,6 @@
 # Relatedness and Population Structure Filtering (ld-pruning-wf.wdl)
 **Cost estimate when running on Terra, default inputs: $0.67**  
-This workflow prunes on the basis of linkage disequilibrium. It then subsets GDS files based on those pruned variants, then performs merging and optional checks the merged files. This represents [the second "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#relatedness-and-population-structure).
+This workflow prunes on the basis of linkage disequilibrium. It then subsets GDS files based on those pruned variants, then performs merging and optional checks the merged files. This represents [the second "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#relatedness-and-population-structure). A [checker workflow](../checker/ld-pruning-checker.wdl) is provided to ensure congruence against CWL truth files.
 
 **Warning: If you run this on a local machine without setting concurrent-job-limit for Cromwell, Cromwell will attempt to LD prune all chromosomes at once, likely freezing Docker across your OS in the process.** Please check the repo's main readme for more information.
 
