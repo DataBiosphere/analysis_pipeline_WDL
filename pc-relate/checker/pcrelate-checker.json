@@ -1,5 +1,5 @@
 {
-  "checker_pcrelate.gds_file": "gs://topmed_workflow_testing/UWGAC_WDL/checker/b_ldpruning/merged.gds",
+  "checker_pcrelate.gds_file": "gs://topmed_workflow_testing/UWGAC_WDL/ld_prune/outs/merged.gds",
   "checker_pcrelate.pca_file": "gs://topmed_workflow_testing/UWGAC_WDL/null_model/pcair.RData",
   "checker_pcrelate.n_sample_blocks": 1,
   "checker_pcrelate.phenotype_file": "gs://topmed_workflow_testing/UWGAC_WDL/null_model/1KG_phase3_subset_annot.RData",
