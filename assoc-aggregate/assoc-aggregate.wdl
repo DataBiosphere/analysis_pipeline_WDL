@@ -4,9 +4,14 @@ version 1.0
 # Please see https://doi.org/10.1093/bioinformatics/btz567
 
 task wdl_validate_inputs {
-	# WDL Only -- Validate inputs that are type enum in the CWL
+	# WDL Only -- Validate inputs
 	#
-	# It is acceptable for the user to put nothing for these values. The R files
+	# This task:
+	# * mimics CWL type enum for three input variables by ensuring they're valid
+	# * makes sure more than one GDS file was input
+	# * sets up proper disk scaling for the prepare segments task
+	#
+	# It is acceptable for the user to put nothing for the enums. The R scripts
 	# will fall back on the falling defaults if nothing is defined:
 	# * genome_build: "hg38"
 	# * aggregate_type: "allele"
@@ -34,7 +39,7 @@ task wdl_validate_inputs {
 		#acceptable aggreg types:  ("allele" "position")
 		acceptable_test_values=("burden" "skat" "smmat" "fastskat" "skato")
 
-		if [[ ! ~{genome_build} = "" ]]
+		if [[ ! "~{genome_build}" = "" ]]
 		then
 			if [[ ! "hg38" = "~{genome_build}" ]]
 			then
@@ -104,12 +109,11 @@ task sbg_gds_renamer {
 
 	input {
 		File in_variant
+		Boolean debug
 
 		# this is ignored by the script itself, but including this stops this task from firing
 		# before wdl_validate_inputs finishes
 		String? noop
-
-		Boolean debug = false
 
 		# runtime attributes, which you shouldn't need to adjust as this is a very light task
 		Int addldisk = 3
@@ -171,6 +175,7 @@ task sbg_gds_renamer {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: 1
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -238,16 +243,23 @@ task define_segments_r {
 			fi
 		fi
 
+		# get the actual number of segments so we can scale sbg_prepare_segments_1 
+		lines=$(wc -l < "segments.txt")
+		segs="$((lines-2))"
+		echo $segs > "Iwishtopassthisbashvariableasanoutput.txt"
+
 	>>>
 	
 	runtime {
 		cpu: cpu
 		disks: "local-disk " + finalDiskSize + " HDD"
 		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
+		maxRetries: 1
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
 	output {
+		Int actual_number_of_segments = read_int("Iwishtopassthisbashvariableasanoutput.txt")
 		File config_file = "define_segments.config"
 		File define_segments_output = "segments.txt"
 	}
@@ -397,6 +409,7 @@ task aggregate_list {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: 1
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -426,25 +439,34 @@ task sbg_prepare_segments_1 {
 		Array[File]? variant_include_files
 		Int? n_segments
 
+		Int actual_number_of_segments
+		Int num_gds_files
+		Boolean debug
+
 		# runtime attr
 		Int addldisk = 100
 		Int cpu = 12
 		Int memory = 16
+		Int retries = 1
 		Int preempt = 0
 	}
 
-	# estimate disk size required
-	# size(input_gds_files, "GB") returns size of the entire array, ie all 23 chrs
-	# if we wanted the average of all chrs, we could multiply by 0.0434ish, but that'd assume
-	# running on all 23 chrs, which we often don't do. people tend to test with only 2 chrs.
-	# the largest chromosome, chr1, should be no more than 10% of the total size
-	# but to account for people running on only chr1 and chr2, we set the multiplier to 0.5
-	Int gds_size = select_first([n_segments, 50]) * ceil(size(input_gds_files, "GB") * 0.5)
+	# Disk size estimation gets really tricky in this task, due to its zip workaround.
+	#
+	# Considerations:
+	#  * size(input_gds_files, "GB") returns size of the entire array, ie all 23 chrs.
+	#  * If we wanted the average of all chrs, we could multiply by 0.0434ish, but that'd assume
+	#    running on all 23 chrs, which we often don't do; people tend to test with only 2 chrs.
+	#  * The largest chromosome, chr1, should be <10% of the total size of the whole genome.
+	#  * Bigger chrs have bigger gds files AND more segments
+	Int gds_size = ceil(size(input_gds_files, "GB")) / num_gds_files
 	Int seg_size = ceil(size(segments_file, "GB"))
-	Int agg_size = select_first([n_segments, 50]) * ceil(size(aggregate_files, "GB"))
-	Int dsk_size = gds_size + seg_size + agg_size + addldisk
+	Int agg_size = ceil(size(aggregate_files, "GB"))
+	Int each_segment_size = gds_size + seg_size + agg_size
+	Int disk_size = addldisk + actual_number_of_segments * each_segment_size
 	
 	command <<<
+		echo "INFO: Requested ~{disk_size} GB of disk storage."
 		set -eux -o pipefail
 		cp ~{segments_file} .
 
@@ -473,28 +495,40 @@ task sbg_prepare_segments_1 {
 		fi
 
 		python << CODE
-		IIsegments_fileII = "~{segments_file}"
-		IIinput_gds_filesII = ['~{sep="','" input_gds_files}']
-		IIvariant_include_filesII = ['~{sep="','" variant_include_files}']
-		IIaggregate_filesII = ['~{sep="','" aggregate_files}']
+		segments_file_py = "~{segments_file}"
+		input_gds_files_py = ['~{sep="','" input_gds_files}']
+		variant_include_files_py = ['~{sep="','" variant_include_files}']
+		aggregate_files_py = ['~{sep="','" aggregate_files}']
 
 		from zipfile import ZipFile
 		import os
 		import shutil
 		import datetime
+		import logging
+		import subprocess
+
+		if "~{debug}" == "true":
+			logging.basicConfig(level=logging.DEBUG)
+		else:
+			logging.basicConfig(level=logging.INFO)
+
+		def print_disk_usage(dotprod=-1):
+			'''Prints disk storage information, useful for debugging'''
+			if logging.root.level <= logging.INFO:
+				disk = ""
+				# this might be more helpful on certain backends
+				#if logging.root.level == logging.DEBUG:
+					#disk += subprocess.check_output(["df", "-H"])
+				if dotprod > -1:
+					disk += "After creating dotprod%s, disk space is " % dotprod
+				disk += subprocess.check_output(["du", "-hs"])
+				logging.info(disk)
 
 		def find_chromosome(file):
+			'''Corresponds with find_chromosome() in CWL'''
 			chr_array = []
 			chrom_num = split_on_chromosome(file)
-			if len(chrom_num) == 1:
-				acceptable_chrs = [str(integer) for integer in list(range(1,22))]
-				acceptable_chrs.extend(["X","Y","M"])
-				if chrom_num in acceptable_chrs:
-					return chrom_num
-				else:
-					print("%s appears to be an invalid chromosome number." % chrom_num)
-					exit(1)
-			elif (unicode(str(chrom_num[1])).isnumeric()):
+			if (unicode(str(chrom_num[1])).isnumeric()):
 				# two digit number
 				chr_array.append(chrom_num[0])
 				chr_array.append(chrom_num[1])
@@ -508,122 +542,90 @@ task sbg_prepare_segments_1 {
 			return chrom_num
 
 		def pair_chromosome_gds(file_array):
+			'''Corresponds with pair_chromosome_gds() in CWL'''
 			gdss = dict() # forced to use constructor due to WDL syntax issues
 			for i in range(0, len(file_array)): 
 				# Key is chr number, value is associated GDS file
-				this_chr = find_chromosome(file_array[i])
-				if this_chr == "X":
-					gdss[23] = os.path.basename(file_array[i])
-				elif this_chr == "Y":
-					gdss[24] = os.path.basename(file_array[i])
-				elif this_chr == "M":
-					gdss[25] = os.path.basename(file_array[i])
-				else:
-					gdss[int(this_chr)] = os.path.basename(file_array[i])
+				gdss[find_chromosome(file_array[i])] = os.path.basename(file_array[i])
+			logging.debug("pair_chromosome_gds returning %s" % gdss)
 			return gdss
 
 		def pair_chromosome_gds_special(file_array, agg_file):
+			'''Corresponds with pair_chromosome_gds_special() in CWL'''
 			gdss = dict()
 			for i in range(0, len(file_array)):
-				gdss[int(find_chromosome(file_array[i]))] = os.path.basename(agg_file)
+				gdss[find_chromosome(file_array[i])] = os.path.basename(agg_file)
+			logging.debug("pair_chromosome_gds_special returning %s" % gdss)
 			return gdss
 
 		def wdl_get_segments():
-			segfile = open(IIsegments_fileII, 'rb')
+			'''Corresponds with CWLs segments = self[0].contents.split("\n")'''
+			segfile = open(segments_file_py, 'rb')
 			segments = str((segfile.read(64000))).split('\n') # CWL x.contents only gets 64000 bytes
 			segfile.close()
-			segments = segments[1:] # remove first line
+			segments = segments[1:] # segments = segments.slice(1) in CWL; removes first line
 			return segments
 
-		######################
-		# prepare GDS output #
-		######################
-		beginning = datetime.datetime.now()
-		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
+		print_disk_usage()
+		logging.debug("\n######################\n# prepare gds output #\n######################")
+		input_gdss = pair_chromosome_gds(input_gds_files_py)
 		output_gdss = []
 		gds_segments = wdl_get_segments()
 		for i in range(0, len(gds_segments)): # for(var i=0;i<segments.length;i++){
-			try:
-				chr = int(gds_segments[i].split('\t')[0])
-			except ValueError: # chr X, Y, M
-				chr = gds_segments[i].split('\t')[0]
+			chr = gds_segments[i].split('\t')[0]
 			if(chr in input_gdss):
 				output_gdss.append(input_gdss[chr])
-		gds_output_hack = open("gds_output_debug.txt", "w")
-		gds_output_hack.writelines(["%s " % thing for thing in output_gdss])
-		gds_output_hack.close()
-		print("Info: GDS output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+		logging.debug("GDS output prepared (len: %s)" % len(output_gdss))
+		logging.debug(["%s " % thing for thing in output_gdss])
 
-		######################
-		# prepare seg output #
-		######################
-		beginning = datetime.datetime.now()
-		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
+		logging.debug("\n######################\n# prepare seg output #\n######################")
+		input_gdss = pair_chromosome_gds(input_gds_files_py)
 		output_segments = []
 		actual_segments = wdl_get_segments()
 		for i in range(0, len(actual_segments)): # for(var i=0;i<segments.length;i++){
-			try:
-				chr = int(actual_segments[i].split('\t')[0])
-			except ValueError: # chr X, Y, M
-				chr = actual_segments[i].split('\t')[0]
+			chr = actual_segments[i].split('\t')[0]
 			if(chr in input_gdss):
 				seg_num = i+1
-				output_segments.append(seg_num)
+				output_segments.append(int(seg_num))
 				output_seg_as_file = open("%s.integer" % seg_num, "w")
 
-		# I don't know for sure if this case is actually problematic, but I suspect it will be.
+		# This shouldn't cause problems anymore, but just in case...
 		if max(output_segments) != len(output_segments):
-			print("ERROR: output_segments needs to be a list of consecutive integers.")
-			print("Debug: Max of list: %s. Len of list: %s." % 
-				[max(output_segments), len(output_segments)])
-			print("Debug: List is as follows:\n\t%s" % output_segments)
-			exit(1)
+			logging.warning("Maximum (%s) doesn't equal length (%s) of segment array. "
+				"This usually isn't an issue, so we'll continue..." % 
+				(max(output_segments), len(output_segments)))
+		logging.debug("Segment output prepared (len: %s)" % len(output_segments))
+		logging.debug("%s" % output_segments)
 
-		segs_output_hack = open("segs_output_debug.txt", "w")
-		segs_output_hack.writelines(["%s " % thing for thing in output_segments])
-		segs_output_hack.close()
-		print("Info: Segment output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
-
-		######################
-		# prepare agg output #
-		######################
+		logging.debug("\n######################\n# prepare agg output #\n######################")
 		# The CWL accounts for there being no aggregate files as the CWL considers them an optional
 		# input. We don't need to account for that because the way WDL works means it they are a
 		# required output of a previous task and a required input of this task. That said, if this
 		# code is reused for other WDLs, it may need some adjustments right around here.
-		beginning = datetime.datetime.now()
-		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
+		input_gdss = pair_chromosome_gds(input_gds_files_py)
 		agg_segments = wdl_get_segments()
-		if 'chr' in os.path.basename(IIaggregate_filesII[0]):
-			input_aggregate_files = pair_chromosome_gds(IIaggregate_filesII)
+		if 'chr' in os.path.basename(aggregate_files_py[0]):
+			input_aggregate_files = pair_chromosome_gds(aggregate_files_py)
 		else:
-			input_aggregate_files = pair_chromosome_gds_special(IIinput_gds_filesII, IIaggregate_filesII[0])
+			input_aggregate_files = pair_chromosome_gds_special(input_gds_files_py, aggregate_files_py[0])
 		output_aggregate_files = []
 		for i in range(0, len(agg_segments)): # for(var i=0;i<segments.length;i++){
-			try: 
-				chr = int(agg_segments[i].split('\t')[0])
-			except ValueError: # chr X, Y, M
-				chr = agg_segments[i].split('\t')[0]
+			chr = agg_segments[i].split('\t')[0] # chr = segments[i].split('\t')[0]
 			if(chr in input_aggregate_files):
 				output_aggregate_files.append(input_aggregate_files[chr])
 			elif (chr in input_gdss):
 				output_aggregate_files.append(None)
-		print("Info: Aggregate output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+		logging.debug("Aggregate output prepared (len: %s)" % len(output_aggregate_files))
+		logging.debug(["%s " % thing for thing in output_aggregate_files])
 
-		#########################
-		# prepare varinc output #
-		#########################
-		beginning = datetime.datetime.now()
-		input_gdss = pair_chromosome_gds(IIinput_gds_filesII)
+		logging.debug("\n#########################\n# prepare varinc output #\n##########################")
+		input_gdss = pair_chromosome_gds(input_gds_files_py)
 		var_segments = wdl_get_segments()
-		if IIvariant_include_filesII != [""]:
-			input_variant_files = pair_chromosome_gds(IIvariant_include_filesII)
+		if variant_include_files_py != [""]:
+			input_variant_files = pair_chromosome_gds(variant_include_files_py)
 			output_variant_files = []
 			for i in range(0, len(var_segments)):
-				try:
-					chr = int(var_segments[i].split('\t')[0])
-				except ValueError: # chr X, Y, M
-					chr = var_segments[i].split('\t')[0]
+				chr = var_segments[i].split('\t')[0]
 				if(chr in input_variant_files):
 					output_variant_files.append(input_variant_files[chr])
 				elif(chr in input_gdss):
@@ -633,36 +635,36 @@ task sbg_prepare_segments_1 {
 		else:
 			null_outputs = []
 			for i in range(0, len(var_segments)):
-				try:
-					chr = int(var_segments[i].split('\t')[0])
-				except ValueError: # chr X, Y, M
-					chr = var_segments[i].split('\t')[0]
+				chr = var_segments[i].split('\t')[0]
 				if(chr in input_gdss):
 					null_outputs.append(None)
 			output_variant_files = null_outputs
-		var_output_hack = open("variant_output_debug.txt", "w")
-		var_output_hack.writelines(["%s " % thing for thing in output_variant_files])
-		var_output_hack.close()
-		print("Info: Variant include output prepared in %s minutes" % divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0])
+		logging.debug("Variant include output prepared (len: %s)" % len(output_variant_files))
+		logging.debug(["%s " % thing for thing in output_variant_files])
 
 		# We can only consistently tell output files apart by their extension. If var include files 
 		# and agg files are both outputs, this is problematic, as they both share the RData ext.
 		# Therefore we put var include files in a subdir.
-		if IIvariant_include_filesII != [""]:
+		if variant_include_files_py != [""]:
 			os.mkdir("varinclude")
 			os.mkdir("temp")
 
 		# make a bunch of zip files
-		print("Preparing zip file outputs...")
-		for i in range(0, max(output_segments)):
+		logging.info("Preparing zip file outputs (this might take a while)...")
+		for i in range(0, len(output_segments)):
+			# If the chromosomes are not consecutive, i != segment number, such as:
+			# ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '71', '72', '73', '74']
 			beginning = datetime.datetime.now()
 			plusone = i+1
+			logging.debug("Writing dotprod%s.zip for %s, segment %s" % 
+				(plusone, 
+				output_gdss[i], 
+				output_segments[i]))
 			this_zip = ZipFile("dotprod%s.zip" % plusone, "w", allowZip64=True)
 			this_zip.write("%s" % output_gdss[i])
 			this_zip.write("%s.integer" % output_segments[i])
 			this_zip.write("%s" % output_aggregate_files[i])
-			if IIvariant_include_filesII != [""]:
-				print("We detected %s as an output variant file." % output_variant_files[i])
+			if output_variant_files[i] is not None:
 				try:
 					# Both the CWL and the WDL basically have duplicated output wherein each
 					# segment for a given chromosome get the same var include output. If you
@@ -684,19 +686,24 @@ task sbg_prepare_segments_1 {
 					# Variant include for this chr has already been taken up and zipped.
 					# The earlier copy should stop this but permissions can get iffy on
 					# Terra, so we should at least catch the error here for debugging.
-					print("Variant include file appears unavailable. Exiting disgracefully...")
+					logging.error("Variant include file appears unavailable.")
 					exit(1)
 				
 				this_zip.write("varinclude/%s" % output_variant_files[i])
 			this_zip.close()
-			print("Info: Wrote dotprod%s.zip in %s minutes" % (plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]))
+			logging.info("Wrote dotprod%s.zip in %s minutes" % (plusone, divmod((datetime.datetime.now()-beginning).total_seconds(), 60)[0]))
+			print_disk_usage(plusone)
+		logging.info("Finished. WDL executor will now attempt to delocalize the outputs. This step might take a long time.")
+		logging.info("If delocalization is very slow, try running the task again with more disk space (which increases IO speed on Google backends),")
+		logging.info("or you can try decreasing the number of segments.")
 		CODE
 	>>>
 
 	runtime {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
-		disks: "local-disk " + dsk_size + " SSD"
+		disks: "local-disk " + disk_size + " SSD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -733,9 +740,11 @@ task assoc_aggregate {
 		# runtime attr
 		Int addldisk = 50
 		Int cpu = 4
+		Int retries = 2
 		Int memory = 16
 		Int preempt = 1
 
+		# WDL only
 		Boolean debug = true
 	}
 	
@@ -958,7 +967,7 @@ task assoc_aggregate {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + finalDiskSize + " SSD"
-		bootDiskSizeGb: 6
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -975,12 +984,13 @@ task assoc_aggregate {
 task sbg_group_segments_1 {
 	input {
 		Array[String] assoc_files
-		Boolean debug = false
+		Boolean debug
 
 		# runtime attr
 		Int addldisk = 3
 		Int cpu = 8
 		Int memory = 8
+		Int retries = 1
 		Int preempt = 2
 	}
 
@@ -1082,6 +1092,7 @@ task sbg_group_segments_1 {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + addldisk + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -1100,12 +1111,13 @@ task assoc_combine_r {
 		String? out_prefix = "" # not the default in CWL
 		File? conditional_variant_file
 
-		Boolean debug = true
+		Boolean debug
 		
 		# runtime attr
 		Int addldisk = 3
 		Int cpu = 8
 		Int memory = 8
+		Int retries = 1
 		Int preempt = 2
 	}
 	Int assoc_size = ceil(size(assoc_files, "GB"))
@@ -1215,6 +1227,7 @@ task assoc_combine_r {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -1237,12 +1250,13 @@ task assoc_plots_r {
 		Int? plot_mac_threshold
 		Float? truncate_pval_threshold
 
-		Boolean debug = false
+		Boolean debug
 
 		# runtime attr
 		Int addldisk = 3
 		Int cpu = 8
 		Int memory = 8
+		Int retries = 1
 		Int preempt = 2
 	}
 	Int assoc_size = ceil(size(assoc_files, "GB"))
@@ -1347,6 +1361,7 @@ task assoc_plots_r {
 		cpu: cpu
 		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428" # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -1362,6 +1377,7 @@ workflow assoc_agg {
 	input {
 		String?      aggregate_type
 		Float?       alt_freq_max
+		Boolean      debug = false  # WDL only, turns on debug prints
 		Boolean?     disable_thin
 		String?      genome_build
 		String?      group_id
@@ -1402,6 +1418,7 @@ workflow assoc_agg {
 		call sbg_gds_renamer {
 			input:
 				in_variant = gds_file,
+				debug = debug,
 				noop = wdl_validate_inputs.valid_genome_build
 		}
 	}
@@ -1428,7 +1445,9 @@ workflow assoc_agg {
 			segments_file = define_segments_r.define_segments_output,
 			aggregate_files = aggregate_list.aggregate_list,
 			variant_include_files = variant_include_files,
-			n_segments = n_segments
+			actual_number_of_segments = define_segments_r.actual_number_of_segments,
+			num_gds_files = num_gds_files,
+			debug = debug
 	}
  
     # gds, aggregate, segments, and variant include are represented as a zip file here
@@ -1448,7 +1467,8 @@ workflow assoc_agg {
 				pass_only = pass_only,
 				variant_weight_file = variant_weight_file,
 				weight_user = weight_user,
-				genome_build = wdl_validate_inputs.valid_genome_build
+				genome_build = wdl_validate_inputs.valid_genome_build,
+				debug = debug
 	
 		}
 	}
@@ -1456,14 +1476,16 @@ workflow assoc_agg {
 	Array[File] flatten_array = flatten(select_all(assoc_aggregate.assoc_aggregate))
 	call sbg_group_segments_1 {
 			input:
-				assoc_files = flatten_array
+				assoc_files = flatten_array,
+				debug = debug
 	}
 
 	scatter(thing in sbg_group_segments_1.grouped_files_as_strings) {
 		call assoc_combine_r {
 			input:
 				assoc_files = thing,
-				assoc_type = "aggregate"
+				assoc_type = "aggregate",
+				debug = debug
 		}
 	}
 
@@ -1477,7 +1499,8 @@ workflow assoc_agg {
 			thin_npoints = thin_npoints,
 			thin_nbins = thin_nbins,
 			plot_mac_threshold = plot_mac_threshold,
-			truncate_pval_threshold = truncate_pval_threshold
+			truncate_pval_threshold = truncate_pval_threshold,
+			debug = debug
 	}
 
 	output {

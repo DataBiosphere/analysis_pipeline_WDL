@@ -1,0 +1,1 @@
+find -name "*" -not \( -path './cromwell-execution/*' -o -path './cromwell-input/*' -o -path '*/README.md' -o -path '*/.DS_Store' \) -type f -exec md5 {} \; > checksums.md5

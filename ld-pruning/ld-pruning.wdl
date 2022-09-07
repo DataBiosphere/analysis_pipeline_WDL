@@ -88,7 +88,7 @@ task ld_pruning {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428"
 		disks: "local-disk " + final_disk_dize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -163,11 +163,11 @@ task subset_gds {
 
 		if ("~{out_prefix}" != ""):
 			chromosome = py_rootPlusChr(gds)[1]
-			py_filename = "~{out_prefix}" + "_chr" + chromosome + ".gds"
+			py_filename = "\"~{out_prefix}" + "_chr" + chromosome + ".gds\""
 		else:
 			chromosome = py_rootPlusChr(gds)[1]
 			basename = os.path.basename(py_rootPlusChr(gds)[0])
-			py_filename = basename + "subset_chr" + chromosome + ".gds"
+			py_filename = "\"" + basename + "subset_chr" + chromosome + ".gds\""
 
 		f.write("subset_gds_file " + py_filename)
 		f.close()
@@ -179,7 +179,7 @@ task subset_gds {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428"
 		disks: "local-disk " + final_disk_dize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -282,7 +282,7 @@ task merge_gds {
 	runtime {
 		cpu: cpu
 		disks: "local-disk " + final_disk_dize + " HDD"
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -355,7 +355,7 @@ task check_merged_gds {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428"
 		disks: "local-disk " + final_disk_dize + " HDD"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
@@ -373,6 +373,8 @@ workflow ldpruning {
 		File? sample_include_file
 		File? variant_include_file
 	}
+
+	Int num_gds_files = length(gds_files)
 
 	scatter(gds_file in gds_files) {
 		call ld_pruning {
@@ -394,21 +396,22 @@ workflow ldpruning {
 		}
 	}
 
-	call merge_gds {
-		input:
-			gdss = subset_gds.subset_output,
-			out_prefix = out_prefix
-	}
-
-	scatter(subset_gds in subset_gds.subset_output) {
-		call check_merged_gds {
+	if (num_gds_files > 1) {
+		call merge_gds {
 			input:
-				gds_file = subset_gds,
-				merged_gds_file = merge_gds.merged_gds_output
+				gdss = subset_gds.subset_output,
+				out_prefix = out_prefix
+		}
+		
+		scatter(subset_gds in subset_gds.subset_output) {
+			call check_merged_gds {
+				input:
+					gds_file = subset_gds,
+					merged_gds_file = merge_gds.merged_gds_output
 
+			}
 		}
 	}
-
 
 	meta {
 		author: "Ash O'Farrell"

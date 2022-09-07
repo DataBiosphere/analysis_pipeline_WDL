@@ -2,58 +2,9 @@ version 1.0
 
 # Caveat programmator: Please be sure to read the readme on Github
 
-import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/v7.1.1/ld-pruning/ld-pruning.wdl" as test_run_ldpruning
-
-task md5sum {
-	input {
-		File test
-		Array[File] truth
-		File truth_info
-		# having an input that depends upon a previous task's output reigns in
-		# cromwell's tendencies to run tasks out of order
-		File? enforce_chronological_order
-	}
-
-	command <<<
-
-	set -eux -o pipefail
-
-	echo "Information about these truth files:"
-	head -n 3 "~{truth_info}"
-	echo "The container version refers to the container used in applicable tasks in the WDL and is the important value here."
-	echo "If container versions are equivalent, there should be no difference in GDS output between a local run and a run on Terra."
-	
-	md5sum ~{test} > sum.txt
-
-	test_basename="$(basename -- ~{test})"
-	echo "test file: ${test_basename}"
-
-	for i in ~{sep=' ' truth}
-	do
-		truth_basename="$(basename -- ${i})"
-		if [ "${test_basename}" == "${truth_basename}" ]; then
-			actual_truth="$i"
-			break
-		fi
-	done
-
-	# must be done outside while and if or else `set -eux -o pipefail` is ignored
-	echo "$(cut -f1 -d' ' sum.txt)" $actual_truth | md5sum --check
-
-	touch previous_task_dummy_output
-	>>>
-
-	runtime {
-		docker: "python:3.8-slim"
-		memory: "2 GB"
-		preemptible: 2
-	}
-
-	output {
-		File enforce_chronological_order = "previous_task_dummy_output"
-	}
-
-}
+import "https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/main/ld-pruning/ld-pruning.wdl" as test_run_ldpruning
+import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v1.1.0/checker_tasks/arraycheck_task.wdl" as verify_array
+import "https://raw.githubusercontent.com/dockstore/checker-WDL-templates/v1.1.0/checker_tasks/filecheck_task.wdl" as verify_file
 
 workflow checker_ldprune {
 	input {
@@ -61,8 +12,8 @@ workflow checker_ldprune {
 		Array[File] gds_with_unique_var_ids
 
 		# checker-specific
-		File truth_defaults_info
-		File truth_nondefaults_info
+		#File truth_defaults_info
+		#File truth_nondefaults_info
 		Array[File] truth_defaults_subset
 		Array[File] truth_nondefaults_subset
 		File truth_defaults_merged
@@ -74,8 +25,8 @@ workflow checker_ldprune {
 		Float option_nondefault_ld_win_size = 10.1
 		Float option_nondefault_maf_threshold = 0.05
 		Float option_nondefault_missing_threshold = 0.02
-		#Boolean option_nondefault_exclude_pca_corr = false  # skipped due to CWL bug
 		String? option_nondefault_out_prefix = "includePCA_hg19_10.1win_0.3r_0.05MAF_0.02missing"
+		# exclude_pca_corr is not tested due to a bug in the CWL that makes comparison difficult
 
 	}
 
@@ -110,13 +61,10 @@ workflow checker_ldprune {
 	# # # # # # # # # # # # #
 	#     md5 -- subset     #
 	# # # # # # # # # # # # #
-	scatter(gds_test in nondef_step2_subset.subset_output) {
-		call md5sum as nondef_md5_subset {
-			input:
-				test = gds_test,
-				truth = truth_nondefaults_subset,
-				truth_info = truth_nondefaults_info
-		}
+	call verify_array.arraycheck_classic as nondef_md5_subset {
+		input:
+			test = nondef_step2_subset.subset_output,
+			truth = truth_nondefaults_subset
 	}
 
 	####################################
@@ -139,13 +87,10 @@ workflow checker_ldprune {
 	# # # # # # # # # # # # #
 	#     md5 -- merged     #
 	# # # # # # # # # # # # #
-	call md5sum as nondef_md5_merge {
+	call verify_file.filecheck as nondef_md5_merge {
 		input:
 			test = nondef_step3_merge.merged_gds_output,
-			truth = [truth_nondefaults_merged],
-			truth_info = truth_nondefaults_info,
-			enforce_chronological_order = nondef_md5_subset.enforce_chronological_order[0]
-
+			truth = truth_nondefaults_merged
 	}
 
 	####################################
@@ -171,14 +116,10 @@ workflow checker_ldprune {
 	# # # # # # # # # # # # #
 	#     md5 -- subset     #
 	# # # # # # # # # # # # #
-	scatter(gds_test in default_step2_subset.subset_output) {
-		call md5sum as default_md5_subset {
-			input:
-				test = gds_test,
-				truth = truth_defaults_subset,
-				truth_info = truth_defaults_info,
-				enforce_chronological_order = nondef_md5_merge.enforce_chronological_order
-		}
+	call verify_array.arraycheck_classic as default_md5_subset {
+		input:
+			test = default_step2_subset.subset_output,
+			truth = truth_defaults_subset
 	}
 
 	####################################
@@ -199,12 +140,10 @@ workflow checker_ldprune {
 	# # # # # # # # # # # # #
 	#     md5 -- merged     #
 	# # # # # # # # # # # # #
-	call md5sum as default_md5_merge {
+	call verify_file.filecheck as default_md5_merge {
 		input:
 			test = default_step3_merge.merged_gds_output,
-			truth = [truth_defaults_merged],
-			truth_info = truth_defaults_info,
-			enforce_chronological_order = default_md5_subset.enforce_chronological_order[0]
+			truth = truth_defaults_merged
 	}
 
 	meta {

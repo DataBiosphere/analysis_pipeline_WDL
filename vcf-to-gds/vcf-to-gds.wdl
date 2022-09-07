@@ -4,16 +4,23 @@ version 1.0
 task vcf2gds {
 	input {
 		File vcf
-		String debug_basename = basename(vcf)
-		String debug_basenamesub = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
 		Array[String] format # vcf formats to keep
 
 		# runtime attributes
 		Int addldisk = 1
 		Int cpu = 4
+		Int retries = 3
 		Int memory = 8
-		Int preempt = 3
+		Int preempt = 2
 	}
+	# Estimate disk size required
+	Int vcf_size = ceil(size(vcf, "GB"))
+	Int finalDiskSize = 4*vcf_size + addldisk
+
+	# Useful for diagnosing rare Terra permission bugs
+	String debug_basename = basename(vcf)
+	String debug_basenamesub = basename(sub(vcf, "\.vcf\.gz(?!.{1,})|\.vcf\.bgz(?!.{5,})|\.vcf(?!.{5,})|\.bcf(?!.{1,})", ".gds"))
+
 	command {
 		set -eux -o pipefail
 
@@ -51,19 +58,16 @@ task vcf2gds {
 		Rscript /usr/local/analysis_pipeline/R/vcf2gds.R vcf2gds.config
 	}
 	
-	# Estimate disk size required
-	Int vcf_size = ceil(size(vcf, "GB"))
-	Int finalDiskSize = 4*vcf_size + addldisk
-	
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428"  # uwgac/topmed-master:2.12.1
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
 	output {
-		File vcf_output = glob("*.vcf*")[0]  # workaround for check_gds issues with drs URIs
+		String vcf_output = vcf
 		File gds_output = glob("*.gds")[0]
 		File config_file = "vcf2gds.config"
 		File debug_basneames = "debug.txt"
@@ -79,6 +83,7 @@ task unique_variant_id {
 		Int addldisk = 1
 		Int cpu = 2
 		Int memory = 8
+		Int retries = 2
 		Int preempt = 2
 	}
 	command <<<
@@ -152,8 +157,9 @@ task unique_variant_id {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428"
 		disks: "local-disk " + finalDiskSize + " HDD"
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}
@@ -168,10 +174,12 @@ task check_gds {
 	input {
 		File gds
 		Array[File] vcfs
+
 		# runtime attr
 		Int addldisk = 1
 		Int cpu = 8
 		Int memory = 12
+		Int retries = 3
 		Int preempt = 0
 	}
 
@@ -252,9 +260,9 @@ task check_gds {
 
 	runtime {
 		cpu: cpu
-		docker: "uwgac/topmed-master@sha256:0bb7f98d6b9182d4e4a6b82c98c04a244d766707875ddfd8a48005a9f5c5481e"
+		docker: "uwgac/topmed-master@sha256:f2445668725434ea6e4114af03f2857d411ab543f42a553f5856f2958e6e9428"
 		disks: "local-disk " + finalDiskSize + " SSD"
-		bootDiskSizeGb: 6
+		maxRetries: "${retries}"
 		memory: "${memory} GB"
 		preemptibles: "${preempt}"
 	}

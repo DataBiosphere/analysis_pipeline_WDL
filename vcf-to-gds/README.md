@@ -6,7 +6,7 @@ Please be aware that the third step, check_gds is skipped by default, as it is i
 ### Inputs
 | variable          	| type          	| default 	| info                                                                                                                        	|
 |-------------------	|---------------	|---------	|-----------------------------------------------------------------------------------------------------------------------------	|
-| **vcf**               	| **Array[File]**   	|         	| **Input vcf, .vcf.bgz, .vcf.gz, .bcf, or any combination thereof; expects 22-25**                                                              	|
+| **vcf**               	| **Array[File]**   	|         	| **Input vcf, .vcf.bgz, .vcf.gz, .bcf, or any combination thereof; expects no more than 25 files.**                                                              	|
 |                   |           |         	|                                            	|
 | check_gds         | Boolean   | false   	| Run the checkGDS step. **Highly recommended** to leave as `false` except on provided test data. 	|
 | check_gds.cpu		| int 		| 8			| Runtime cores to allot for 3rd task           |
@@ -32,3 +32,6 @@ unique_variant_id_gds_per_chr:
 * Array of GDS files, matching the name of the input vcfs with ".gds" appended to the end, and with unique variant IDs across the whole genome.  
   
 Note that the check_gds step, while it will stop the pipeline should a check fail, does not actually have any true ouputs. The GDS file output is from the step prior.
+
+### Example of runtime attributes for "real" data on Terra
+When running on 1000 Genomes NA20768.haplotypeCalls.er.raw.g.vcf.gz and NA19321.haplotypeCalls.er.raw.g.vcf.gz, the first task alone took 2 hours and 40 minutes when vcfgds.addldisk = 1, vcfgds.cpu = 16, and vcfgds.memory = 64. unique_variant_ids was not run as these files do not correspond to the chrN naming scheme that it requires.

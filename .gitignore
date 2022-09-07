@@ -1,16 +1,40 @@
 
+# mac garbage
 .DS_Store
+
+# cromwell logs
+cromwell-executions/*
 cromwell-input/*
 Cromwell.stderr.txt
 Cromwell.stdout.txt
+*/cromwell-68.1.jar
+
+# R logs
 .Rproj.user
-_test-data-and-truths_/null_model/truth_outputs/.Rhistory
-cromwell-executions/*
-# debug
-assoc-aggregate/cromwell-68.1.jar
+*/.Rhistory
+
+# general debugging stuff
 *_debug.txt
 *.integer
 *.zip
+
+# a bogus test file made by concatenating chr1 against itself until it was 4 GB in size
+# used as a stress test of sorts. it's not controlled data but we don't need it in remote.
+_test-data-and-truths_/assoc/big_silly_file_chr1.gds
+
+# cwl comparison files
 cwl.output.json
 job.json
-_test-data-and-truths_/assoc/big_silly_file_chr1.gds
+
+# detritus for the standalone python version of sbg_prepare_segments_1 task
+assoc-aggregate/segments.txt
+assoc-aggregate/aggregate_list_chrX.RData
+assoc-aggregate/aggregate_list_chr2.RData
+assoc-aggregate/aggregate_list_chr1.RData
+assoc-aggregate/1KG_phase3_subset_chrX.gds
+assoc-aggregate/1KG_phase3_subset_chr2.gds
+assoc-aggregate/1KG_phase3_subset_chr1.gds
+assoc-aggregate/1KG_phase3_subset_chr2_butwithadifferentname.gds
+assoc-aggregate/variant_include_chr1.RData
+assoc-aggregate/variant_include_chr2.RData
+assoc-aggregate/variant_include_chrX.RData

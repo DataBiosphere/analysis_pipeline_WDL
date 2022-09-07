@@ -1,52 +1,66 @@
 version: 1.2
 workflows:
-   - subclass: WDL
-     primaryDescriptorPath: /vcf-to-gds/vcf-to-gds.wdl
-     testParameterFiles:
-         - /vcf-to-gds/vcf-to-gds-terra.json
-         - /vcf-to-gds/vcf-to-gds-local.json
-     name: vcf-to-gds-wdl
-   - subclass: WDL
-     primaryDescriptorPath: /ld-pruning/ld-pruning.wdl
-     testParameterFiles:
-        - /ld-pruning/ld-pruning-terra.json
-        - /ld-pruning/ld-pruning-local.json
-     name: ld-pruning-wdl
-   - subclass: WDL
-     primaryDescriptorPath: /null-model/null-model.wdl
-     testParameterFiles:
-        - /null-model/null-model.json
-        - /null-model/null-model-binary.json
-        - /null-model/null-model-conditional.json
-        - /null-model/null-model-grm.json
-        - /null-model/null-model-group.json
-        - /null-model/null-model-norm-bygroup.json
-        - /null-model/null-model-notransform.json
-        - /null-model/null-model-unrel-binary.json
-        - /null-model/null-model-unrel.json
-        - /null-model/terra-null-model-conditional.json
-     name: null-model-wdl
-   - subclass: WDL
-     primaryDescriptorPath: /king/king.wdl
-     testParameterFiles:
-        - /king/king-terra.json
-     name: king-wdl
-   - subclass: WDL
-     primaryDescriptorPath: /assoc-aggregate/assoc-aggregate.wdl
-     testParameterFiles:
-        - /assoc-aggregate/assoc-aggregate-terra-allele.json
-        - /assoc-aggregate/assoc-aggregate-terra-position.json
-        - /assoc-aggregate/assoc-aggregate-terra-weights.json
-     name: assocation-aggregate-wdl
-   - subclass: WDL
-     primaryDescriptorPath: /pc-air/pc-air.wdl
-     testParameterFiles:
-         - /pc-air/pc-air-local.json
-         - /pc-air/pc-air-terra.json
-     name: pc-air-wdl
-   - subclass: WDL 
-     primaryDescriptorPath: /pc-relate/pcrelate.wdl
-     testParameterFiles:
-         - /pc-relate/pcrelate-terra.json
-         - /pc-relate/pcrelate-local.json
-     name: pc-relate-wdl
+  - subclass: WDL
+    primaryDescriptorPath: /vcf-to-gds/vcf-to-gds.wdl
+    testParameterFiles:
+      - /vcf-to-gds/vcf-to-gds-terra.json
+      - /vcf-to-gds/vcf-to-gds-local.json
+    authors:
+      - orcid: 0000-0003-4896-1858
+    name: vcf-to-gds-wdl
+  - subclass: WDL
+    primaryDescriptorPath: /ld-pruning/ld-pruning.wdl
+    testParameterFiles:
+      - /ld-pruning/ld-pruning-terra.json
+      - /ld-pruning/ld-pruning-local.json
+    name: ld-pruning-wdl
+    authors:
+      - orcid: 0000-0003-4896-1858
+  - subclass: WDL
+    primaryDescriptorPath: /null-model/null-model.wdl
+    testParameterFiles:
+      - /null-model/null-model.json
+      - /null-model/null-model-binary.json
+      - /null-model/null-model-conditional.json
+      - /null-model/null-model-grm.json
+      - /null-model/null-model-group.json
+      - /null-model/null-model-norm-bygroup.json
+      - /null-model/null-model-notransform.json
+      - /null-model/null-model-unrel-binary.json
+      - /null-model/null-model-unrel.json
+      - /null-model/terra-null-model-conditional.json
+    authors:
+      - orcid: 0000-0003-4896-1858
+    name: null-model-wdl
+  - subclass: WDL
+    primaryDescriptorPath: /king/king.wdl
+    testParameterFiles:
+      - /king/king-terra.json
+    authors:
+      - orcid: 0000-0002-3930-0129
+    name: king-wdl
+  - subclass: WDL
+    primaryDescriptorPath: /assoc-aggregate/assoc-aggregate.wdl
+    testParameterFiles:
+      - /assoc-aggregate/assoc-aggregate-terra-allele.json
+      - /assoc-aggregate/assoc-aggregate-terra-position.json
+      - /assoc-aggregate/assoc-aggregate-terra-weights.json
+    authors:
+      - orcid: 0000-0003-4896-1858
+    name: assocation-aggregate-wdl
+  - subclass: WDL
+    primaryDescriptorPath: /pc-air/pc-air.wdl
+    testParameterFiles:
+       - /pc-air/pc-air-local.json
+       - /pc-air/pc-air-terra.json
+    authors:
+      - orcid: 0000-0001-9163-2756
+    name: pc-air-wdl
+  - subclass: WDL 
+    primaryDescriptorPath: /pc-relate/pcrelate.wdl
+    testParameterFiles:
+       - /pc-relate/pcrelate-terra.json
+       - /pc-relate/pcrelate-local.json
+    authors:
+      - orcid: 0000-0003-4896-1858
+    name: pc-relate-wdl

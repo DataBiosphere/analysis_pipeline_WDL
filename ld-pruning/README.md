@@ -1,8 +1,8 @@
 # Relatedness and Population Structure Filtering (ld-pruning-wf.wdl)
 **Cost estimate when running on Terra, default inputs: $0.67**  
-This workflow prunes on the basis of linkage disequilibrium. It then subsets GDS files based on those pruned variants, then performs merging and optional checks the merged files. This represents [the second "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#relatedness-and-population-structure).
+This workflow prunes on the basis of linkage disequilibrium. It then subsets GDS files based on those pruned variants, then performs merging and optional checks the merged files. This represents [the second "chunk" of the original pipeline](https://github.com/UW-GAC/analysis_pipeline#relatedness-and-population-structure). A [checker workflow](../checker/ld-pruning-checker.wdl) is provided to ensure congruence against CWL truth files.
 
-**Warning: If you run this on a local machine without setting concurrent-job-limit for Cromwell, Cromwell will attempt to LD prune all 23 chromosomes at once, likely freezing Docker across your OS in the process.** Please check the repo's main readme for more information.
+**Warning: If you run this on a local machine without setting concurrent-job-limit for Cromwell, Cromwell will attempt to LD prune all chromosomes at once, likely freezing Docker across your OS in the process.** Please check the repo's main readme for more information.
 
 Original CWL description:
 > This workflow LD prunes variants and creates a new GDS file containing only the pruned variants. Linkage disequilibrium (LD) is a measure of correlation of genotypes between a pair of variants. LD-pruning is the process filtering variants so that those that remain have LD measures below a given threshold. This procedure is typically used to identify a (nearly) independent subset of variants. This is often the first step in evaluating relatedness and population structure to avoid having results driven by clusters of variants in high LD regions of the genome.
@@ -10,15 +10,11 @@ Original CWL description:
 Some variable descriptions have been pulled from the CWL.
 
 ## Inputs
-Note that this pipeline only directly takes in variant_include_file in the first step. If you pass in variant_include_file, that is used as a vector of variants to consider for LD pruning. LD pruning outputs an RData file. After the LD pruning task, a variable called variant_include_file is also used in the subset task, but it takes in the output of the previous task's RData file, **not** the file you input for the first task.
-
-Due to [how](https://github.com/zhengxwen/SeqArray/blob/828cbb5d06d85581119aaf9ab854e1d2497c65c5/R/UtilsMerge.R#L282) [SeqArray](https://github.com/zhengxwen/SeqArray/blob/828cbb5d06d85581119aaf9ab854e1d2497c65c5/R/UtilsMerge.R#L299) [works](https://github.com/zhengxwen/SeqArray/blob/828cbb5d06d85581119aaf9ab854e1d2497c65c5/R/UtilsMerge.R#L358), you **must** input more than one file into gds_files. Otherwise, the pipeline will (likely incorrectly) claim that you have repeating variants IDs and/or repeating sample IDs.
-
 ### Input Files
 * gds_files
 	* Required
 	* An array of GDS files, with names that contain "chr" + the number/letter of the chromosome, such as ["chr1.gds", "chr2.gds"]
-	* Must contain at least two files
+	* Must contain at least two files if you want to run the merge and check merged tasks
 * sample_include_file
 	* Optional
 	* RData file with vector of sample.id to use for LD pruning (unrelated samples are recommended)

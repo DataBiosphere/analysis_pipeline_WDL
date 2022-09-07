@@ -25,9 +25,6 @@ This one has the most significant differences by far. Some tasks have their outp
 
 * This pipeline features heavy usage of the twice localized workaround. (Interestingly, some steps in the CWL actually use the same or a similar workaround, so sometimes this isn't a difference but rather a case of simultaneous invention.)
 
-### High-level overview
-![Table showing high-level overview of tasks in the CWL versus the WDL. Information is summarized in text.](https://raw.githubusercontent.com/DataBiosphere/analysis_pipeline_WDL/assoc-agg-part2/_documentation_/for%20developers/assoc_agg_cwl_vs_wdl.png)
-
 ### wdl_validate_inputs
 **Summary: New task to validate inputs**  
 This is a simple to task to validate if three String? inputs are valid. The CWL sets them as type enum, which limits what values they can be. WDL does not have this type, so this task performs the validation to ensure inputs are valid. We do this before anything else runs as these inputs are not used until about halfway down the pipeline, and we don't want to waste user's time doing the first half if the second is doomed to fail.
@@ -53,13 +50,15 @@ The CWL then dot-product scatters on these arrays, meaning that each instance of
 * One aggregate RData file
 * Optional: One variant include RData file
 
-It is theoretically possible to mimic this in a WDL that is compatible in Terra using custom structs, but I had difficulty scattering on such a thing reliably. (The fact that variant_include_files is an optional array seems to be part of the issue.) In any case, I found it to be less error-prone to simply set this task's output to a single array of zip files and to have the next task scatter on those zip files. Each zip file contains, and will pass into each instance of the subsequent scattered task:
+~It is theoretically possible to mimic this in a WDL that is compatible in Terra using custom structs, but I had difficulty scattering on such a thing reliably. (The fact that variant_include_files is an optional array seems to be part of the issue.)~ *Update: It may not be possible with structs after all. WDL does not officially support scattering on the dot-product of more than two arrays, optional or otherwise. However, there may be some workarounds by nesting zip() or scatter(), or playing with JSON file outputs, combined with select_first() to handle the optional array* In any case, I found it to be less error-prone to simply set this task's output to a single array of zip files and to have the next task scatter on those zip files. Each zip file contains, and will pass into each instance of the subsequent scattered task:
 * One GDS file
 * One file with with the pattern X.integer where X represents the segment number
 * One aggregate RData file
 * Optional: One variant include RData file, in its own subfolder in order to differentiate it from the other RData file
 
 Why is the variant include output in its own subfolder? The variant include RData file does not have a predictable file name, nor does the aggregate RData file -- all we know is their extension, which they share. The CWL "keeps track" of them by assigning them to output variables of type file. We are unable to do that, nor can we easily assign unpredictable file names to an output variable of type string in WDL ("easily" because in theory this could be done with using read_file() to output a variable of type string but I have found it to be error-prone), therefore we are using the filesystem itself to keep track of which RData file is which.
+
+Wen running on very large files, the delocalization segment of this task is extremely slow, which is one reason why I hope to replace this workaround eventually.
 
 ### assoc_aggregate
 **Summary: Both WDL and CWL can output nothing for this task, but in WDL we must be very careful**  
@@ -71,9 +70,9 @@ This is problematic for WDL, as Terra-compatible WDL has strict limitations on g
 Completely replace CWL task with a WDL built-in function.  
 
 ### sbg_group_segments_1
-The CWL has this as a scattered task. Each instance of the scattered task takes in an Array[File] and outputs an Array[Array[File?]] plus an Array[String?].
+In the CWL, this task takes in an Array[File] and outputs grouped_assoc_files with type Array[Array[File?]] and chromosome with type Array[String?].
 
-The WDL has this a non-scattered task. The task takes in a Array[File] and outputs list of strings a list of the grouped files as Array[String] (along with two debug files). Previous versions of this code attempted to output a complex object containing one Array[File] and one Array[String], but this has issues on Terra. Therefore, the current version is not actually passing any files to the next task. This has the unfortunate side effect of the next task needing to duplicate some of the work done in this task.
+In the WDL, this task takes in a Array[File] and outputs list of strings a list of the grouped files as Array[String] (along with two debug files). In other words, the WDL version is not actually passing any files to the next task, just strings pointing to existing files. Previous versions of this code attempted to output a complex object containing one Array[File] and one Array[String], but this has issues on Terra. This has the unfortunate side effect of the next task, assoc_combine_r, needing to duplicate some of the work done in this task.
 
 ### assoc_combine_r
 In this task we have a bunch of RData input files in the workdir. If we did not need to run on Terra, we could write the output filename to a text file, then read that as a WDL task-level output and then glob upon that as another WDL task output, but Google-Cromwell doesn't allow for such workarounds. Thankfully, `assoc_combined = glob("*.RData")[0]` *appears* to always grab the correct RData file in its output, although I fear this may not be robust.
@@ -81,6 +80,8 @@ In this task we have a bunch of RData input files in the workdir. If we did not 
 ## ld-pruning.wdl
 * WDL does not have an equivalent to ScatterMethod:DotProduct so it instead scatters using zip().
 * check_merged_gds uses the chromosome file workaround.
+* The CWL and the WDL can optionally take in a user-provided variant_include_file in the first step. If included, it is used as a vector of variants to consider for LD pruning. LD pruning then outputs an RData file, which in the CWL version of this pipeline is *also* called variant_include_file. So, after the LD pruning task, the CWL version of this pipeline uses a variable called variant_include_file in the subset task, but it takes in the output of the previous task's RData file, **not** the file you input for the first task. The WDL, not being able to dot-product scatter without zip(), happens to avoid this potentially confusing input naming.
+
 
 ## null-model.wdl
 The CWL technically has duplicated outputs. The WDL instead returns each file once. On SB, cwl.output.json sets the outputs as the following, where ! indicates a duplicated output, inverse norm transformation is applied, and the output_prefix is set to `test`:
