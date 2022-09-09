@@ -5,7 +5,7 @@
   "aggie_checker.variant_include_files": ["_test-data-and-truths_/assoc/variant_include_chr1.RData", "_test-data-and-truths_/assoc/variant_include_chr2.RData"],
   "aggie_checker.variant_group_files_coding": ["_test-data-and-truths_/assoc/coding_variants_chr1.RData", "_test-data-and-truths_/assoc/coding_variants_chr2.RData"],
   "aggie_checker.variant_group_files_genes": ["_test-data-and-truths_/assoc/genes_chr1.RData", "_test-data-and-truths_/assoc/genes_chr2.RData"],
-  "aggie_checker.truths_allele": ["_test-data-and-truths_/assoc/truths/allele_chr1.RData", "_test-data-and-truths_/assoc/truths/allele_chr2.RData"],
-  "aggie_checker.truths_position": ["_test-data-and-truths_/assoc/truths/position_chr1.RData", "_test-data-and-truths_/assoc/truths/position_chr2.RData"],
-  "aggie_checker.truths_weights": ["_test-data-and-truths_/assoc/truths/weights_chr1.RData", "_test-data-and-truths_/assoc/truths/weights_chr2.RData"]
+  "aggie_checker.truths_allele": ["_test-data-and-truths_/assoc/truths/old_truths/allele_chr1.RData", "_test-data-and-truths_/assoc/truths/old_truths/allele_chr2.RData"],
+  "aggie_checker.truths_position": ["_test-data-and-truths_/assoc/truths/old_truths/position_chr1.RData", "_test-data-and-truths_/assoc/truths/old_truths/position_chr2.RData"],
+  "aggie_checker.truths_weights": ["_test-data-and-truths_/assoc/truths/old_truths/weights_chr1.RData", "_test-data-and-truths_/assoc/truths/old_truths/weights_chr2.RData"]
 }
