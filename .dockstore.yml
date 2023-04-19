@@ -2,6 +2,7 @@ version: 1.2
 workflows:
   - subclass: WDL
     primaryDescriptorPath: /vcf-to-gds/vcf-to-gds.wdl
+    readMePath: /vcf-to-gds/README.md
     testParameterFiles:
       - /vcf-to-gds/vcf-to-gds-terra.json
       - /vcf-to-gds/vcf-to-gds-local.json
@@ -10,6 +11,7 @@ workflows:
     name: vcf-to-gds-wdl
   - subclass: WDL
     primaryDescriptorPath: /ld-pruning/ld-pruning.wdl
+    readMePath: /ld-pruning/README.md
     testParameterFiles:
       - /ld-pruning/ld-pruning-terra.json
       - /ld-pruning/ld-pruning-local.json
@@ -18,6 +20,7 @@ workflows:
       - orcid: 0000-0003-4896-1858
   - subclass: WDL
     primaryDescriptorPath: /null-model/null-model.wdl
+    readMePath: /null-model/README.md
     testParameterFiles:
       - /null-model/null-model.json
       - /null-model/null-model-binary.json
@@ -34,6 +37,7 @@ workflows:
     name: null-model-wdl
   - subclass: WDL
     primaryDescriptorPath: /king/king.wdl
+    readMePath: /king/README.md
     testParameterFiles:
       - /king/king-terra.json
     authors:
@@ -41,6 +45,7 @@ workflows:
     name: king-wdl
   - subclass: WDL
     primaryDescriptorPath: /assoc-aggregate/assoc-aggregate.wdl
+    readMePath: /assoc-aggregate/readme.md
     testParameterFiles:
       - /assoc-aggregate/assoc-aggregate-terra-allele.json
       - /assoc-aggregate/assoc-aggregate-terra-position.json
@@ -50,6 +55,7 @@ workflows:
     name: assocation-aggregate-wdl
   - subclass: WDL
     primaryDescriptorPath: /pc-air/pc-air.wdl
+    readMePath: /pc-air/README.md
     testParameterFiles:
        - /pc-air/pc-air-local.json
        - /pc-air/pc-air-terra.json
@@ -58,6 +64,7 @@ workflows:
     name: pc-air-wdl
   - subclass: WDL 
     primaryDescriptorPath: /pc-relate/pcrelate.wdl
+    readMePath: /pc-relate/README.md
     testParameterFiles:
        - /pc-relate/pcrelate-terra.json
        - /pc-relate/pcrelate-local.json
